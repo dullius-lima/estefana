@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procedimentos Operacionais Padrão (POP) — LEVEH</title>
+  <style>
+    :root {
+      --primary: #5B6E53;
+      --primary-dark: #43523D;
+      --primary-light: #EBF0E9;
+      --bg: #F4F6F2;
+      --text: #2A3327;
+      --text-muted: #6B7866;
+      --border: #DCE3D8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 2rem; min-height: 100vh; }
+    .container { max-width: 1300px; margin: 0 auto; background: white; padding: 2rem; border-radius: 1rem; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }
+    .btn { padding: 0.65rem 1.25rem; border: none; border-radius: 0.5rem; background: var(--primary); color: white; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.9rem; transition: 0.2s; }
+    .btn:hover { background: var(--primary-dark); }
+    .btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
+    .btn-outline:hover { background: var(--primary-light); }
+    .btn-danger { background: #DC2626; color: white; }
+    .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.8rem; }
+    
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .form-group input, .form-group select, .form-group textarea { padding: 0.65rem; border: 1px solid var(--border); border-radius: 0.4rem; font-size: 0.9rem; }
+    
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; margin-top: 1rem; }
+    th { padding: 0.8rem 0.9rem; background: #F6F8F4; border-bottom: 2px solid var(--border); color: var(--text-muted); font-weight: 700; }
+    td { padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    
+    .badge-pop { background: var(--primary-light); color: var(--primary-dark); border: 1px solid #CBD8C5; padding: 0.2rem 0.5rem; border-radius: 0.3rem; font-weight: 700; font-size: 0.75rem; }
+    .file-chip { display: inline-flex; align-items: center; gap: 0.35rem; background: #E0F2FE; color: #0369A1; padding: 0.25rem 0.6rem; border-radius: 0.35rem; font-weight: 600; font-size: 0.8rem; text-decoration: none; border: 1px solid #BAE6FD; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1 style="color:var(--primary); font-size:1.6rem;">Manual de Procedimentos Operacionais Padrão (POP)</h1>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Documentos normativos obrigatórios para auditoria sanitária da Vigilância Sanitária (RDC 63/2011)</p>
+      </div>
+      <div style="display:flex; gap:0.5rem;">
+        <button class="btn" onclick="toggleForm('formNovoPop')">+ Cadastrar & Anexar Novo POP</button>
+        <a href="/frontend-admin/public/index.html" class="btn btn-outline">← Voltar ao Painel</a>
+      </div>
+    </div>
+
+    <!-- FORMULÁRIO DE CADASTRO E ANEXO DE POP -->
+    <div id="formNovoPop" class="hidden" style="background:#F8FAF6; border:1px solid var(--border); padding:1.5rem; border-radius:0.75rem; margin-bottom:1.5rem;">
+      <h3 style="color:var(--primary); margin-bottom:1rem;">Cadastro de Procedimento Operacional Padrão (POP)</h3>
+      <form onsubmit="salvarPop(event)">
+        <div class="form-grid">
+          <div class="form-group"><label>Código do POP</label><input type="text" id="popCodigo" required placeholder="Ex: POP-HIG-01, POP-ENF-02"></div>
+          <div class="form-group"><label>Título do Procedimento</label><input type="text" id="popTitulo" required placeholder="Ex: Higienização e Desinfecção das Salas Clínicas"></div>
+          <div class="form-group"><label>Setor / Especialidade</label>
+            <select id="popSetor" required>
+              <option value="Higienização & Limpeza">Higienização & Limpeza Geral</option>
+              <option value="Enfermagem">Enfermagem & Procedimentos</option>
+              <option value="Nutrição Clínica">Nutrição Clínica & Consultórios</option>
+              <option value="Médico">Atendimento Médico & Prescrições</option>
+              <option value="Gerenciamento de Resíduos (PGRSS)">Gerenciamento de Resíduos (PGRSS)</option>
+              <option value="Esterilização & Autoclave">Esterilização & Autoclave</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Versão</label><input type="text" id="popVersao" value="v1.0" required></div>
+          <div class="form-group"><label>Responsável Técnico / Elaborador</label><input type="text" id="popResponsavel" required placeholder="Ex: Dra. Estefana Andrade (CRN) / Enf. Responsável"></div>
+          <div class="form-group"><label>Data da Última Revisão</label><input type="date" id="popDataRevisao" required></div>
+          <div class="form-group"><label>Data da Próxima Revisão</label><input type="date" id="popDataValidade" required></div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label>Anexar Documento do POP (PDF ou Documento Oficial Assinado)</label>
+            <input type="file" id="popArquivoInput" accept=".pdf,.doc,.docx,.png,.jpg" style="padding:0.4rem; background:white;">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:0.5rem;">
+          <label>Resumo / Objetivo do Procedimento</label>
+          <textarea id="popObjetivo" rows="2" placeholder="Descreva sucintamente o objetivo e o passo a passo resumido deste POP..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+          <button type="button" class="btn btn-outline" onclick="toggleForm('formNovoPop')">Cancelar</button>
+          <button type="submit" class="btn">Concluir & Anexar POP</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- PESQUISA DE POP -->
+    <input type="text" id="buscaPop" oninput="filtrarPops()" placeholder="🔍 Pesquisar por código, título ou setor..." style="width:100%; max-width:400px; padding:0.65rem 1rem; border:1.5px solid var(--border); border-radius:0.5rem; font-size:0.9rem; margin-bottom:1rem; outline:none;">
+
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Título do POP</th>
+            <th>Setor</th>
+            <th>Versão</th>
+            <th>Responsável Técnico</th>
+            <th>Próxima Revisão</th>
+            <th>Arquivo Anexado</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpoTabelaPops"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // POPs fundamentais pré-carregados para conformidade com a VISA
+    const POPS_PADRAO = [
+      { id: 1, codigo: "POP-HIG-01", titulo: "Higienização das Mãos e Antissepsia", setor: "Higienização & Limpeza", versao: "v1.0", responsavel: "RT Clínica LEVEH", revisao: "2026-01-10", validade: "2027-01-10", arquivoNome: "POP_Higienizacao_Maos.pdf", arquivoData: null, objetivo: "Padronizar o processo de higienização das mãos de colaboradores e profissionais." },
+      { id: 2, codigo: "POP-RES-01", titulo: "Plano de Gerenciamento de Resíduos Sólidos de Saúde (PGRSS)", setor: "Gerenciamento de Resíduos (PGRSS)", versao: "v1.0", responsavel: "RT Clínica LEVEH", revisao: "2026-02-15", validade: "2027-02-15", arquivoNome: "POP_Descarte_Residuos_PGRSS.pdf", arquivoData: null, objetivo: "Orientar a segregação de lixo infectante, perfurocortante e comum." },
+      { id: 3, codigo: "POP-BIO-01", titulo: "Operação e Calibração do Aparelho de Bioimpedância", setor: "Nutrição Clínica", versao: "v1.1", responsavel: "Nutricionista Responsável", revisao: "2026-03-01", validade: "2027-03-01", arquivoNome: "POP_Operacao_Bioimpedancia.pdf", arquivoData: null, objetivo: "Garantir a desinfecção e protocolo adequado antes e depois do exame do paciente." }
+    ];
+
+    let pops = JSON.parse(localStorage.getItem('leveh_pops_visa') || JSON.stringify(POPS_PADRAO));
+
+    function salvar() {
+      localStorage.setItem('leveh_pops_visa', JSON.stringify(pops));
+      renderTabela(pops);
+    }
+
+    function toggleForm(id) { document.getElementById(id).classList.toggle('hidden'); }
+
+    function renderTabela(lista) {
+      const tbody = document.getElementById('corpoTabelaPops');
+      if (lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">Nenhum POP registrado.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = lista.map((p, idx) => {
+        const dataValBr = p.validade.split('-').reverse().join('/');
+        let linkArquivo = '<span style="color:#9CA3AF; font-size:0.8rem;">Sem anexo</span>';
+        if (p.arquivoData) {
+          linkArquivo = `<a href="${p.arquivoData}" download="${p.arquivoNome}" class="file-chip">📎 ${p.arquivoNome}</a>`;
+        } else if (p.arquivoNome) {
+          linkArquivo = `<span class="file-chip">📄 ${p.arquivoNome}</span>`;
+        }
+
+        return `
+          <tr>
+            <td><span class="badge-pop">${p.codigo}</span></td>
+            <td><strong>${p.titulo}</strong><br><small style="color:var(--text-muted);">${p.objetivo || ''}</small></td>
+            <td>${p.setor}</td>
+            <td>${p.versao}</td>
+            <td>${p.responsavel}</td>
+            <td>${dataValBr}</td>
+            <td>${linkArquivo}</td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="excluirPop(${idx})">Excluir</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function salvarPop(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('popArquivoInput');
+      const file = fileInput.files[0];
+
+      const novoPop = {
+        id: Date.now(),
+        codigo: document.getElementById('popCodigo').value.trim(),
+        titulo: document.getElementById('popTitulo').value.trim(),
+        setor: document.getElementById('popSetor').value,
+        versao: document.getElementById('popVersao').value.trim(),
+        responsavel: document.getElementById('popResponsavel').value.trim(),
+        revisao: document.getElementById('popDataRevisao').value,
+        validade: document.getElementById('popDataValidade').value,
+        objetivo: document.getElementById('popObjetivo').value.trim(),
+        arquivoNome: file ? file.name : null,
+        arquivoData: null
+      };
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          novoPop.arquivoData = evt.target.result;
+          pops.unshift(novoPop);
+          salvar();
+          toggleForm('formNovoPop');
+          e.target.reset();
+          alert('POP cadastrado com arquivo anexado com sucesso!');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        pops.unshift(novoPop);
+        salvar();
+        toggleForm('formNovoPop');
+        e.target.reset();
+        alert('POP cadastrado com sucesso!');
+      }
+    }
+
+    function excluirPop(idx) {
+      if (confirm(`Deseja remover o "${pops[idx].codigo} - ${pops[idx].titulo}"?`)) {
+        pops.splice(idx, 1);
+        salvar();
+      }
+    }
+
+    function filtrarPops() {
+      const q = document.getElementById('buscaPop').value.toLowerCase();
+      const filtrados = pops.filter(p => 
+        p.codigo.toLowerCase().includes(q) || p.titulo.toLowerCase().includes(q) || p.setor.toLowerCase().includes(q)
+      );
+      renderTabela(filtrados);
+    }
+
+    renderTabela(pops);
+  </script>
+</body>
+</html>

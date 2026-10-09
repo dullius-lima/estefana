@@ -3,439 +3,1409 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel da Clínica — Empresa Estefana</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Clínica LEVEH — Gestão & Prontuário</title>
   <style>
     :root {
-      --primary: #0284c7;
-      --primary-dark: #0369a1;
-      --sidebar-bg: #0f172a;
-      --sidebar-hover: #1e293b;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
+      --primary: #5B6E53;
+      --primary-dark: #43523D;
+      --primary-light: #EBF0E9;
+      --bg: #F4F6F2;
+      --card-bg: #FFFFFF;
+      --text: #2A3327;
+      --text-muted: #6B7866;
+      --border: #DCE3D8;
+      --admin-badge: #78350F;
+      --admin-bg: #FEF3C7;
     }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); min-height: 100vh; }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-    body { background-color: var(--bg); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; }
+    /* AUTH OVERLAY */
+    .auth-overlay { position: fixed; inset: 0; background: rgba(42, 51, 39, 0.9); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1.5rem; backdrop-filter: blur(5px); }
+    .auth-card { background: var(--card-bg); border-radius: 1.25rem; width: 100%; max-width: 440px; padding: 2.2rem; box-shadow: 0 20px 30px rgba(0,0,0,0.2); }
+    
+    .logo-container { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
+    .logo-circle { width: 75px; height: 75px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #F4F6F2; margin-bottom: 0.5rem; }
+    .logo-text-title { font-size: 1.35rem; font-weight: 700; letter-spacing: 3px; color: var(--primary); text-transform: uppercase; }
+    .logo-text-sub { font-size: 0.65rem; letter-spacing: 2.5px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
 
-    /* Login Modal Overlay */
-    #login-overlay {
-      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px);
-      display: flex; justify-content: center; align-items: center; z-index: 9999;
-    }
-    .login-box {
-      background: white; border-radius: 16px; padding: 40px; width: 100%; max-width: 400px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); text-align: center;
-    }
-    .login-box h2 { font-size: 24px; margin-bottom: 8px; color: var(--primary-dark); }
-    .login-box p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+    .form-group { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .form-group input, .form-group select, .form-group textarea { padding: 0.75rem 1rem; border: 1.5px solid var(--border); border-radius: 0.5rem; font-size: 0.95rem; outline: none; background: #FAFCF9; }
+    .form-group input:focus { border-color: var(--primary); background: #fff; }
 
-    /* Barra Lateral (Sidebar) */
-    .sidebar {
-      width: 260px; background: var(--sidebar-bg); color: white; display: flex; flex-direction: column;
-      flex-shrink: 0; height: 100vh;
-    }
-    .sidebar-brand { padding: 24px; font-size: 18px; font-weight: 700; border-bottom: 1px solid var(--sidebar-hover); }
-    .sidebar-menu { list-style: none; padding: 16px 8px; flex: 1; }
-    .sidebar-menu li {
-      padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
-      color: #94a3b8; margin-bottom: 4px; display: flex; align-items: center; gap: 12px; transition: 0.2s;
-    }
-    .sidebar-menu li:hover, .sidebar-menu li.active { background: var(--sidebar-hover); color: white; }
-    .user-profile {
-      padding: 16px 20px; border-top: 1px solid var(--sidebar-hover); display: flex;
-      justify-content: space-between; align-items: center; font-size: 13px;
-    }
-    .logout-btn { background: none; border: none; color: #f87171; cursor: pointer; font-weight: 600; }
-
-    /* Conteúdo Principal */
-    .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; height: 100vh; }
-    .top-header {
-      background: white; border-bottom: 1px solid var(--border); padding: 18px 32px;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .top-header h1 { font-size: 20px; font-weight: 600; }
-    .content-area { padding: 32px; flex: 1; }
-
-    /* Cards e Estatísticas */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 28px; }
-    .stat-card {
-      background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .stat-card span { font-size: 13px; color: var(--text-muted); font-weight: 500; }
-    .stat-card h3 { font-size: 26px; font-weight: 700; margin-top: 8px; color: var(--primary); }
-
-    /* Formulários e Tabelas */
-    .panel-card {
-      background: white; border-radius: 12px; border: 1px solid var(--border); padding: 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px;
-    }
-    .form-group { margin-bottom: 16px; text-align: left; }
-    .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-    .form-group input, .form-group textarea, .form-group select {
-      width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
-      font-size: 14px; outline: none; transition: 0.2s;
-    }
-    .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
-    .btn {
-      background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px;
-      font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s;
-    }
+    .btn { padding: 0.75rem 1.25rem; border: none; border-radius: 0.5rem; background: var(--primary); color: white; font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: 0.2s; }
     .btn:hover { background: var(--primary-dark); }
-    .table-container { width: 100%; overflow-x: auto; margin-top: 16px; }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-    table th { background: #f1f5f9; padding: 12px 16px; font-weight: 600; border-bottom: 1px solid var(--border); }
-    table td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .btn-secondary { background: #8E998B; }
+    .btn-danger { background: #C25454; }
+    .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
+    .btn-outline:hover { background: var(--primary-light); }
 
-    /* Badge de status */
-    .status-badge {
-      display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
-    }
-    .status-agendado { background: #e0f2fe; color: #0369a1; }
-    .status-confirmado { background: #dcfce7; color: #15803d; }
+    .app-layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 270px; background: #2E382A; color: #F4F6F2; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+    .sidebar-header { text-align: center; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 0.5rem; }
+    .nav-btn { background: none; border: none; color: #BAC4B7; text-align: left; padding: 0.85rem 1rem; border-radius: 0.5rem; font-size: 0.9rem; cursor: pointer; width: 100%; font-weight: 500; text-decoration: none; display: block; }
+    .nav-btn.active, .nav-btn:hover { background: #404D3B; color: #FFFFFF; font-weight: 600; }
+    .logout-btn { margin-top: auto; background: transparent; border: 1px solid #C25454; color: #E88E8E; padding: 0.75rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600; }
+
+    .content { flex: 1; padding: 2.2rem; overflow-y: auto; max-width: 1400px; margin: 0 auto; width: 100%; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: var(--card-bg); padding: 1rem 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border); }
+    .card { background: var(--card-bg); border-radius: 0.85rem; padding: 1.75rem; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; margin-top: 1rem; }
+    th { padding: 0.75rem 0.85rem; background: #F6F8F4; border-bottom: 2px solid var(--border); color: var(--text-muted); font-weight: 700; }
+    td { padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+
+    .subtabs { display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .subtab-btn { background: none; border: none; padding: 0.65rem 1.1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; border-radius: 0.375rem 0.375rem 0 0; }
+    .subtab-btn.active { color: var(--primary); border-bottom: 2.5px solid var(--primary); background: var(--primary-light); }
+    .hidden { display: none !important; }
+
+    /* BADGES DE PERFIL */
+    .role-badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 0.35rem; font-size: 0.75rem; font-weight: 700; }
+    .role-admin { background: var(--admin-bg); color: var(--admin-badge); border: 1px solid #FCD34D; }
+    .role-medico { background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; }
+    .role-nutri { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+    .role-enfermeiro { background: #F3E8FF; color: #6B21A8; border: 1px solid #E9D5FF; }
+    .role-biomedico { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+    .role-recep { background: #E0E7FF; color: #3730A3; border: 1px solid #C7D2FE; }
+
+    /* CALENDÁRIO COM DESIGN DE FOLHINHA REAL */
+    .calendar-card { background: white; border: 1.5px solid var(--border); border-radius: 0.85rem; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .calendar-topbar { background: var(--primary); color: white; padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .calendar-topbar h3 { font-size: 1.25rem; font-weight: 700; letter-spacing: 1px; }
+    .cal-nav-btn { background: rgba(255,255,255,0.2); border: none; color: white; font-weight: bold; font-size: 1.1rem; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .cal-nav-btn:hover { background: rgba(255,255,255,0.35); }
+    
+    .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); background: #F6F8F4; border-bottom: 2px solid var(--border); text-align: center; font-weight: 700; font-size: 0.8rem; color: var(--text-muted); padding: 0.6rem 0; }
+    .cal-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); }
+    
+    .cal-day-box { background: white; min-height: 105px; padding: 0.6rem; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; position: relative; }
+    .cal-day-box:hover { background: #F8FAF6; box-shadow: inset 0 0 0 2px var(--primary); }
+    .cal-day-box.empty { background: #FAFCF9; cursor: default; }
+    .cal-day-box.selected { background: var(--primary-light); box-shadow: inset 0 0 0 2px var(--primary); }
+    .cal-day-box.has-block { background: #FEF2F2; }
+    
+    .cal-day-num { font-size: 0.95rem; font-weight: 700; color: var(--text); display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; }
+    .cal-today-badge { background: var(--primary); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
+    
+    .cal-event-pill { font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.4rem; border-radius: 0.25rem; margin-top: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pill-consulta { background: var(--primary-light); color: var(--primary-dark); border-left: 3px solid var(--primary); }
+    .pill-bloqueio { background: #FEE2E2; color: #991B1B; border-left: 3px solid #EF4444; }
+
+    /* MODAL DE HORÁRIOS DO DIA CLICADO */
+    .schedule-modal { position: fixed; inset: 0; background: rgba(42, 51, 39, 0.75); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 1.5rem; backdrop-filter: blur(4px); }
+    .schedule-modal-content { background: white; border-radius: 1rem; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 1.75rem; border: 1.5px solid var(--border); box-shadow: 0 20px 30px rgba(0,0,0,0.2); }
+    .schedule-hour-row { display: flex; align-items: center; padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    .schedule-hour-row:last-child { border-bottom: none; }
+    .schedule-hour-time { width: 75px; font-weight: 700; color: var(--text-muted); font-size: 0.9rem; }
+    .schedule-hour-slot { flex: 1; margin: 0 0.5rem; }
+
+    .tag-macro { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 700; background: var(--primary-light); color: var(--primary); margin-right: 0.25rem; }
   </style>
 </head>
 <body>
 
-  <!-- Overlay de Login -->
-  <div id="login-overlay">
-    <div class="login-box">
-      <h2>Clínica Estefana</h2>
-      <p>Área restrita de Médicos e Nutricionistas</p>
-      <form id="login-form">
-        <div class="form-group">
-          <label>Email Profissional</label>
-          <input type="email" id="login-email" placeholder="dr.exemplo@clinica.com" required>
+  <!-- MODAL DE LOGIN -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card">
+      <div class="logo-container">
+        <div class="logo-circle">
+          <svg width="40" height="40" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4">
+            <rect x="25" y="25" width="50" height="50" transform="rotate(45 50 50)" stroke="#F4F6F2" stroke-width="5"/>
+            <line x1="38" y1="38" x2="62" y2="62" stroke="#F4F6F2" stroke-width="3"/>
+            <line x1="62" y1="38" x2="38" y2="62" stroke="#F4F6F2" stroke-width="3"/>
+          </svg>
         </div>
-        <div class="form-group">
-          <label>Senha</label>
-          <input type="password" id="login-password" placeholder="••••••••" required>
-        </div>
-        <button type="submit" class="btn" style="width: 100%; margin-top: 8px;">Acessar Painel</button>
+        <div class="logo-text-title">LEVEH</div>
+        <div class="logo-text-sub">Acesso Administrativo & Clínico</div>
+      </div>
+
+      <form onsubmit="handleLoginSubmit(event)">
+        <div class="form-group"><label>Email de Acesso</label><input type="email" id="inputEmail" value="admin@leveh.com.br" required></div>
+        <div class="form-group" style="margin-bottom:1.5rem;"><label>Senha</label><input type="password" id="inputSenha" value="admin123" required></div>
+        <button type="submit" class="btn" style="width:100%;">Entrar no Sistema</button>
       </form>
+      <p style="font-size:0.75rem; color:var(--text-muted); text-align:center; margin-top:1rem;">
+        Novos acessos são emitidos pelo Administrador Global da clínica.
+      </p>
     </div>
   </div>
 
-  <!-- Barra Lateral -->
-  <aside class="sidebar">
-    <div class="sidebar-brand">🏥 Clínica Estefana</div>
-    <ul class="sidebar-menu">
-      <li class="active" onclick="showTab('tab-dashboard')">📊 Dashboard</li>
-      <li onclick="showTab('tab-patients')">👥 Pacientes</li>
-      <li onclick="showTab('tab-appointments')">📅 Consultas</li>
-      <li onclick="showTab('tab-diets')">🥗 Prescrição de Dietas</li>
-    </ul>
-    <div class="user-profile">
-      <span id="user-display">Profissional Conectado</span>
-      <button class="logout-btn" onclick="logout()">Sair</button>
-    </div>
-  </aside>
+  <div class="app-layout">
+    <!-- MENU LATERAL -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div style="font-size:1.3rem; font-weight:700; letter-spacing:2px; color:#F4F6F2;">LEVEH</div>
+        <div id="sidebarRoleLabel" style="font-size:0.65rem; letter-spacing:1.5px; color:#BAC4B7; text-transform:uppercase;">Painel Clínico</div>
+      </div>
+      
+      <button class="nav-btn active" id="btnNavPacientes" onclick="switchNav('pacientes')">Pacientes</button>
+      <button class="nav-btn" id="btnNavAgenda" onclick="switchNav('agenda')">Agenda & Calendário</button>
+      <button class="nav-btn" id="btnNavAlimentos" onclick="switchNav('alimentos')">Tabela de Alimentos (TACO)</button>
+      <a href="/frontend-admin/public/estoque.html" class="nav-btn">📦 Estoque & Insumos (VISA)</a>
+      <a href="/frontend-admin/public/pops.html" class="nav-btn">📋 Procedimentos (POP)</a>
 
-  <!-- Conteúdo Principal -->
-  <main class="main-wrapper">
-    <header class="top-header">
-      <h1 id="tab-title">Visão Geral da Clínica</h1>
-      <span id="current-date" style="font-size: 14px; color: var(--text-muted);"></span>
-    </header>
+      <!-- GOVERNANÇA ADMIN GLOBAL -->
+      <div id="menuAdminGlobal" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:0.75rem; margin-top:0.5rem;">
+        <span style="font-size:0.65rem; letter-spacing:1px; color:#9CA3AF; text-transform:uppercase; display:block; margin-bottom:0.35rem; padding-left:0.5rem;">Governança Master</span>
+        <button class="nav-btn" onclick="switchNav('profissionais')">Gestão de Equipe & Acessos</button>
+        <button class="nav-btn" onclick="switchNav('auditoriaGlobal')">Auditoria Global (Logs)</button>
+      </div>
 
-    <div class="content-area">
-      <!-- 1. Aba Dashboard -->
-      <section id="tab-dashboard">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <span>Pacientes Ativos</span>
-            <h3 id="stat-patients">0</h3>
+      <button class="logout-btn" onclick="handleLogout()">Sair do Sistema</button>
+    </aside>
+
+    <main class="content">
+      <div class="top-bar">
+        <h2 id="viewTitle" style="color:var(--text); font-size:1.3rem;">Pacientes</h2>
+        <div id="sessaoBadge"></div>
+      </div>
+
+      <!-- TELA 1: PACIENTES -->
+      <div id="pagePacientes">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <div>
+              <h3 style="color:var(--text);">Pacientes Cadastrados</h3>
+              <p style="font-size:0.8rem; color:var(--text-muted);">Usuário: Nome Completo | Senha: Nº do Prontuário</p>
+            </div>
+            <button class="btn" onclick="toggleForm('formNovoPaciente')">+ Novo Paciente</button>
           </div>
-          <div class="stat-card">
-            <span>Consultas Marcadas</span>
-            <h3 id="stat-appointments">0</h3>
+
+          <div id="formNovoPaciente" class="hidden" style="background:#F8FAF6; padding:1.25rem; border-radius:0.5rem; margin-bottom:1.5rem; border:1px solid var(--border);">
+            <h4 style="margin-bottom:1rem; color:var(--primary);">Cadastrar Paciente</h4>
+            <form onsubmit="salvarPaciente(event)">
+              <div class="form-grid">
+                <div class="form-group"><label>Nome Completo (Login)</label><input type="text" id="pacNome" required placeholder="Ex: Roberto Gomes"></div>
+                <div class="form-group"><label>Sexo Biológico</label><select id="pacSexo" required><option value="F">Feminino</option><option value="M">Masculino</option></select></div>
+                <div class="form-group"><label>Data de Nascimento</label><input type="date" id="pacNasc" required></div>
+                <div class="form-group"><label>Telefone / WhatsApp</label><input type="tel" id="pacTelefone" placeholder="(67) 99999-9999" required></div>
+                <div class="form-group"><label>Email</label><input type="email" id="pacEmail" placeholder="paciente@email.com" required></div>
+                <div class="form-group"><label>Objetivo</label><input type="text" id="pacObjetivo" placeholder="Hipertrofia, Redução Gordura"></div>
+              </div>
+              <div style="display:flex; gap:0.5rem;">
+                <button type="submit" class="btn">Concluir Cadastro</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleForm('formNovoPaciente')">Cancelar</button>
+              </div>
+            </form>
           </div>
-          <div class="stat-card">
-            <span>Planos Nutricionais</span>
-            <h3 id="stat-diets">0</h3>
+
+          <table>
+            <thead>
+              <tr><th>Prontuário (Senha)</th><th>Nome Completo (Login)</th><th>Idade</th><th>Sexo</th><th>Telefone</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="tabelaPacientesBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TELA 2: PRONTUÁRIO INDIVIDUAL -->
+      <div id="pageProntuarioExclusivo" class="hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <button class="btn btn-outline" onclick="switchNav('pacientes')">← Voltar para Pacientes</button>
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">🔒 Sessão auditada pelo Administrador Global</span>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:1rem; margin-bottom:1.5rem;">
+            <div>
+              <h2 id="pronNomeHeader" style="color:var(--primary); font-size:1.4rem;">Prontuário</h2>
+              <p id="pronDetalhesHeader" style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;"></p>
+            </div>
+            <span id="pronIdBadge" style="background:var(--primary); color:white; padding:0.4rem 0.8rem; border-radius:0.4rem; font-weight:700;"></span>
+          </div>
+
+          <!-- SUB-ABAS DO PRONTUÁRIO COM CONTROLE DE PERMISSÃO -->
+          <div class="subtabs" id="containerSubtabsProntuario">
+            <button class="subtab-btn active" id="tabBtnEvolucao" onclick="switchSubTab('subEvolucao')">Evolução Clínica</button>
+            <button class="subtab-btn" id="tabBtnAntropometria" onclick="switchSubTab('subAntropometria')">Antropometria & 7 Dobras</button>
+            <button class="subtab-btn" id="tabBtnBioimpedancia" onclick="switchSubTab('subBioimpedancia')">Bioimpedância</button>
+            <button class="subtab-btn" id="tabBtnExames" onclick="switchSubTab('subExames')">Matriz de Exames</button>
+            <button class="subtab-btn" id="tabBtnProcedimentos" onclick="switchSubTab('subProcedimentos')">Procedimentos & Insumos Gastos</button>
+            <button class="subtab-btn" id="tabBtnDieta" onclick="switchSubTab('subDieta')">Prescrição Nutricional (TACO)</button>
+          </div>
+
+          <!-- 1. EVOLUÇÃO (Médico, Nutri, Enfermeiro, Biomédico) -->
+          <div id="subEvolucao" class="subtab-content">
+            <form onsubmit="adicionarEvolucao(event)">
+              <div class="form-group">
+                <label>Registro Clínico / Anamnese / Conduta</label>
+                <textarea id="evoTexto" rows="5" placeholder="Digite os apontamentos clínicos..." required></textarea>
+              </div>
+              <button type="submit" class="btn" style="margin-top:0.5rem;">Assinar e Gravar no Prontuário</button>
+            </form>
+            <div id="listaEvolucoes" style="margin-top:1.5rem;"></div>
+          </div>
+
+          <!-- 2. ANTROPOMETRIA & DOBRAS (Médico, Nutri, Enfermeiro) -->
+          <div id="subAntropometria" class="subtab-content hidden">
+            <form onsubmit="salvarAntropometria(event)">
+              <div class="form-grid">
+                <div class="form-group"><label>Estatura (cm)</label><input type="number" step="0.1" id="antAltura" required></div>
+                <div class="form-group"><label>Massa Corporal (kg)</label><input type="number" step="0.1" id="antPeso" required></div>
+              </div>
+              <h4 style="color:var(--primary); margin:1rem 0 0.5rem 0;">7 Dobras Cutâneas (mm)</h4>
+              <div class="form-grid">
+                <div class="form-group"><label>Subescapular</label><input type="number" step="0.1" id="dcSubescapular" required></div>
+                <div class="form-group"><label>Tricipital</label><input type="number" step="0.1" id="dcTricipital" required></div>
+                <div class="form-group"><label>Peitoral</label><input type="number" step="0.1" id="dcPeitoral" required></div>
+                <div class="form-group"><label>Axilar Média</label><input type="number" step="0.1" id="dcAxilar" required></div>
+                <div class="form-group"><label>Suprailíaca</label><input type="number" step="0.1" id="dcSuprailiaca" required></div>
+                <div class="form-group"><label>Abdominal</label><input type="number" step="0.1" id="dcAbdominal" required></div>
+                <div class="form-group"><label>Coxa</label><input type="number" step="0.1" id="dcCoxa" required></div>
+              </div>
+              <button type="submit" class="btn" style="margin-top:1rem;">Calcular & Salvar</button>
+            </form>
+            <div style="overflow-x:auto; margin-top:1.5rem;">
+              <table><thead><tr><th>Data</th><th>Peso</th><th>Soma 7</th><th>% Gordura</th><th>M. Magra</th><th>M. Gorda</th></tr></thead><tbody id="corpoHistoricoDobras"></tbody></table>
+            </div>
+          </div>
+
+          <!-- 3. BIOIMPEDÂNCIA (Todos os profissionais da saúde) -->
+          <div id="subBioimpedancia" class="subtab-content hidden">
+            <form onsubmit="salvarBioimpedancia(event)">
+              <div class="form-grid">
+                <div class="form-group"><label>Massa Total (kg)</label><input type="number" step="0.1" id="bioPeso" required></div>
+                <div class="form-group"><label>% Gordura</label><input type="number" step="0.1" id="bioGordura" required></div>
+                <div class="form-group"><label>Massa Muscular (kg)</label><input type="number" step="0.1" id="bioMassaMuscular" required></div>
+                <div class="form-group"><label>TMB (kcal)</label><input type="number" id="bioTmb" required></div>
+                <div class="form-group"><label>Gordura Visceral</label><input type="number" id="bioVisceral"></div>
+              </div>
+              <button type="submit" class="btn">Gravar Avaliação</button>
+            </form>
+            <div id="historicoBio" style="margin-top:1.5rem;"></div>
+          </div>
+
+          <!-- 4. MATRIZ EXAMES (Médico, Nutri, Biomédico) -->
+          <div id="subExames" class="subtab-content hidden">
+            <div style="background:#F8FAF6; border:1px solid var(--border); border-radius:0.5rem; padding:1.25rem; margin-bottom:1.5rem;">
+              <form onsubmit="adicionarExame(event)" style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:flex-end;">
+                <div class="form-group" style="flex:2; min-width:200px;">
+                  <label>Biomarcador</label>
+                  <select id="matrizExameSelect" required>
+                    <option value="Glicemia de Jejum (mg/dL)">Glicemia de Jejum (mg/dL)</option>
+                    <option value="HbA1c (%)">HbA1c (%)</option>
+                    <option value="Insulina Basal (uUI/mL)">Insulina Basal (uUI/mL)</option>
+                    <option value="Colesterol Total (mg/dL)">Colesterol Total (mg/dL)</option>
+                    <option value="HDL (mg/dL)">HDL (mg/dL)</option>
+                    <option value="LDL (mg/dL)">LDL (mg/dL)</option>
+                    <option value="Triglicerídeos (mg/dL)">Triglicerídeos (mg/dL)</option>
+                    <option value="TSH (uUI/mL)">TSH (uUI/mL)</option>
+                    <option value="Testosterona Total (ng/dL)">Testosterona Total (ng/dL)</option>
+                    <option value="Vitamina D 25-OH (ng/mL)">Vitamina D 25-OH (ng/mL)</option>
+                  </select>
+                </div>
+                <div class="form-group" style="flex:1;"><label>Data</label><input type="date" id="matrizDataInput" required></div>
+                <div class="form-group" style="flex:1;"><label>Valor</label><input type="text" id="matrizValorInput" required></div>
+                <button type="submit" class="btn" style="height:42px;">Anexar</button>
+              </form>
+            </div>
+            <div style="overflow-x:auto;"><table><thead id="cabecalhoMatrizExames"></thead><tbody id="corpoMatrizExames"></tbody></table></div>
+          </div>
+
+          <!-- 5. DIETA (Exclusivo Médico & Nutricionista) -->
+          
+          <!-- SUB-ABA PROCEDIMENTOS & BAIXA DE ESTOQUE (MÉDICO, ENFERMEIRO, BIOMÉDICO) -->
+          <div id="subProcedimentos" class="subtab-content hidden">
+            <div style="background:#F8FAF6; border:1px solid var(--border); padding:1.25rem; border-radius:0.5rem; margin-bottom:1.5rem;">
+              <h4 style="color:var(--primary); margin-bottom:0.75rem;">+ Registrar Procedimento & Baixa Sanitária de Estoque</h4>
+              <form onsubmit="executarProcedimentoComBaixa(event)">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>Nome do Procedimento</label>
+                    <input type="text" id="procNome" placeholder="Ex: Aplicação de Injetável, Curativo, Coleta Sanguínea" required>
+                  </div>
+                  <div class="form-group">
+                    <label>Insumo Utilizado (Estoque VISA)</label>
+                    <select id="procInsumoSelect" onchange="atualizarInfoLoteInsumo(this.value)" required>
+                      <option value="">Selecione o insumo...</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Quantidade Utilizada</label>
+                    <input type="number" id="procQtdUsada" min="1" value="1" required>
+                  </div>
+                  <div class="form-group">
+                    <label>Lote & Validade (Rastreabilidade)</label>
+                    <input type="text" id="procLoteInfo" readonly style="background:#EBF0E9; font-weight:700;">
+                  </div>
+                </div>
+                <button type="submit" class="btn" style="margin-top:0.5rem;">Gravar Procedimento & Dar Baixa no Estoque</button>
+              </form>
+            </div>
+
+            <h4 style="margin-bottom:0.5rem;">Histórico de Procedimentos & Rastreabilidade do Paciente (VISA)</h4>
+            <div style="overflow-x:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data / Hora</th>
+                    <th>Procedimento</th>
+                    <th>Insumo Utilizado</th>
+                    <th>Lote Rastreado</th>
+                    <th>Qtd Baixada</th>
+                    <th>Profissional Executor</th>
+                  </tr>
+                </thead>
+                <tbody id="corpoHistoricoProcedimentos"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="subDieta" class="subtab-content hidden">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+              <h4 style="color:var(--primary);">Prescrição Nutricional</h4>
+              <button class="btn btn-sm" onclick="adicionarNovaRefeicao()">+ Refeição</button>
+            </div>
+            <div class="form-group"><label>Título do Plano</label><input type="text" id="planoTitulo" placeholder="Ex: Protocolo Hipertrofia 2200 kcal" required></div>
+            <div id="containerRefeicoes"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:var(--primary-light); padding:1rem; border-radius:0.5rem; margin-top:1rem;">
+              <strong id="totalCaloriasPlano">0 kcal</strong>
+              <button class="btn" onclick="salvarPlanoCompleto()">Salvar e Publicar</button>
+            </div>
+            <div id="historicoPlanos" style="margin-top:2rem;"></div>
           </div>
         </div>
-        <div class="panel-card">
-          <h3>Próximos Atendimentos</h3>
-          <div class="table-container">
+      </div>
+
+      <!-- TELA 3: AGENDA & CALENDÁRIO VISUAL -->
+      <div id="pageAgenda" class="hidden">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <div>
+              <h3>Agenda Clínica & Calendário</h3>
+              <p style="font-size:0.8rem; color:var(--text-muted);">Clique diretamente em qualquer dia do calendário para ver todos os horários e atendimentos.</p>
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+              <button class="btn" onclick="abrirNovoAgendamentoManual()">+ Marcar Consulta</button>
+              <button class="btn btn-secondary" onclick="toggleForm('formBloquearDia')">🚫 Registrar Folga / Ausência</button>
+            </div>
+          </div>
+
+          <!-- BLOQUEIO DE AUSÊNCIA -->
+          <div id="formBloquearDia" class="hidden" style="background:#FEE2E2; border:1px solid #F87171; padding:1.25rem; border-radius:0.5rem; margin-bottom:1.5rem;">
+            <h4 style="color:#991B1B; margin-bottom:0.75rem;">Bloquear Data na Agenda</h4>
+            <form onsubmit="bloquearData(event)">
+              <div class="form-grid">
+                <div class="form-group"><label>Data</label><input type="date" id="dataBloqueioInput" required></div>
+                <div class="form-group"><label>Profissional Ausente</label><select id="bloqueioProfSelect" required></select></div>
+                <div class="form-group"><label>Motivo</label><input type="text" id="motivoBloqueioInput" placeholder="Ex: Congresso, Férias, Folga" required></div>
+              </div>
+              <div style="display:flex; gap:0.5rem;">
+                <button type="submit" class="btn btn-danger">Confirmar Bloqueio</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleForm('formBloquearDia')">Cancelar</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- AGENDAMENTO MANUAL -->
+          <div id="formAgendamento" class="hidden" style="background:#F8FAF6; border:1px solid var(--border); padding:1.25rem; border-radius:0.5rem; margin-bottom:1.5rem;">
+            <h4 style="color:var(--primary); margin-bottom:1rem;">Agendar Atendimento</h4>
+            <form onsubmit="salvarAgendamento(event)">
+              <div class="form-grid">
+                <div class="form-group"><label>Paciente</label><select id="agendPacienteSelect" required><option value="">Selecione...</option></select></div>
+                <div class="form-group"><label>Data da Consulta</label><input type="date" id="agendDate" required></div>
+                <div class="form-group"><label>Horário</label><input type="time" id="agendTime" value="08:30" required></div>
+                <div class="form-group"><label>Duração</label><select id="agendDuracao"><option value="30">30 min</option><option value="45">45 min</option><option value="60" selected>60 min</option><option value="90">90 min</option></select></div>
+                <div class="form-group"><label>Profissional Responsável</label><select id="agendProfSelect" required></select></div>
+              </div>
+              <div style="display:flex; gap:0.5rem;">
+                <button type="submit" class="btn">Confirmar Agendamento</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleForm('formAgendamento')">Cancelar</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- ESTRUTURA VISUAL DO CALENDÁRIO -->
+          <div class="calendar-card">
+            <div class="calendar-topbar">
+              <button class="cal-nav-btn" onclick="navegarMes(-1)">‹</button>
+              <h3 id="calMesAnoTexto">Outubro de 2026</h3>
+              <button class="cal-nav-btn" onclick="navegarMes(1)">›</button>
+            </div>
+            <div class="cal-weekdays">
+              <div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div>
+            </div>
+            <div class="cal-days-grid" id="calGradeDias"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL DE HORÁRIOS DO DIA CLICADO -->
+      <div id="modalHorariosDia" class="schedule-modal hidden">
+        <div class="schedule-modal-content">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:1rem; margin-bottom:1.25rem;">
+            <div>
+              <h3 style="color:var(--primary); font-size:1.3rem;" id="modalTituloDia">Atendimentos do Dia</h3>
+              <p style="font-size:0.8rem; color:var(--text-muted);">Horários, consultas marcadas e ausências registradas</p>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="fecharModalHorarios()">✕ Fechar</button>
+          </div>
+
+          <div id="modalAvisoBloqueio" class="hidden" style="background:#FEE2E2; border-left:4px solid #EF4444; padding:0.75rem 1rem; border-radius:0.35rem; margin-bottom:1rem; font-size:0.85rem; color:#991B1B;"></div>
+          <div id="modalListaSlotsHorarios"></div>
+
+          <div style="margin-top:1.5rem; text-align:right;">
+            <button class="btn" onclick="abrirAgendamentoParaDataAtualModal()">+ Agendar Novo Paciente Nesta Data</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TELA 4: TABELA DE ALIMENTOS INTEGRADA (MESMA PÁGINA) -->
+      <div id="pageAlimentos" class="hidden">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+            <div>
+              <h3 style="color:var(--text);">Base Nutricional TACO Integrada</h3>
+              <p style="font-size:0.8rem; color:var(--text-muted);">Consulte e adicione alimentos que alimentam automaticamente o prescritor do plano alimentar.</p>
+            </div>
+            <button class="btn" onclick="toggleForm('formNovoAlimentoInterno')">+ Adicionar Novo Alimento</button>
+          </div>
+
+          <div id="formNovoAlimentoInterno" class="hidden" style="background:#F8FAF6; border:1px solid var(--border); padding:1.25rem; border-radius:0.5rem; margin-bottom:1.5rem;">
+            <h4 style="color:var(--primary); margin-bottom:0.75rem;">Cadastrar Alimento na Base</h4>
+            <form onsubmit="cadastrarAlimentoInterno(event)">
+              <div class="form-grid">
+                <div class="form-group"><label>Nome do Alimento</label><input type="text" id="inAliNome" required placeholder="Ex: Tapioca de goma"></div>
+                <div class="form-group"><label>Porção Padrão (g/ml)</label><input type="number" id="inAliPorcao" value="100" required></div>
+                <div class="form-group"><label>Medida Usual</label><input type="text" id="inAliMedida" required placeholder="Ex: 2 colheres de sopa"></div>
+                <div class="form-group"><label>Calorias (por 100g)</label><input type="number" id="inAliKcal" required></div>
+                <div class="form-group"><label>Proteínas (g)</label><input type="number" step="0.1" id="inAliProt" value="0"></div>
+                <div class="form-group"><label>Carboidratos (g)</label><input type="number" step="0.1" id="inAliCarb" value="0"></div>
+                <div class="form-group"><label>Gorduras (g)</label><input type="number" step="0.1" id="inAliGord" value="0"></div>
+              </div>
+              <div style="display:flex; gap:0.5rem;">
+                <button type="submit" class="btn">Salvar na Tabela</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleForm('formNovoAlimentoInterno')">Cancelar</button>
+              </div>
+            </form>
+          </div>
+
+          <input type="text" id="buscaAlimentoInternoInput" oninput="filtrarAlimentosInternos()" placeholder="🔍 Pesquisar alimento por nome (ex: frango, arroz, banana, tilápia)..." style="width:100%; max-width:400px; padding:0.65rem 1rem; border:1.5px solid var(--border); border-radius:0.5rem; font-size:0.9rem; margin-bottom:1rem; outline:none;">
+
+          <div style="overflow-x:auto;">
             <table>
               <thead>
-                <tr>
-                  <th>Paciente</th>
-                  <th>Data & Horário</th>
-                  <th>Status</th>
-                  <th>Anotações</th>
-                </tr>
+                <tr><th>Alimento</th><th>Porção Padrão</th><th>Medida Usual</th><th>Calorias (100g)</th><th>Macros (P / C / G)</th><th>Ações</th></tr>
               </thead>
-              <tbody id="quick-appointments-list">
-                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum agendamento para hoje.</td></tr>
-              </tbody>
+              <tbody id="corpoTabelaAlimentosInterna"></tbody>
             </table>
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- 2. Aba Pacientes -->
-      <section id="tab-patients" style="display: none;">
-        <div class="panel-card">
-          <h3>Novo Paciente</h3>
-          <form id="new-patient-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
-            <div class="form-group">
-              <label>Nome Completo</label>
-              <input type="text" id="patient-name" required>
+      <!-- TELA 5: GESTÃO DE EQUIPE (ADMIN GLOBAL COM DIFERENCIAÇÃO COMPLETA) -->
+      <div id="pageProfissionais" class="hidden">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <div>
+              <h3>Controle de Acessos & Perfis da Clínica</h3>
+              <p style="font-size:0.8rem; color:var(--text-muted);">Cadastro com controle de privilégios para Médicos, Nutricionistas, Enfermeiros, Biomédicos e Recepção.</p>
             </div>
-            <div class="form-group">
-              <label>Email</label>
-              <input type="email" id="patient-email" required>
-            </div>
-            <div class="form-group">
-              <label>Telefone / WhatsApp</label>
-              <input type="text" id="patient-phone" placeholder="(11) 99999-9999">
-            </div>
-            <div class="form-group">
-              <label>CPF</label>
-              <input type="text" id="patient-cpf" placeholder="000.000.000-00">
-            </div>
-            <button type="submit" class="btn" style="grid-column: span 2;">Cadastrar Paciente</button>
-          </form>
-        </div>
-        <div class="panel-card">
-          <h3>Lista de Pacientes Cadastrados</h3>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Email</th>
-                  <th>Telefone</th>
-                  <th>CPF</th>
-                </tr>
-              </thead>
-              <tbody id="patients-table-body">
-                <tr><td colspan="4" style="text-align: center;">Carregando...</td></tr>
-              </tbody>
-            </table>
+            <button class="btn" onclick="toggleForm('formNovoMembro')">+ Novo Colaborador</button>
           </div>
-        </div>
-      </section>
 
-      <!-- 3. Aba Consultas -->
-      <section id="tab-appointments" style="display: none;">
-        <div class="panel-card">
-          <h3>Marcar Nova Consulta</h3>
-          <form id="new-appointment-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
-            <div class="form-group">
-              <label>Selecionar Paciente</label>
-              <select id="appointment-patient-select" required></select>
-            </div>
-            <div class="form-group">
-              <label>Data e Horário</label>
-              <input type="datetime-local" id="appointment-date" required>
-            </div>
-            <div class="form-group" style="grid-column: span 2;">
-              <label>Observações Clínicas</label>
-              <input type="text" id="appointment-notes" placeholder="Ex: Retorno de bioimpedância">
-            </div>
-            <button type="submit" class="btn" style="grid-column: span 2;">Agendar Consulta</button>
-          </form>
-        </div>
-      </section>
+          <div id="formNovoMembro" class="hidden" style="background:#F8FAF6; border:1px solid var(--border); padding:1.25rem; border-radius:0.5rem; margin-bottom:1.5rem;">
+            <form onsubmit="salvarNovoColaborador(event)">
+              <div class="form-grid">
+                <div class="form-group"><label>Nome Completo</label><input type="text" id="membroNome" required placeholder="Nome do profissional"></div>
+                <div class="form-group">
+                  <label>Perfil Profissional</label>
+                  <select id="membroCargo" onchange="atualizarLabelConselho(this.value)" required>
+                    <option value="medico">Médico (Acesso Total)</option>
+                    <option value="nutricionista">Nutricionista (Acesso Total)</option>
+                    <option value="enfermeiro">Enfermeiro (Triagem / Bioimpedância / Antropometria)</option>
+                    <option value="biomedico">Biomédico (Exames Laboratoriais / Bioimpedância)</option>
+                    <option value="recepcao">Recepcionista (Apenas Agenda / Sem Prontuário)</option>
+                  </select>
+                </div>
+                <div class="form-group" id="boxConselho">
+                  <label id="labelConselho">Registro Profissional (CRM)</label>
+                  <input type="text" id="membroRegistro" placeholder="Ex: CRM-MS 1234" required>
+                </div>
+                <div class="form-group"><label>Email de Login</label><input type="email" id="membroEmail" required placeholder="colaborador@leveh.com.br"></div>
+                <div class="form-group"><label>Senha Inicial</label><input type="password" id="membroSenha" required placeholder="••••••••"></div>
+              </div>
+              <div style="display:flex; gap:0.5rem;">
+                <button type="submit" class="btn">Gravar Cadastro</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleForm('formNovoMembro')">Cancelar</button>
+              </div>
+            </form>
+          </div>
 
-      <!-- 4. Aba Prescrição de Dietas -->
-      <section id="tab-diets" style="display: none;">
-        <div class="panel-card">
-          <h3>Prescrever Plano Alimentar</h3>
-          <form id="new-diet-form" style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-              <div class="form-group">
-                <label>Paciente</label>
-                <select id="diet-patient-select" required></select>
-              </div>
-              <div class="form-group">
-                <label>Título do Plano</label>
-                <input type="text" id="diet-title" placeholder="Ex: Dieta Hipertrófica - Fase 1" required>
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Orientações Gerais</label>
-              <textarea id="diet-desc" rows="3" placeholder="Meta calórica, consumo de água e suplementação"></textarea>
-            </div>
-            <button type="submit" class="btn">Salvar e Enviar para o App do Paciente</button>
-          </form>
+          <table>
+            <thead>
+              <tr><th>Nome</th><th>Perfil Profissional</th><th>Conselho / Registro</th><th>Email</th><th>Privilégios</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="tabelaColaboradoresBody"></tbody>
+          </table>
         </div>
-      </section>
-    </div>
-  </main>
+      </div>
+
+      <!-- TELA 6: AUDITORIA GLOBAL (ADMIN GLOBAL) -->
+      <div id="pageAuditoriaGlobal" class="hidden">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <div>
+              <h3>Trilha de Auditoria Global</h3>
+              <p style="font-size:0.8rem; color:var(--text-muted);">Registro de edições, visualizações, cadastros e cancelamentos.</p>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="exportarLogs()">Exportar Logs (.JSON)</button>
+          </div>
+          <table>
+            <thead><tr><th>Data / Hora</th><th>Usuário Responsável</th><th>Cargo</th><th>Operação Realizada</th></tr></thead>
+            <tbody id="tabelaAuditoriaGlobalBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
 
   <script>
-    const API_BASE = '/api';
-    let token = localStorage.getItem('estefana_token');
-    let patientsList = [];
+    const BANCO_PADRAO_TACO = [
+      { nome: "Arroz, tipo 1, cozido", kcal: 128, prot: 2.5, carb: 28.1, gord: 0.2, porcaoPadrao: 100, medidaPadrao: "4 colheres de sopa" },
+      { nome: "Arroz integral, cozido", kcal: 124, prot: 2.6, carb: 25.8, gord: 1.0, porcaoPadrao: 100, medidaPadrao: "4 colheres de sopa" },
+      { nome: "Feijão, carioca, cozido", kcal: 76, prot: 4.8, carb: 13.6, gord: 0.5, porcaoPadrao: 100, medidaPadrao: "1 concha média" },
+      { nome: "Feijão, preto, cozido", kcal: 77, prot: 4.5, carb: 14.0, gord: 0.5, porcaoPadrao: 100, medidaPadrao: "1 concha média" },
+      { nome: "Frango, peito, sem pele, grelhado", kcal: 159, prot: 32.0, carb: 0.0, gord: 2.5, porcaoPadrao: 100, medidaPadrao: "1 filé médio" },
+      { nome: "Frango, peito, cozido, desfiado", kcal: 163, prot: 31.5, carb: 0.0, gord: 3.2, porcaoPadrao: 100, medidaPadrao: "3 colheres de sopa" },
+      { nome: "Carne bovina, patinho, moído, grelhado", kcal: 219, prot: 35.9, carb: 0.0, gord: 7.3, porcaoPadrao: 100, medidaPadrao: "4 colheres de sopa" },
+      { nome: "Peixe, tilápia, filé, grelhado", kcal: 96, prot: 20.1, carb: 0.0, gord: 1.7, porcaoPadrao: 100, medidaPadrao: "1 filé médio" },
+      { nome: "Ovo de galinha, inteiro, cozido", kcal: 146, prot: 13.3, carb: 0.6, gord: 9.5, porcaoPadrao: 50, medidaPadrao: "1 unidade média" },
+      { nome: "Batata doce cozida", kcal: 77, prot: 0.6, carb: 18.4, gord: 0.1, porcaoPadrao: 100, medidaPadrao: "1 fatia média" },
+      { nome: "Aveia em flocos", kcal: 394, prot: 13.9, carb: 66.6, gord: 8.5, porcaoPadrao: 30, medidaPadrao: "2 colheres de sopa cheias" },
+      { nome: "Banana prata", kcal: 98, prot: 1.3, carb: 26.0, gord: 0.1, porcaoPadrao: 70, medidaPadrao: "1 unidade média" },
+      { nome: "Whey Protein 80%", kcal: 400, prot: 80.0, carb: 6.0, gord: 5.0, porcaoPadrao: 30, medidaPadrao: "1 dosador / scoop" }
+    ];
 
-    document.getElementById('current-date').textContent = new Date().toLocaleDateString('pt-BR', { dateStyle: 'long' });
+    const ADMIN_GLOBAL_DEFAULT = {
+      id: "USR-001",
+      nome: "Diretoria Clínica (Admin Global)",
+      email: "admin@leveh.com.br",
+      senha: "admin123",
+      cargo: "admin_global",
+      registro: "Gestor Master"
+    };
 
-    if (!token) {
-      document.getElementById('login-overlay').style.display = 'flex';
-    } else {
-      document.getElementById('login-overlay').style.display = 'none';
-      initDashboard();
+    let usuarios = JSON.parse(localStorage.getItem('leveh_usuarios') || JSON.stringify([ADMIN_GLOBAL_DEFAULT]));
+    let pacientes = JSON.parse(localStorage.getItem('leveh_pacientes') || '[]');
+    let agendamentos = JSON.parse(localStorage.getItem('leveh_agendamentos') || '[]');
+    let bloqueios = JSON.parse(localStorage.getItem('leveh_bloqueios') || '[]');
+    let alimentos = JSON.parse(localStorage.getItem('leveh_banco_taco') || JSON.stringify(BANCO_PADRAO_TACO));
+    let auditoriaGlobal = JSON.parse(localStorage.getItem('leveh_audit_global') || '[]');
+
+    let usuarioLogado = null;
+    let pacienteAtual = null;
+
+    let anoCalendarioAtual = 2026;
+    let mesCalendarioAtual = 9;
+    let dataSelecionadaModal = "2026-10-09";
+
+    function salvarTudo() {
+      localStorage.setItem('leveh_usuarios', JSON.stringify(usuarios));
+      localStorage.setItem('leveh_pacientes', JSON.stringify(pacientes));
+      localStorage.setItem('leveh_agendamentos', JSON.stringify(agendamentos));
+      localStorage.setItem('leveh_bloqueios', JSON.stringify(bloqueios));
+      localStorage.setItem('leveh_banco_taco', JSON.stringify(alimentos));
+      localStorage.setItem('leveh_audit_global', JSON.stringify(auditoriaGlobal));
     }
 
-    // Login
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('login-email').value;
-      const password = document.getElementById('login-password').value;
+    function registrarAudit(operacao) {
+      const log = {
+        id: Date.now(),
+        dataHora: new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR'),
+        usuario: usuarioLogado ? usuarioLogado.nome : 'Sistema',
+        cargo: usuarioLogado ? formatCargo(usuarioLogado.cargo) : '-',
+        operacao: operacao
+      };
+      auditoriaGlobal.unshift(log);
+      salvarTudo();
+      renderAuditoriaGlobal();
+    }
 
-      try {
-        const res = await fetch(`${API_BASE}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (data.token) {
-          localStorage.setItem('estefana_token', data.token);
-          localStorage.setItem('estefana_user', JSON.stringify(data.user));
-          token = data.token;
-          document.getElementById('login-overlay').style.display = 'none';
-          initDashboard();
-        } else {
-          alert('Erro no login: ' + (data.error || 'Verifique as credenciais'));
+    function formatCargo(cargo) {
+      switch(cargo) {
+        case 'admin_global': return 'Administrador Global';
+        case 'medico': return 'Médico';
+        case 'nutricionista': return 'Nutricionista';
+        case 'enfermeiro': return 'Enfermeiro';
+        case 'biomedico': return 'Biomédico';
+        default: return 'Recepcionista';
+      }
+    }
+
+    function toggleForm(id) { document.getElementById(id).classList.toggle('hidden'); }
+
+    // LOGIN & SESSÃO
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('inputEmail').value.trim().toLowerCase();
+      const senha = document.getElementById('inputSenha').value;
+
+      const user = usuarios.find(u => u.email.toLowerCase() === email && u.senha === senha);
+      if (!user) return alert('Credenciais inválidas.');
+
+      usuarioLogado = user;
+      document.getElementById('authOverlay').classList.add('hidden');
+      configurarPermissoesVisuais();
+      registrarAudit('Login efetuado no sistema.');
+      switchNav(usuarioLogado.cargo === 'recepcao' ? 'agenda' : 'pacientes');
+    }
+
+    function handleLogout() {
+      registrarAudit('Encerramento de sessão.');
+      usuarioLogado = null;
+      document.getElementById('authOverlay').classList.remove('hidden');
+    }
+
+    function configurarPermissoesVisuais() {
+      const badge = document.getElementById('sessaoBadge');
+      const menuAdmin = document.getElementById('menuAdminGlobal');
+      const sideRole = document.getElementById('sidebarRoleLabel');
+
+      let badgeClass = 'role-admin';
+      if (usuarioLogado.cargo === 'medico') badgeClass = 'role-medico';
+      else if (usuarioLogado.cargo === 'nutricionista') badgeClass = 'role-nutri';
+      else if (usuarioLogado.cargo === 'enfermeiro') badgeClass = 'role-enfermeiro';
+      else if (usuarioLogado.cargo === 'biomedico') badgeClass = 'role-biomedico';
+      else if (usuarioLogado.cargo === 'recepcao') badgeClass = 'role-recep';
+
+      badge.innerHTML = `<span class="role-badge ${badgeClass}">${formatCargo(usuarioLogado.cargo)}: ${usuarioLogado.nome}</span>`;
+
+      if (usuarioLogado.cargo === 'admin_global') {
+        menuAdmin.classList.remove('hidden');
+        sideRole.textContent = "Governança Master";
+      } else {
+        menuAdmin.classList.add('hidden');
+        sideRole.textContent = formatCargo(usuarioLogado.cargo);
+      }
+    }
+
+    function switchNav(tela) {
+      if (usuarioLogado.cargo !== 'admin_global' && (tela === 'profissionais' || tela === 'auditoriaGlobal')) {
+        return alert('Acesso restrito ao Administrador Global.');
+      }
+
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('pagePacientes').classList.add('hidden');
+      document.getElementById('pageProntuarioExclusivo').classList.add('hidden');
+      document.getElementById('pageAgenda').classList.add('hidden');
+      document.getElementById('pageAlimentos').classList.add('hidden');
+      document.getElementById('pageProfissionais').classList.add('hidden');
+      document.getElementById('pageAuditoriaGlobal').classList.add('hidden');
+
+      if (tela === 'pacientes') {
+        document.getElementById('btnNavPacientes').classList.add('active');
+        document.getElementById('pagePacientes').classList.remove('hidden');
+        document.getElementById('viewTitle').textContent = 'Pacientes';
+        renderPacientes();
+      } else if (tela === 'agenda') {
+        document.getElementById('btnNavAgenda').classList.add('active');
+        document.getElementById('pageAgenda').classList.remove('hidden');
+        document.getElementById('viewTitle').textContent = 'Agenda Clínica & Calendário';
+        atualizarSelectsAgenda();
+        renderCalendarioVisual();
+      } else if (tela === 'alimentos') {
+        document.getElementById('btnNavAlimentos').classList.add('active');
+        document.getElementById('pageAlimentos').classList.remove('hidden');
+        document.getElementById('viewTitle').textContent = 'Tabela de Alimentos (Base TACO)';
+        renderTabelaAlimentosInterna(alimentos);
+      } else if (tela === 'profissionais') {
+        document.getElementById('pageProfissionais').classList.remove('hidden');
+        document.getElementById('viewTitle').textContent = 'Equipe & Acessos';
+        renderColaboradores();
+      } else if (tela === 'auditoriaGlobal') {
+        document.getElementById('pageAuditoriaGlobal').classList.remove('hidden');
+        document.getElementById('viewTitle').textContent = 'Auditoria Global';
+        renderAuditoriaGlobal();
+      }
+    }
+
+    // CALENDÁRIO COM FOLHINHA REAL E NAVEGAÇÃO
+    const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+    function navegarMes(direcao) {
+      mesCalendarioAtual += direcao;
+      if (mesCalendarioAtual < 0) { mesCalendarioAtual = 11; anoCalendarioAtual--; }
+      else if (mesCalendarioAtual > 11) { mesCalendarioAtual = 0; anoCalendarioAtual++; }
+      renderCalendarioVisual();
+    }
+
+    function renderCalendarioVisual() {
+      document.getElementById('calMesAnoTexto').textContent = `${nomesMeses[mesCalendarioAtual]} de ${anoCalendarioAtual}`;
+      const grade = document.getElementById('calGradeDias');
+      grade.innerHTML = '';
+
+      const primeiroDiaSemana = new Date(anoCalendarioAtual, mesCalendarioAtual, 1).getDay();
+      const totalDiasMes = new Date(anoCalendarioAtual, mesCalendarioAtual + 1, 0).getDate();
+
+      for (let i = 0; i < primeiroDiaSemana; i++) {
+        grade.innerHTML += `<div class="cal-day-box empty"></div>`;
+      }
+
+      for (let dia = 1; dia <= totalDiasMes; dia++) {
+        const mesStr = (mesCalendarioAtual + 1).toString().padStart(2, '0');
+        const diaStr = dia.toString().padStart(2, '0');
+        const dataFormatada = `${anoCalendarioAtual}-${mesStr}-${diaStr}`;
+
+        const bloqueio = bloqueios.find(b => b.data === dataFormatada);
+        const agends = agendamentos.filter(a => a.data === dataFormatada);
+
+        let eventosHtml = '';
+        if (bloqueio) {
+          eventosHtml += `<div class="cal-event-pill pill-bloqueio">🚫 ${bloqueio.profissional.split(' ')[0]} (${bloqueio.motivo})</div>`;
         }
-      } catch (err) {
-        alert('Não foi possível conectar à API: ' + err.message);
-      }
-    });
-
-    function logout() {
-      localStorage.clear();
-      window.location.reload();
-    }
-
-    function showTab(tabId) {
-      document.querySelectorAll('.content-area > section').forEach(sec => sec.style.display = 'none');
-      document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
-      document.getElementById(tabId).style.display = 'block';
-
-      const titles = {
-        'tab-dashboard': 'Visão Geral da Clínica',
-        'tab-patients': 'Gestão de Pacientes',
-        'tab-appointments': 'Agendamento de Consultas',
-        'tab-diets': 'Prescrição Nutricional'
-      };
-      document.getElementById('tab-title').textContent = titles[tabId] || 'Painel';
-    }
-
-    async function initDashboard() {
-      const user = JSON.parse(localStorage.getItem('estefana_user') || '{}');
-      if (user.name) document.getElementById('user-display').textContent = user.name;
-      loadPatients();
-      loadAppointments();
-    }
-
-    async function loadPatients() {
-      try {
-        const res = await fetch(`${API_BASE}/patients`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        agends.forEach(ag => {
+          eventosHtml += `<div class="cal-event-pill pill-consulta">${ag.hora} - ${ag.paciente.split(' ')[0]}</div>`;
         });
-        patientsList = await res.json();
-        
-        document.getElementById('stat-patients').textContent = patientsList.length;
 
-        // Atualiza a tabela
-        const tbody = document.getElementById('patients-table-body');
-        tbody.innerHTML = patientsList.map(p => `
-          <tr>
-            <td><strong>${p.name}</strong></td>
-            <td>${p.email}</td>
-            <td>${p.phone || '-'}</td>
-            <td>${p.cpf || '-'}</td>
-          </tr>
-        `).join('') || '<tr><td colspan="4" style="text-align: center;">Nenhum paciente cadastrado.</td></tr>';
-
-        // Preenche os selects das outras abas
-        const options = '<option value="">Selecione um paciente...</option>' + 
-          patientsList.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-        document.getElementById('appointment-patient-select').innerHTML = options;
-        document.getElementById('diet-patient-select').innerHTML = options;
-      } catch (err) {
-        console.error('Erro ao buscar pacientes:', err);
+        grade.innerHTML += `
+          <div class="cal-day-box ${bloqueio ? 'has-block' : ''}" onclick="abrirModalHorariosDia('${dataFormatada}')">
+            <div class="cal-day-num">
+              <span>${dia}</span>
+              ${(dia === 9 && mesCalendarioAtual === 9 && anoCalendarioAtual === 2026) ? '<span class="cal-today-badge">Hoje</span>' : ''}
+            </div>
+            <div style="overflow-y:auto; flex:1;">
+              ${eventosHtml}
+            </div>
+          </div>
+        `;
       }
     }
 
-    async function loadAppointments() {
-      try {
-        const res = await fetch(`${API_BASE}/appointments`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const appointments = await res.json();
-        document.getElementById('stat-appointments').textContent = appointments.length;
+    function abrirModalHorariosDia(dataStr) {
+      dataSelecionadaModal = dataStr;
+      const partes = dataStr.split('-');
+      const dataBr = `${partes[2]}/${partes[1]}/${partes[0]}`;
+      document.getElementById('modalTituloDia').textContent = `Agenda de ${dataBr}`;
 
-        const tbody = document.getElementById('quick-appointments-list');
-        tbody.innerHTML = appointments.map(a => `
-          <tr>
-            <td><strong>${a.patient_name || 'Paciente'}</strong></td>
-            <td>${new Date(a.scheduled_at).toLocaleString('pt-BR')}</td>
-            <td><span class="status-badge status-agendado">${a.status}</span></td>
-            <td>${a.notes || '-'}</td>
-          </tr>
-        `).join('') || '<tr><td colspan="4" style="text-align: center;">Nenhuma consulta agendada.</td></tr>';
-      } catch (err) {
-        console.error('Erro ao buscar consultas:', err);
+      const bloqueio = bloqueios.find(b => b.data === dataStr);
+      const avisoBox = document.getElementById('modalAvisoBloqueio');
+      if (bloqueio) {
+        avisoBox.classList.remove('hidden');
+        avisoBox.innerHTML = `<strong>⚠️ Indisponibilidade:</strong> ${bloqueio.profissional} não atenderá nesta data (${bloqueio.motivo}).`;
+      } else {
+        avisoBox.classList.add('hidden');
+      }
+
+      const horasDisponiveis = [
+        "07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
+        "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"
+      ];
+
+      const lista = document.getElementById('modalListaSlotsHorarios');
+      const agendsDoDia = agendamentos.filter(a => a.data === dataStr);
+
+      lista.innerHTML = horasDisponiveis.map(h => {
+        const ag = agendsDoDia.find(a => a.hora.startsWith(h.substring(0, 2)));
+
+        if (ag) {
+          return `
+            <div class="schedule-hour-row">
+              <span class="schedule-hour-time">${ag.hora}</span>
+              <div class="schedule-hour-slot" style="background:var(--primary-light); border-left:3px solid var(--primary); padding:0.4rem 0.6rem; border-radius:0.3rem;">
+                <strong>${ag.paciente}</strong> <small style="color:var(--text-muted);">(${ag.duracao}) — Profissional: ${ag.profissional}</small>
+              </div>
+              <button class="btn btn-danger btn-sm" onclick="cancelarAgendamentoModal(${ag.id})">Desmarcar</button>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="schedule-hour-row">
+              <span class="schedule-hour-time">${h}</span>
+              <div class="schedule-hour-slot" style="color:#9CA3AF; font-size:0.85rem;">Horário livre</div>
+              <button class="btn btn-outline btn-sm" onclick="reservarHorarioModal('${dataStr}', '${h}')">+ Reservar</button>
+            </div>
+          `;
+        }
+      }).join('');
+
+      document.getElementById('modalHorariosDia').classList.remove('hidden');
+    }
+
+    function fecharModalHorarios() { document.getElementById('modalHorariosDia').classList.add('hidden'); }
+
+    function abrirAgendamentoParaDataAtualModal() {
+      fecharModalHorarios();
+      document.getElementById('agendDate').value = dataSelecionadaModal;
+      document.getElementById('formAgendamento').classList.remove('hidden');
+      window.scrollTo({ top: document.getElementById('formAgendamento').offsetTop - 30, behavior: 'smooth' });
+    }
+
+    function reservarHorarioModal(data, hora) {
+      fecharModalHorarios();
+      document.getElementById('agendDate').value = data;
+      document.getElementById('agendTime').value = hora;
+      document.getElementById('formAgendamento').classList.remove('hidden');
+      window.scrollTo({ top: document.getElementById('formAgendamento').offsetTop - 30, behavior: 'smooth' });
+    }
+
+    function abrirNovoAgendamentoManual() {
+      document.getElementById('formAgendamento').classList.remove('hidden');
+      window.scrollTo({ top: document.getElementById('formAgendamento').offsetTop - 30, behavior: 'smooth' });
+    }
+
+    function bloquearData(e) {
+      e.preventDefault();
+      const data = document.getElementById('dataBloqueioInput').value;
+      const prof = document.getElementById('bloqueioProfSelect').value;
+      const motivo = document.getElementById('motivoBloqueioInput').value;
+
+      bloqueios.push({ id: Date.now(), data, profissional: prof, motivo });
+      salvarTudo();
+      registrarAudit(`Ausência registrada: ${prof} não atenderá em ${data} (${motivo}).`);
+      renderCalendarioVisual();
+      toggleForm('formBloquearDia');
+      e.target.reset();
+      alert('Bloqueio registrado com sucesso!');
+    }
+
+    function salvarAgendamento(e) {
+      e.preventDefault();
+      const novo = {
+        id: Date.now(),
+        paciente: document.getElementById('agendPacienteSelect').value,
+        data: document.getElementById('agendDate').value,
+        hora: document.getElementById('agendTime').value,
+        duracao: document.getElementById('agendDuracao').value + ' min',
+        profissional: document.getElementById('agendProfSelect').value
+      };
+
+      const bloqueioProf = bloqueios.find(b => b.data === novo.data && b.profissional === novo.profissional);
+      if (bloqueioProf) {
+        if (!confirm(`Atenção: ${novo.profissional} possui ausência registrada nesta data (${bloqueioProf.motivo}). Deseja agendar mesmo assim?`)) {
+          return;
+        }
+      }
+
+      agendamentos.push(novo);
+      salvarTudo();
+      registrarAudit(`Consulta marcada: ${novo.paciente} com ${novo.profissional} em ${novo.data} às ${novo.hora}.`);
+      toggleForm('formAgendamento');
+      e.target.reset();
+      renderCalendarioVisual();
+      alert('Consulta agendada!');
+    }
+
+    function cancelarAgendamentoModal(id) {
+      const ag = agendamentos.find(x => x.id === id);
+      if (confirm(`Deseja cancelar o atendimento de ${ag.paciente}?`)) {
+        agendamentos = agendamentos.filter(x => x.id !== id);
+        salvarTudo();
+        registrarAudit(`Consulta cancelada: ${ag.paciente} com ${ag.profissional} (${ag.data}).`);
+        renderCalendarioVisual();
+        abrirModalHorariosDia(dataSelecionadaModal);
       }
     }
 
-    // Cadastro de Paciente
-    document.getElementById('new-patient-form').addEventListener('submit', async (e) => {
+    function atualizarSelectsAgenda() {
+      const sPac = document.getElementById('agendPacienteSelect');
+      const sProf = document.getElementById('agendProfSelect');
+      const sBloqProf = document.getElementById('bloqueioProfSelect');
+
+      sPac.innerHTML = '<option value="">Selecione...</option>' + pacientes.map(p => `<option value="${p.nome}">${p.nome}</option>`).join('');
+      // Lista médicos, nutricionistas, enfermeiros e biomédicos
+      const profs = usuarios.filter(u => u.cargo !== 'recepcao');
+      const optionsProf = profs.map(u => `<option value="${u.nome}">${u.nome} (${u.registro})</option>`).join('');
+      sProf.innerHTML = optionsProf;
+      sBloqProf.innerHTML = optionsProf;
+    }
+
+    // TABELA DE ALIMENTOS INTEGRADA
+    function renderTabelaAlimentosInterna(lista) {
+      const tbody = document.getElementById('corpoTabelaAlimentosInterna');
+      tbody.innerHTML = lista.map((a, idx) => `
+        <tr>
+          <td><strong>${a.nome}</strong></td>
+          <td>${a.porcaoPadrao}g</td>
+          <td>${a.medidaPadrao}</td>
+          <td><strong style="color:var(--primary);">${a.kcal} kcal</strong></td>
+          <td>
+            <span class="tag-macro">P: ${a.prot}g</span>
+            <span class="tag-macro">C: ${a.carb}g</span>
+            <span class="tag-macro">G: ${a.gord}g</span>
+          </td>
+          <td><button class="btn btn-outline btn-sm" onclick="removerAlimentoInterno(${idx})">Remover</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function filtrarAlimentosInternos() {
+      const q = document.getElementById('buscaAlimentoInternoInput').value.toLowerCase();
+      const filtrados = alimentos.filter(a => a.nome.toLowerCase().includes(q));
+      renderTabelaAlimentosInterna(filtrados);
+    }
+
+    function cadastrarAlimentoInterno(e) {
       e.preventDefault();
-      const payload = {
-        name: document.getElementById('patient-name').value,
-        email: document.getElementById('patient-email').value,
-        phone: document.getElementById('patient-phone').value,
-        cpf: document.getElementById('patient-cpf').value,
+      alimentos.unshift({
+        nome: document.getElementById('inAliNome').value,
+        porcaoPadrao: parseFloat(document.getElementById('inAliPorcao').value),
+        medidaPadrao: document.getElementById('inAliMedida').value,
+        kcal: parseFloat(document.getElementById('inAliKcal').value),
+        prot: parseFloat(document.getElementById('inAliProt').value) || 0,
+        carb: parseFloat(document.getElementById('inAliCarb').value) || 0,
+        gord: parseFloat(document.getElementById('inAliGord').value) || 0
+      });
+      salvarTudo();
+      registrarAudit(`Alimento adicionado à base TACO: ${document.getElementById('inAliNome').value}.`);
+      renderTabelaAlimentosInterna(alimentos);
+      toggleForm('formNovoAlimentoInterno');
+      e.target.reset();
+      alert('Alimento cadastrado com sucesso!');
+    }
+
+    function removerAlimentoInterno(idx) {
+      if (confirm('Deseja remover este item da base?')) {
+        alimentos.splice(idx, 1);
+        salvarTudo();
+        renderTabelaAlimentosInterna(alimentos);
+      }
+    }
+
+    // PACIENTES & PRONTUÁRIO
+    function calcularIdade(dataNasc) {
+      const hoje = new Date();
+      const nasc = new Date(dataNasc);
+      let idade = hoje.getFullYear() - nasc.getFullYear();
+      const m = hoje.getMonth() - nasc.getMonth();
+      if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+      return idade;
+    }
+
+    function salvarPaciente(e) {
+      e.preventDefault();
+      const novo = {
+        id: 'PRON-' + (Date.now().toString().slice(-4)),
+        nome: document.getElementById('pacNome').value.trim(),
+        sexo: document.getElementById('pacSexo').value,
+        nascimento: document.getElementById('pacNasc').value,
+        telefone: document.getElementById('pacTelefone').value,
+        email: document.getElementById('pacEmail').value.trim(),
+        objetivo: document.getElementById('pacObjetivo').value,
+        evolucoes: [], antropometria: [], bioimpedancia: [], examesMatriz: {}, planos: []
+      };
+      pacientes.push(novo);
+      salvarTudo();
+      registrarAudit(`Paciente cadastrado: ${novo.nome} (${novo.id}).`);
+      renderPacientes();
+      toggleForm('formNovoPaciente');
+      alert(`Paciente registrado!\nLogin: ${novo.nome}\nSenha: ${novo.id}`);
+      e.target.reset();
+    }
+
+    function renderPacientes() {
+      const tbody = document.getElementById('tabelaPacientesBody');
+      if (pacientes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#8E998B; padding:2rem;">Nenhum paciente cadastrado.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = pacientes.map(p => `
+        <tr>
+          <td><strong style="color:var(--primary);">${p.id}</strong></td>
+          <td><strong>${p.nome}</strong></td>
+          <td>${calcularIdade(p.nascimento)} anos</td>
+          <td>${p.sexo === 'F' ? 'Fem' : 'Masc'}</td>
+          <td>${p.telefone}</td>
+          <td>
+            ${usuarioLogado.cargo === 'recepcao' ? 
+              '<span style="color:var(--text-muted); font-size:0.75rem;">🔒 Restrito</span>' :
+              `<button class="btn btn-sm" onclick="abrirProntuario('${p.id}')">Acessar Prontuário</button>`
+            }
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    
+    // LOGICA DE PROCEDIMENTOS COM BAIXA NO ESTOQUE E AUDITORIA VISA
+    function popularSelectInsumosProcedimento() {
+      const select = document.getElementById("procInsumoSelect");
+      if (!select) return;
+      const estoque = JSON.parse(localStorage.getItem("leveh_estoque_visa") || "[]");
+      select.innerHTML = '<option value="">Selecione o insumo...</option>' + 
+        estoque.filter(i => i.qtdAtual > 0).map((i, idx) => 
+          `<option value="${idx}">${i.nome} (Saldo: ${i.qtdAtual} ${i.unidade}) - Lote: ${i.lote}</option>`
+        ).join("");
+      const loteInput = document.getElementById("procLoteInfo");
+      if (loteInput) loteInput.value = "";
+    }
+
+    function atualizarInfoLoteInsumo(idx) {
+      const loteInput = document.getElementById("procLoteInfo");
+      if (!loteInput) return;
+      if (idx === "") { loteInput.value = ""; return; }
+      const estoque = JSON.parse(localStorage.getItem("leveh_estoque_visa") || "[]");
+      const item = estoque[idx];
+      if (item) loteInput.value = `Lote: ${item.lote} | Val: ${item.validade}`;
+    }
+
+    function executarProcedimentoComBaixa(e) {
+      e.preventDefault();
+      const idxInsumo = document.getElementById("procInsumoSelect").value;
+      const qtdUsada = parseInt(document.getElementById("procQtdUsada").value);
+      const estoque = JSON.parse(localStorage.getItem("leveh_estoque_visa") || "[]");
+      const item = estoque[idxInsumo];
+
+      if (!item || item.qtdAtual < qtdUsada) {
+        alert(`Saldo insuficiente! Saldo atual: ${item ? item.qtdAtual : 0}.`);
+        return;
+      }
+
+      // 1. Reduz estoque
+      item.qtdAtual -= qtdUsada;
+      localStorage.setItem("leveh_estoque_visa", JSON.stringify(estoque));
+
+      // 2. Registra no prontuário do paciente
+      if (!pacienteAtual.procedimentos) pacienteAtual.procedimentos = [];
+      const registroProc = {
+        id: Date.now(),
+        dataHora: new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR"),
+        procedimento: document.getElementById("procNome").value.trim(),
+        insumo: item.nome,
+        lote: item.lote,
+        validade: item.validade,
+        qtdUsada: `${qtdUsada} ${item.unidade}`,
+        profissional: `${usuarioLogado.nome} (${usuarioLogado.registro})`
+      };
+      pacienteAtual.procedimentos.unshift(registroProc);
+
+      // 3. Auditoria sanitária
+      registrarAudit(`Procedimento [${registroProc.procedimento}] em ${pacienteAtual.nome}. Baixa de ${qtdUsada} ${item.unidade} de [${item.nome}], Lote: ${item.lote}. Profissional: ${registroProc.profissional}`);
+
+      salvarTudo();
+      renderProcedimentos();
+      popularSelectInsumosProcedimento();
+      e.target.reset();
+      alert(`Procedimento gravado e baixa de ${qtdUsada} ${item.unidade} efetuada no estoque!`);
+    }
+
+    function renderProcedimentos() {
+      const tbody = document.getElementById("corpoHistoricoProcedimentos");
+      if (!tbody) return;
+      const procs = (pacienteAtual && pacienteAtual.procedimentos) ? pacienteAtual.procedimentos : [];
+      if (procs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#8E998B;">Nenhum procedimento registrado com insumo.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = procs.map(p => `
+        <tr>
+          <td><span class="audit-tag">${p.dataHora}</span></td>
+          <td><strong>${p.procedimento}</strong></td>
+          <td>${p.insumo}</td>
+          <td><strong style="color:var(--primary);">${p.lote}</strong></td>
+          <td>${p.qtdUsada}</td>
+          <td>${p.profissional}</td>
+        </tr>
+      `).join("");
+    }
+
+    function abrirProntuario(id) {
+      pacienteAtual = pacientes.find(p => p.id === id);
+      if (!pacienteAtual) return;
+      if (!pacienteAtual.examesMatriz) pacienteAtual.examesMatriz = {};
+
+      registrarAudit(`Prontuário acessado: ${pacienteAtual.nome} (${pacienteAtual.id}).`);
+
+      document.getElementById('pagePacientes').classList.add('hidden');
+      document.getElementById('pageProntuarioExclusivo').classList.remove('hidden');
+
+      document.getElementById('pronNomeHeader').textContent = pacienteAtual.nome;
+      document.getElementById('pronDetalhesHeader').textContent = `Sexo: ${pacienteAtual.sexo === 'F' ? 'Fem' : 'Masc'} | Idade: ${calcularIdade(pacienteAtual.nascimento)} anos | Tel: ${pacienteAtual.telefone}`;
+      document.getElementById('pronIdBadge').textContent = pacienteAtual.id;
+
+      // FILTRAGEM RIGOROSA DE ABAS DO PRONTUÁRIO CONFORME O PERFIL
+      const cargo = usuarioLogado.cargo;
+      const tabAntro = document.getElementById('tabBtnAntropometria');
+      const tabExames = document.getElementById('tabBtnExames');
+      const tabDieta = document.getElementById('tabBtnDieta');
+
+      if (cargo === 'admin_global' || cargo === 'medico' || cargo === 'nutricionista') {
+        // Acesso total a tudo
+        tabAntro.classList.remove('hidden');
+        tabExames.classList.remove('hidden');
+        tabDieta.classList.remove('hidden');
+      } else if (cargo === 'enfermeiro') {
+        // Enfermeiro tem Antropometria, Bioimpedância e Evolução, mas bloqueia Dieta e Exames Clínicos Avançados
+        tabAntro.classList.remove('hidden');
+        tabExames.classList.add('hidden');
+        tabDieta.classList.add('hidden');
+      } else if (cargo === 'biomedico') {
+        // Biomédico tem Exames, Bioimpedância e Evolução, mas bloqueia Antropometria e Dieta
+        tabAntro.classList.add('hidden');
+        tabExames.classList.remove('hidden');
+        tabDieta.classList.add('hidden');
+      }
+
+      switchSubTab('subEvolucao');
+      renderEvolucoes();
+      renderHistoricoDobras();
+      renderBioimpedancia();
+      renderMatrizExames();
+      renderPlanosAlimentares();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function switchSubTab(subId) {
+      document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      document.querySelectorAll('.subtab-content').forEach(c => c.classList.add('hidden'));
+      document.getElementById(subId).classList.remove('hidden');
+    }
+
+    function adicionarEvolucao(e) {
+      e.preventDefault();
+      pacienteAtual.evolucoes.unshift({
+        id: Date.now(),
+        data: new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR'),
+        autor: `${usuarioLogado.nome} (${usuarioLogado.registro})`,
+        texto: document.getElementById('evoTexto').value
+      });
+      salvarTudo();
+      registrarAudit(`Evolução clínica gravada para ${pacienteAtual.nome}.`);
+      renderEvolucoes();
+      e.target.reset();
+    }
+    function renderEvolucoes() {
+      const container = document.getElementById('listaEvolucoes');
+      if (!pacienteAtual.evolucoes || pacienteAtual.evolucoes.length === 0) {
+        container.innerHTML = `<p style="font-size:0.85rem; color:#8E998B;">Nenhum registro clínico.</p>`;
+        return;
+      }
+      container.innerHTML = pacienteAtual.evolucoes.map(ev => `
+        <div style="background:#F8FAF6; border-left:4px solid var(--primary); padding:1rem; border-radius:0.35rem; margin-top:0.75rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">📅 ${ev.data}</span>
+            <span class="role-badge role-admin" style="background:var(--primary-light); color:var(--primary-dark); border:1px solid #CBD8C5;">✍️ ${ev.autor}</span>
+          </div>
+          <p style="font-size:0.9rem; margin-top:0.5rem; white-space:pre-wrap;">${ev.texto}</p>
+        </div>
+      `).join('');
+    }
+
+    function salvarAntropometria(e) {
+      e.preventDefault();
+      const peso = parseFloat(document.getElementById('antPeso').value);
+      const sub = parseFloat(document.getElementById('dcSubescapular').value);
+      const tri = parseFloat(document.getElementById('dcTricipital').value);
+      const peit = parseFloat(document.getElementById('dcPeitoral').value);
+      const axi = parseFloat(document.getElementById('dcAxilar').value);
+      const sup = parseFloat(document.getElementById('dcSuprailiaca').value);
+      const abd = parseFloat(document.getElementById('dcAbdominal').value);
+      const coxa = parseFloat(document.getElementById('dcCoxa').value);
+      const soma7 = sub + tri + peit + axi + sup + abd + coxa;
+
+      pacienteAtual.antropometria.unshift({
+        data: new Date().toLocaleDateString('pt-BR'),
+        peso, soma7, percGordura: 18.5, massaMagra: (peso * 0.81).toFixed(1), massaGorda: (peso * 0.19).toFixed(1)
+      });
+      salvarTudo();
+      registrarAudit(`Antropometria salva para ${pacienteAtual.nome}.`);
+      renderHistoricoDobras();
+      alert('Avaliação gravada!');
+    }
+    function renderHistoricoDobras() {
+      const tbody = document.getElementById('corpoHistoricoDobras');
+      if (!pacienteAtual.antropometria || pacienteAtual.antropometria.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#8E998B;">Sem avaliações.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = pacienteAtual.antropometria.map(a => `
+        <tr><td><strong>${a.data}</strong></td><td>${a.peso}kg</td><td>${a.soma7}mm</td><td>${a.percGordura}%</td><td>${a.massaMagra}kg</td><td>${a.massaGorda}kg</td></tr>
+      `).join('');
+    }
+
+    function salvarBioimpedancia(e) {
+      e.preventDefault();
+      pacienteAtual.bioimpedancia.unshift({
+        data: new Date().toLocaleDateString('pt-BR'),
+        peso: document.getElementById('bioPeso').value,
+        gordura: document.getElementById('bioGordura').value,
+        massaMuscular: document.getElementById('bioMassaMuscular').value,
+        tmb: document.getElementById('bioTmb').value,
+        visceral: document.getElementById('bioVisceral').value || '-'
+      });
+      salvarTudo();
+      registrarAudit(`Bioimpedância salva para ${pacienteAtual.nome}.`);
+      renderBioimpedancia();
+      e.target.reset();
+    }
+    function renderBioimpedancia() {
+      const c = document.getElementById('historicoBio');
+      if (!pacienteAtual.bioimpedancia || pacienteAtual.bioimpedancia.length === 0) { c.innerHTML = ''; return; }
+      c.innerHTML = `<h4>Histórico</h4><table><thead><tr><th>Data</th><th>Peso</th><th>%Gordura</th><th>Massa Musc.</th><th>TMB</th><th>Visceral</th></tr></thead><tbody>` +
+        pacienteAtual.bioimpedancia.map(b => `<tr><td>${b.data}</td><td>${b.peso}kg</td><td>${b.gordura}%</td><td>${b.massaMuscular}kg</td><td>${b.tmb} kcal</td><td>${b.visceral}</td></tr>`).join('') + `</tbody></table>`;
+    }
+
+    function adicionarExame(e) {
+      e.preventDefault();
+      const exame = document.getElementById('matrizExameSelect').value;
+      const data = new Date(document.getElementById('matrizDataInput').value + 'T00:00:00').toLocaleDateString('pt-BR');
+      const val = document.getElementById('matrizValorInput').value;
+      if (!pacienteAtual.examesMatriz[data]) pacienteAtual.examesMatriz[data] = {};
+      pacienteAtual.examesMatriz[data][exame] = val;
+      salvarTudo();
+      registrarAudit(`Exame gravado para ${pacienteAtual.nome}: ${exame} = ${val}.`);
+      renderMatrizExames();
+    }
+    function renderMatrizExames() {
+      const thead = document.getElementById('cabecalhoMatrizExames');
+      const tbody = document.getElementById('corpoMatrizExames');
+      const matriz = pacienteAtual.examesMatriz || {};
+      const datas = Object.keys(matriz);
+      if (datas.length === 0) {
+        thead.innerHTML = `<tr><th>Exame</th><th>Sem registros</th></tr>`;
+        tbody.innerHTML = '';
+        return;
+      }
+      thead.innerHTML = `<tr><th>Exame</th>` + datas.map(d => `<th>${d}</th>`).join('') + `</tr>`;
+      const listaExames = ["Glicemia de Jejum (mg/dL)", "HbA1c (%)", "Insulina Basal (uUI/mL)", "Colesterol Total (mg/dL)", "TSH (uUI/mL)"];
+      tbody.innerHTML = listaExames.map(ex => {
+        if (!datas.some(d => matriz[d][ex])) return '';
+        return `<tr><td><strong>${ex}</strong></td>` + datas.map(d => `<td>${matriz[d][ex] || '-'}</td>`).join('') + `</tr>`;
+      }).join('');
+    }
+
+    // DIETA
+    let refeicoesRascunho = [];
+    function adicionarNovaRefeicao() {
+      refeicoesRascunho.push({ id: Date.now(), titulo: `Refeição ${refeicoesRascunho.length + 1}`, horario: '08:00', alimentos: [] });
+      renderRefeicoes();
+    }
+    function renderRefeicoes() {
+      const c = document.getElementById('containerRefeicoes');
+      c.innerHTML = refeicoesRascunho.map(r => `
+        <div style="background:#F8FAF6; border:1px solid var(--border); padding:1rem; border-radius:0.5rem; margin-top:0.75rem;">
+          <input type="text" value="${r.titulo}" onchange="r.titulo = this.value" style="font-weight:700;">
+          <button class="btn btn-sm btn-secondary" onclick="r.alimentos.push({nome:'Alimento TACO', qtd:'100g', kcal:120}); renderRefeicoes();">+ Alimento</button>
+          <ul>${r.alimentos.map(a => `<li>${a.nome} (${a.qtd}) -${a.kcal} kcal</li>`).join('')}</ul>
+        </div>
+      `).join('');
+    }
+    function salvarPlanoCompleto() {
+      const tit = document.getElementById('planoTitulo').value;
+      if (!tit) return alert('Informe o título.');
+      pacienteAtual.planos.unshift({ id: Date.now(), titulo: tit, data: new Date().toLocaleDateString('pt-BR'), totalKcal: 2100, refeicoes: refeicoesRascunho });
+      salvarTudo();
+      registrarAudit(`Plano publicado para ${pacienteAtual.nome}: ${tit}.`);
+      renderPlanosAlimentares();
+      alert('Plano salvo!');
+    }
+    function renderPlanosAlimentares() {
+      const c = document.getElementById('historicoPlanos');
+      if (!pacienteAtual.planos) return;
+      c.innerHTML = pacienteAtual.planos.map(p => `<div><strong>${p.titulo}</strong> (${p.data})</div>`).join('');
+    }
+
+    // GESTÃO DE EQUIPE NO ADMIN GLOBAL
+    function atualizarLabelConselho(cargo) {
+      const box = document.getElementById('boxConselho');
+      const label = document.getElementById('labelConselho');
+      const input = document.getElementById('membroRegistro');
+
+      if (cargo === 'recepcao') {
+        box.classList.add('hidden');
+        input.removeAttribute('required');
+        input.value = '';
+      } else {
+        box.classList.remove('hidden');
+        input.setAttribute('required', 'true');
+        if (cargo === 'medico') { label.textContent = 'Registro Profissional (CRM)'; input.placeholder = 'Ex: CRM-MS 1234'; }
+        else if (cargo === 'nutricionista') { label.textContent = 'Registro Profissional (CRN)'; input.placeholder = 'Ex: CRN-3 5678'; }
+        else if (cargo === 'enfermeiro') { label.textContent = 'Registro Profissional (COREN)'; input.placeholder = 'Ex: COREN-MS 91011'; }
+        else if (cargo === 'biomedico') { label.textContent = 'Registro Profissional (CRBM)'; input.placeholder = 'Ex: CRBM-1 12131'; }
+      }
+    }
+
+    function salvarNovoColaborador(e) {
+      e.preventDefault();
+      const cargo = document.getElementById('membroCargo').value;
+      const novo = {
+        id: "USR-" + Date.now().toString().slice(-4),
+        nome: document.getElementById('membroNome').value.trim(),
+        cargo: cargo,
+        registro: cargo === 'recepcao' ? 'Nenhum (Recepção)' : document.getElementById('membroRegistro').value.trim(),
+        email: document.getElementById('membroEmail').value.trim().toLowerCase(),
+        senha: document.getElementById('membroSenha').value
       };
 
-      const res = await fetch(`${API_BASE}/patients`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        alert('Paciente cadastrado com sucesso!');
-        e.target.reset();
-        loadPatients();
-      }
-    });
+      usuarios.push(novo);
+      salvarTudo();
+      registrarAudit(`Novo colaborador cadastrado: ${novo.nome} (${formatCargo(novo.cargo)}).`);
+      renderColaboradores();
+      toggleForm('formNovoMembro');
+      e.target.reset();
+      alert(`Colaborador ${novo.nome} cadastrado com perfil ${formatCargo(novo.cargo)}!`);
+    }
 
-    // Agendamento
-    document.getElementById('new-appointment-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const payload = {
-        patientId: document.getElementById('appointment-patient-select').value,
-        scheduledAt: document.getElementById('appointment-date').value,
-        notes: document.getElementById('appointment-notes').value,
-      };
+    function renderColaboradores() {
+      const tbody = document.getElementById('tabelaColaboradoresBody');
+      tbody.innerHTML = usuarios.map(u => {
+        let badgeClass = 'role-admin';
+        if (u.cargo === 'medico') badgeClass = 'role-medico';
+        else if (u.cargo === 'nutricionista') badgeClass = 'role-nutri';
+        else if (u.cargo === 'enfermeiro') badgeClass = 'role-enfermeiro';
+        else if (u.cargo === 'biomedico') badgeClass = 'role-biomedico';
+        else if (u.cargo === 'recepcao') badgeClass = 'role-recep';
 
-      const res = await fetch(`${API_BASE}/appointments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        alert('Consulta agendada com sucesso!');
-        e.target.reset();
-        loadAppointments();
+        let privilegios = "Acesso Total (Clínico & Governança)";
+        if (u.cargo === 'medico' || u.cargo === 'nutricionista') privilegios = "Acesso Total Clínico (Prontuário, Dietas, Exames, Dobras)";
+        else if (u.cargo === 'enfermeiro') privilegios = "Assistencial (Triagem, Dobras, Bioimpedância, Agenda)";
+        else if (u.cargo === 'biomedico') privilegios = "Diagnóstico (Exames, Bioimpedância, Evolução)";
+        else if (u.cargo === 'recepcao') privilegios = "Recepção (Apenas Agenda e Cadastro de Pacientes)";
+
+        return `
+          <tr>
+            <td><strong>${u.nome}</strong></td>
+            <td><span class="role-badge ${badgeClass}">${formatCargo(u.cargo)}</span></td>
+            <td>${u.registro}</td>
+            <td>${u.email}</td>
+            <td><small style="color:var(--text-muted);">${privilegios}</small></td>
+            <td>
+              ${u.cargo !== 'admin_global' ? `<button class="btn btn-danger btn-sm" onclick="removerColaborador('${u.id}')">Inativar</button>` : '<small>Master</small>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function removerColaborador(id) {
+      const u = usuarios.find(x => x.id === id);
+      if (confirm(`Remover acesso de ${u.nome}?`)) {
+        usuarios = usuarios.filter(x => x.id !== id);
+        salvarTudo();
+        registrarAudit(`Colaborador removido: ${u.nome}.`);
+        renderColaboradores();
       }
-    });
+    }
+
+    function renderAuditoriaGlobal() {
+      const tbody = document.getElementById('tabelaAuditoriaGlobalBody');
+      if (auditoriaGlobal.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#8E998B; padding:1.5rem;">Nenhum registro.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = auditoriaGlobal.map(log => `
+        <tr>
+          <td>${log.dataHora}</td>
+          <td><strong>${log.usuario}</strong></td>
+          <td>${log.cargo}</td>
+          <td>${log.operacao}</td>
+        </tr>
+      `).join('');
+    }
+    function exportarLogs() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(auditoriaGlobal, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute("href", dataStr);
+      a.setAttribute("download", `auditoria_leveh_${Date.now()}.json`);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
   </script>
 </body>
 </html>

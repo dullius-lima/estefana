@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Estoque & Insumos — Vigilância Sanitária — LEVEH</title>
+  <style>
+    :root {
+      --primary: #5B6E53;
+      --primary-dark: #43523D;
+      --primary-light: #EBF0E9;
+      --bg: #F4F6F2;
+      --text: #2A3327;
+      --text-muted: #6B7866;
+      --border: #DCE3D8;
+      --danger: #DC2626;
+      --danger-bg: #FEF2F2;
+      --warning: #D97706;
+      --warning-bg: #FFFBEB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 2rem; min-height: 100vh; }
+    .container { max-width: 1350px; margin: 0 auto; background: white; padding: 2rem; border-radius: 1rem; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }
+    .btn { padding: 0.65rem 1.25rem; border: none; border-radius: 0.5rem; background: var(--primary); color: white; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.9rem; transition: 0.2s; }
+    .btn:hover { background: var(--primary-dark); }
+    .btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
+    .btn-outline:hover { background: var(--primary-light); }
+    .btn-danger { background: var(--danger); }
+    .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.8rem; }
+    
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: #FAFCF9; border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem; border-left: 4px solid var(--primary); }
+    .stat-card span { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+    .stat-card strong { display: block; font-size: 1.4rem; color: var(--text); margin-top: 0.25rem; }
+    
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .form-group input, .form-group select { padding: 0.65rem; border: 1px solid var(--border); border-radius: 0.4rem; font-size: 0.9rem; }
+    
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; margin-top: 1rem; }
+    th { padding: 0.8rem 0.9rem; background: #F6F8F4; border-bottom: 2px solid var(--border); color: var(--text-muted); font-weight: 700; }
+    td { padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    
+    .badge-status { padding: 0.25rem 0.6rem; border-radius: 0.35rem; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+    .status-ok { background: var(--primary-light); color: var(--primary-dark); border: 1px solid #CBD8C5; }
+    .status-alert { background: var(--warning-bg); color: var(--warning); border: 1px solid #FDE68A; }
+    .status-expired { background: var(--danger-bg); color: var(--danger); border: 1px solid #FECACA; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1 style="color:var(--primary); font-size:1.6rem;">Livro de Registro de Estoque & Insumos Sanitários</h1>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Rastreabilidade, controle de lotes, registros ANVISA e prazos de validade</p>
+      </div>
+      <div style="display:flex; gap:0.5rem;">
+        <button class="btn" onclick="toggleForm('formNovoInsumo')">+ Registrar Insumo / Medicamento</button>
+        <button class="btn btn-outline" onclick="exportarRelatorioVisa()">📄 Relatório para Vigilância Sanitária</button>
+        <a href="/frontend-admin/public/index.html" class="btn btn-outline">← Painel</a>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><span>Total de Insumos</span><strong id="statTotal">0 itens</strong></div>
+      <div class="stat-card" style="border-left-color: var(--danger);"><span>Vencidos / Irregulares</span><strong id="statVencidos" style="color:var(--danger);">0 itens</strong></div>
+      <div class="stat-card" style="border-left-color: var(--warning);"><span>Estoque Baixo (< Mínimo)</span><strong id="statEstoqueBaixo" style="color:var(--warning);">0 itens</strong></div>
+    </div>
+
+    <!-- FORMULÁRIO DE CADASTRO COMPLETO EXIGIDO PELA VIGILÂNCIA SANITÁRIA -->
+    <div id="formNovoInsumo" class="hidden" style="background:#F8FAF6; border:1px solid var(--border); padding:1.5rem; border-radius:0.75rem; margin-bottom:1.5rem;">
+      <h3 style="color:var(--primary); margin-bottom:1rem;">Cadastro de Insumo / Medicamento para Auditoria Sanitária</h3>
+      <form onsubmit="salvarInsumo(event)">
+        <div class="form-grid">
+          <div class="form-group"><label>Nome do Produto / Princípio Ativo</label><input type="text" id="insNome" required placeholder="Ex: Álcool 70% 1000ml / Seringa 3ml"></div>
+          <div class="form-group"><label>Categoria Sanitária</label>
+            <select id="insCategoria" required>
+              <option value="Material Descartável">Material Descartável (Seringas, Agulhas, Luvas)</option>
+              <option value="Saneante / Desinfetante">Saneante / Desinfetante Hospitalar</option>
+              <option value="Medicamento / Ampola">Medicamento / Ampola / Injetável</option>
+              <option value="EPI">Equipamento de Proteção Individual (EPI)</option>
+              <option value="Insumo Diagnóstico">Insumo Diagnóstico / Tiras de Glicemia</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Fabricante / Marca</label><input type="text" id="insFabricante" required placeholder="Ex: BD / Cremer / Vic Pharma"></div>
+          <div class="form-group"><label>Nº do Lote</label><input type="text" id="insLote" required placeholder="Ex: LOTE-8942-A"></div>
+          <div class="form-group"><label>Registro ANVISA / MS</label><input type="text" id="insAnvisa" required placeholder="Ex: 80034140023"></div>
+          <div class="form-group"><label>Data de Fabricação</label><input type="date" id="insDataFab" required></div>
+          <div class="form-group"><label>Data de Validade</label><input type="date" id="insDataVal" required></div>
+          <div class="form-group"><label>Quantidade Atual</label><input type="number" id="insQtdAtual" min="0" required placeholder="Ex: 50"></div>
+          <div class="form-group"><label>Estoque Mínimo</label><input type="number" id="insQtdMin" min="1" value="10" required></div>
+          <div class="form-group"><label>Unidade de Medida</label><input type="text" id="insUnidade" required placeholder="Ex: Unidades, Frascos, Caixas"></div>
+          <div class="form-group"><label>Local de Armazenamento</label><input type="text" id="insLocal" required placeholder="Ex: Sala de Procedimentos - Armário 02 (15°C a 25°C)"></div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+          <button type="button" class="btn btn-outline" onclick="toggleForm('formNovoInsumo')">Cancelar</button>
+          <button type="submit" class="btn">Salvar Registro Sanitário</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- PESQUISA -->
+    <input type="text" id="buscaInsumo" oninput="filtrarInsumos()" placeholder="🔍 Pesquisar por nome, lote ou registro ANVISA..." style="width:100%; max-width:400px; padding:0.65rem 1rem; border:1.5px solid var(--border); border-radius:0.5rem; font-size:0.9rem; margin-bottom:1rem; outline:none;">
+
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Produto / Insumo</th>
+            <th>Categoria</th>
+            <th>Lote</th>
+            <th>Reg. ANVISA</th>
+            <th>Validade</th>
+            <th>Qtd. / Mínimo</th>
+            <th>Armazenamento</th>
+            <th>Status Sanitário</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpoTabelaInsumos"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let insumos = JSON.parse(localStorage.getItem('leveh_estoque_visa') || '[]');
+
+    function salvar() {
+      localStorage.setItem('leveh_estoque_visa', JSON.stringify(insumos));
+      renderTabela(insumos);
+      atualizarStats();
+    }
+
+    function toggleForm(id) { document.getElementById(id).classList.toggle('hidden'); }
+
+    function calcularStatus(validade, qtdAtual, qtdMin) {
+      const hoje = new Date();
+      const dataVal = new Date(validade + 'T00:00:00');
+      const diasRestantes = Math.ceil((dataVal - hoje) / (1000 * 60 * 60 * 24));
+
+      if (diasRestantes < 0) {
+        return { texto: 'VENCIDO (Interditar)', classe: 'status-expired' };
+      } else if (diasRestantes <= 30) {
+        return { texto: `Vence em ${diasRestantes} dias`, classe: 'status-alert' };
+      } else if (qtdAtual <= qtdMin) {
+        return { texto: 'Estoque Baixo', classe: 'status-alert' };
+      }
+      return { texto: 'Conforme (Regular)', classe: 'status-ok' };
+    }
+
+    function renderTabela(lista) {
+      const tbody = document.getElementById('corpoTabelaInsumos');
+      if (lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:2rem; color:var(--text-muted);">Nenhum insumo cadastrado no livro sanitário.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = lista.map((item, idx) => {
+        const status = calcularStatus(item.validade, item.qtdAtual, item.qtdMin);
+        const dataValBr = item.validade.split('-').reverse().join('/');
+        return `
+          <tr>
+            <td><strong>${item.nome}</strong><br><small style="color:var(--text-muted);">${item.fabricante}</small></td>
+            <td>${item.categoria}</td>
+            <td><strong>${item.lote}</strong></td>
+            <td>${item.anvisa}</td>
+            <td>${dataValBr}</td>
+            <td><strong>${item.qtdAtual}</strong> / ${item.qtdMin} ${item.unidade}</td>
+            <td><small>${item.local}</small></td>
+            <td><span class="badge-status ${status.classe}">${status.texto}</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="ajustarQuantidade(${idx})">± Qtd</button>
+              <button class="btn btn-danger btn-sm" onclick="excluirInsumo(${idx})">Excluir</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function salvarInsumo(e) {
+      e.preventDefault();
+      insumos.unshift({
+        id: Date.now(),
+        nome: document.getElementById('insNome').value.trim(),
+        categoria: document.getElementById('insCategoria').value,
+        fabricante: document.getElementById('insFabricante').value.trim(),
+        lote: document.getElementById('insLote').value.trim(),
+        anvisa: document.getElementById('insAnvisa').value.trim(),
+        fabricacao: document.getElementById('insDataFab').value,
+        validade: document.getElementById('insDataVal').value,
+        qtdAtual: parseInt(document.getElementById('insQtdAtual').value),
+        qtdMin: parseInt(document.getElementById('insQtdMin').value),
+        unidade: document.getElementById('insUnidade').value.trim(),
+        local: document.getElementById('insLocal').value.trim()
+      });
+      salvar();
+      toggleForm('formNovoInsumo');
+      e.target.reset();
+      alert('Registro cadastrado e em conformidade sanitária!');
+    }
+
+    function ajustarQuantidade(idx) {
+      const novaQtd = prompt(`Atualizar quantidade em estoque para "${insumos[idx].nome}":`, insumos[idx].qtdAtual);
+      if (novaQtd !== null && !isNaN(novaQtd) && novaQtd.trim() !== "") {
+        insumos[idx].qtdAtual = parseInt(novaQtd);
+        salvar();
+      }
+    }
+
+    function excluirInsumo(idx) {
+      if (confirm(`Deseja remover o registro de "${insumos[idx].nome}"?`)) {
+        insumos.splice(idx, 1);
+        salvar();
+      }
+    }
+
+    function filtrarInsumos() {
+      const q = document.getElementById('buscaInsumo').value.toLowerCase();
+      const filtrados = insumos.filter(i => 
+        i.nome.toLowerCase().includes(q) || i.lote.toLowerCase().includes(q) || i.anvisa.toLowerCase().includes(q)
+      );
+      renderTabela(filtrados);
+    }
+
+    function atualizarStats() {
+      document.getElementById('statTotal').textContent = `${insumos.length} itens`;
+      let vencidos = 0;
+      let estoqueBaixo = 0;
+      const hoje = new Date();
+
+      insumos.forEach(i => {
+        const dataVal = new Date(i.validade + 'T00:00:00');
+        if (dataVal < hoje) vencidos++;
+        if (i.qtdAtual <= i.qtdMin) estoqueBaixo++;
+      });
+
+      document.getElementById('statVencidos').textContent = `${vencidos} itens`;
+      document.getElementById('statEstoqueBaixo').textContent = `${estoqueBaixo} itens`;
+    }
+
+    function exportarRelatorioVisa() {
+      const printWindow = window.open('', '', 'width=900,height=700');
+      printWindow.document.write(`
+        <html>
+        <head><title>Relatório Sanitário de Estoque — Clínica LEVEH</title>
+        <style>body{font-family:sans-serif;padding:2rem;} table{width:100%;border-collapse:collapse;margin-top:1rem;} th,td{border:1px solid #999;padding:0.5rem;font-size:12px;}</style>
+        </head>
+        <body>
+          <h2>CLÍNICA LEVEH — RELATÓRIO OFICIAL DE ESTOQUE E INSUMOS</h2>
+          <p>Documento emitido para auditoria da Vigilância Sanitária em: ${new Date().toLocaleString('pt-BR')}</p>
+          <table>
+            <thead><tr><th>Produto</th><th>Lote</th><th>Registro ANVISA</th><th>Validade</th><th>Qtd</th><th>Armazenamento</th></tr></thead>
+            <tbody>
+              ${insumos.map(i => `<tr><td>${i.nome}</td><td>${i.lote}</td><td>${i.anvisa}</td><td>${i.validade}</td><td>${i.qtdAtual} ${i.unidade}</td><td>${i.local}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        </body></html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+
+    renderTabela(insumos);
+    atualizarStats();
+  </script>
+</body>
+</html>
