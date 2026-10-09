@@ -144,7 +144,7 @@
       <button class="nav-btn active" id="btnNavPacientes" onclick="switchNav('pacientes')">Pacientes</button>
       <button class="nav-btn" id="btnNavAgenda" onclick="switchNav('agenda')">Agenda & Calendário</button>
       <button class="nav-btn" id="btnNavAlimentos" onclick="switchNav('alimentos')">Tabela de Alimentos (TACO)</button>
-      <a href="/frontend-admin/public/estoque.html" class="nav-btn">📦 Estoque & Insumos (VISA)</a>
+      <a href="/frontend-admin/public/estoque.html" class="nav-btn">📦 Estoque & Insumos</a>
       <a href="/frontend-admin/public/pops.html" class="nav-btn">📋 Procedimentos (POP)</a>
 
       <!-- GOVERNANÇA ADMIN GLOBAL -->
@@ -336,7 +336,7 @@
               </form>
             </div>
 
-            <h4 style="margin-bottom:0.5rem;">Histórico de Procedimentos & Rastreabilidade do Paciente (VISA)</h4>
+            <h4 style="margin-bottom:0.5rem;">Histórico de Procedimentos & Rastreabilidade do Paciente </h4>
             <div style="overflow-x:auto;">
               <table>
                 <thead>
@@ -1406,6 +1406,29 @@
       a.click();
       a.remove();
     }
+  
+    // RESTAURAÇÃO IMEDIATA DE SESSÃO SEM EXIBIR LOGIN
+    function verificarSessaoInicial() {
+      try {
+        const sessaoSalva = localStorage.getItem('leveh_sessao_ativa');
+        if (sessaoSalva) {
+          usuarioLogado = JSON.parse(sessaoSalva);
+          const overlay = document.getElementById('authOverlay');
+          if (overlay) overlay.classList.add('hidden');
+          configurarPermissoesVisuais();
+          switchNav(usuarioLogado.cargo === 'recepcao' ? 'agenda' : 'pacientes');
+        }
+      } catch (err) {
+        console.error('Erro ao restaurar sessão:', err);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', verificarSessaoInicial);
+    } else {
+      verificarSessaoInicial();
+    }
+
   </script>
 </body>
 </html>
