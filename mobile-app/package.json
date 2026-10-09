@@ -1,0 +1,10 @@
+{
+  "name": "estefana-mobile-app",
+  "version": "1.0.0",
+  "description": "Aplicativo dos Pacientes - Clínica Estefana",
+  "scripts": {
+    "start": "node src/index.js",
+    "build:web": "mkdir -p dist && cp -r public/* dist/"
+  },
+  "dependencies": {}
+}

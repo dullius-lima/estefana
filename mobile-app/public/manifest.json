@@ -1,0 +1,9 @@
+{
+  "short_name": "Estefana",
+  "name": "Clínica Estefana — Portal do Paciente",
+  "start_url": "/",
+  "background_color": "#0284c7",
+  "theme_color": "#0284c7",
+  "display": "standalone",
+  "orientation": "portrait"
+}
