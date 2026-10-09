@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel da Clínica — Empresa Estefana</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --sidebar-bg: #0f172a;
+      --sidebar-hover: #1e293b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background-color: var(--bg); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; }
+
+    /* Login Modal Overlay */
+    #login-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px);
+      display: flex; justify-content: center; align-items: center; z-index: 9999;
+    }
+    .login-box {
+      background: white; border-radius: 16px; padding: 40px; width: 100%; max-width: 400px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); text-align: center;
+    }
+    .login-box h2 { font-size: 24px; margin-bottom: 8px; color: var(--primary-dark); }
+    .login-box p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+
+    /* Barra Lateral (Sidebar) */
+    .sidebar {
+      width: 260px; background: var(--sidebar-bg); color: white; display: flex; flex-direction: column;
+      flex-shrink: 0; height: 100vh;
+    }
+    .sidebar-brand { padding: 24px; font-size: 18px; font-weight: 700; border-bottom: 1px solid var(--sidebar-hover); }
+    .sidebar-menu { list-style: none; padding: 16px 8px; flex: 1; }
+    .sidebar-menu li {
+      padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
+      color: #94a3b8; margin-bottom: 4px; display: flex; align-items: center; gap: 12px; transition: 0.2s;
+    }
+    .sidebar-menu li:hover, .sidebar-menu li.active { background: var(--sidebar-hover); color: white; }
+    .user-profile {
+      padding: 16px 20px; border-top: 1px solid var(--sidebar-hover); display: flex;
+      justify-content: space-between; align-items: center; font-size: 13px;
+    }
+    .logout-btn { background: none; border: none; color: #f87171; cursor: pointer; font-weight: 600; }
+
+    /* Conteúdo Principal */
+    .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; height: 100vh; }
+    .top-header {
+      background: white; border-bottom: 1px solid var(--border); padding: 18px 32px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .top-header h1 { font-size: 20px; font-weight: 600; }
+    .content-area { padding: 32px; flex: 1; }
+
+    /* Cards e Estatísticas */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 28px; }
+    .stat-card {
+      background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .stat-card span { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+    .stat-card h3 { font-size: 26px; font-weight: 700; margin-top: 8px; color: var(--primary); }
+
+    /* Formulários e Tabelas */
+    .panel-card {
+      background: white; border-radius: 12px; border: 1px solid var(--border); padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px;
+    }
+    .form-group { margin-bottom: 16px; text-align: left; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 14px; outline: none; transition: 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
+    .btn {
+      background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s;
+    }
+    .btn:hover { background: var(--primary-dark); }
+    .table-container { width: 100%; overflow-x: auto; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+    table th { background: #f1f5f9; padding: 12px 16px; font-weight: 600; border-bottom: 1px solid var(--border); }
+    table td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+
+    /* Badge de status */
+    .status-badge {
+      display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .status-agendado { background: #e0f2fe; color: #0369a1; }
+    .status-confirmado { background: #dcfce7; color: #15803d; }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay de Login -->
+  <div id="login-overlay">
+    <div class="login-box">
+      <h2>Clínica Estefana</h2>
+      <p>Área restrita de Médicos e Nutricionistas</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label>Email Profissional</label>
+          <input type="email" id="login-email" placeholder="dr.exemplo@clinica.com" required>
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="login-password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn" style="width: 100%; margin-top: 8px;">Acessar Painel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Barra Lateral -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">🏥 Clínica Estefana</div>
+    <ul class="sidebar-menu">
+      <li class="active" onclick="showTab('tab-dashboard')">📊 Dashboard</li>
+      <li onclick="showTab('tab-patients')">👥 Pacientes</li>
+      <li onclick="showTab('tab-appointments')">📅 Consultas</li>
+      <li onclick="showTab('tab-diets')">🥗 Prescrição de Dietas</li>
+    </ul>
+    <div class="user-profile">
+      <span id="user-display">Profissional Conectado</span>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </aside>
+
+  <!-- Conteúdo Principal -->
+  <main class="main-wrapper">
+    <header class="top-header">
+      <h1 id="tab-title">Visão Geral da Clínica</h1>
+      <span id="current-date" style="font-size: 14px; color: var(--text-muted);"></span>
+    </header>
+
+    <div class="content-area">
+      <!-- 1. Aba Dashboard -->
+      <section id="tab-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span>Pacientes Ativos</span>
+            <h3 id="stat-patients">0</h3>
+          </div>
+          <div class="stat-card">
+            <span>Consultas Marcadas</span>
+            <h3 id="stat-appointments">0</h3>
+          </div>
+          <div class="stat-card">
+            <span>Planos Nutricionais</span>
+            <h3 id="stat-diets">0</h3>
+          </div>
+        </div>
+        <div class="panel-card">
+          <h3>Próximos Atendimentos</h3>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Paciente</th>
+                  <th>Data & Horário</th>
+                  <th>Status</th>
+                  <th>Anotações</th>
+                </tr>
+              </thead>
+              <tbody id="quick-appointments-list">
+                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum agendamento para hoje.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Aba Pacientes -->
+      <section id="tab-patients" style="display: none;">
+        <div class="panel-card">
+          <h3>Novo Paciente</h3>
+          <form id="new-patient-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+            <div class="form-group">
+              <label>Nome Completo</label>
+              <input type="text" id="patient-name" required>
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="patient-email" required>
+            </div>
+            <div class="form-group">
+              <label>Telefone / WhatsApp</label>
+              <input type="text" id="patient-phone" placeholder="(11) 99999-9999">
+            </div>
+            <div class="form-group">
+              <label>CPF</label>
+              <input type="text" id="patient-cpf" placeholder="000.000.000-00">
+            </div>
+            <button type="submit" class="btn" style="grid-column: span 2;">Cadastrar Paciente</button>
+          </form>
+        </div>
+        <div class="panel-card">
+          <h3>Lista de Pacientes Cadastrados</h3>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Telefone</th>
+                  <th>CPF</th>
+                </tr>
+              </thead>
+              <tbody id="patients-table-body">
+                <tr><td colspan="4" style="text-align: center;">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Aba Consultas -->
+      <section id="tab-appointments" style="display: none;">
+        <div class="panel-card">
+          <h3>Marcar Nova Consulta</h3>
+          <form id="new-appointment-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+            <div class="form-group">
+              <label>Selecionar Paciente</label>
+              <select id="appointment-patient-select" required></select>
+            </div>
+            <div class="form-group">
+              <label>Data e Horário</label>
+              <input type="datetime-local" id="appointment-date" required>
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+              <label>Observações Clínicas</label>
+              <input type="text" id="appointment-notes" placeholder="Ex: Retorno de bioimpedância">
+            </div>
+            <button type="submit" class="btn" style="grid-column: span 2;">Agendar Consulta</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- 4. Aba Prescrição de Dietas -->
+      <section id="tab-diets" style="display: none;">
+        <div class="panel-card">
+          <h3>Prescrever Plano Alimentar</h3>
+          <form id="new-diet-form" style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div class="form-group">
+                <label>Paciente</label>
+                <select id="diet-patient-select" required></select>
+              </div>
+              <div class="form-group">
+                <label>Título do Plano</label>
+                <input type="text" id="diet-title" placeholder="Ex: Dieta Hipertrófica - Fase 1" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Orientações Gerais</label>
+              <textarea id="diet-desc" rows="3" placeholder="Meta calórica, consumo de água e suplementação"></textarea>
+            </div>
+            <button type="submit" class="btn">Salvar e Enviar para o App do Paciente</button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = '/api';
+    let token = localStorage.getItem('estefana_token');
+    let patientsList = [];
+
+    document.getElementById('current-date').textContent = new Date().toLocaleDateString('pt-BR', { dateStyle: 'long' });
+
+    if (!token) {
+      document.getElementById('login-overlay').style.display = 'flex';
+    } else {
+      document.getElementById('login-overlay').style.display = 'none';
+      initDashboard();
+    }
+
+    // Login
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.token) {
+          localStorage.setItem('estefana_token', data.token);
+          localStorage.setItem('estefana_user', JSON.stringify(data.user));
+          token = data.token;
+          document.getElementById('login-overlay').style.display = 'none';
+          initDashboard();
+        } else {
+          alert('Erro no login: ' + (data.error || 'Verifique as credenciais'));
+        }
+      } catch (err) {
+        alert('Não foi possível conectar à API: ' + err.message);
+      }
+    });
+
+    function logout() {
+      localStorage.clear();
+      window.location.reload();
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll('.content-area > section').forEach(sec => sec.style.display = 'none');
+      document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
+      document.getElementById(tabId).style.display = 'block';
+
+      const titles = {
+        'tab-dashboard': 'Visão Geral da Clínica',
+        'tab-patients': 'Gestão de Pacientes',
+        'tab-appointments': 'Agendamento de Consultas',
+        'tab-diets': 'Prescrição Nutricional'
+      };
+      document.getElementById('tab-title').textContent = titles[tabId] || 'Painel';
+    }
+
+    async function initDashboard() {
+      const user = JSON.parse(localStorage.getItem('estefana_user') || '{}');
+      if (user.name) document.getElementById('user-display').textContent = user.name;
+      loadPatients();
+      loadAppointments();
+    }
+
+    async function loadPatients() {
+      try {
+        const res = await fetch(`${API_BASE}/patients`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        patientsList = await res.json();
+        
+        document.getElementById('stat-patients').textContent = patientsList.length;
+
+        // Atualiza a tabela
+        const tbody = document.getElementById('patients-table-body');
+        tbody.innerHTML = patientsList.map(p => `
+          <tr>
+            <td><strong>${p.name}</strong></td>
+            <td>${p.email}</td>
+            <td>${p.phone || '-'}</td>
+            <td>${p.cpf || '-'}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="4" style="text-align: center;">Nenhum paciente cadastrado.</td></tr>';
+
+        // Preenche os selects das outras abas
+        const options = '<option value="">Selecione um paciente...</option>' + 
+          patientsList.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        document.getElementById('appointment-patient-select').innerHTML = options;
+        document.getElementById('diet-patient-select').innerHTML = options;
+      } catch (err) {
+        console.error('Erro ao buscar pacientes:', err);
+      }
+    }
+
+    async function loadAppointments() {
+      try {
+        const res = await fetch(`${API_BASE}/appointments`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const appointments = await res.json();
+        document.getElementById('stat-appointments').textContent = appointments.length;
+
+        const tbody = document.getElementById('quick-appointments-list');
+        tbody.innerHTML = appointments.map(a => `
+          <tr>
+            <td><strong>${a.patient_name || 'Paciente'}</strong></td>
+            <td>${new Date(a.scheduled_at).toLocaleString('pt-BR')}</td>
+            <td><span class="status-badge status-agendado">${a.status}</span></td>
+            <td>${a.notes || '-'}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="4" style="text-align: center;">Nenhuma consulta agendada.</td></tr>';
+      } catch (err) {
+        console.error('Erro ao buscar consultas:', err);
+      }
+    }
+
+    // Cadastro de Paciente
+    document.getElementById('new-patient-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('patient-name').value,
+        email: document.getElementById('patient-email').value,
+        phone: document.getElementById('patient-phone').value,
+        cpf: document.getElementById('patient-cpf').value,
+      };
+
+      const res = await fetch(`${API_BASE}/patients`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        alert('Paciente cadastrado com sucesso!');
+        e.target.reset();
+        loadPatients();
+      }
+    });
+
+    // Agendamento
+    document.getElementById('new-appointment-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        patientId: document.getElementById('appointment-patient-select').value,
+        scheduledAt: document.getElementById('appointment-date').value,
+        notes: document.getElementById('appointment-notes').value,
+      };
+
+      const res = await fetch(`${API_BASE}/appointments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        alert('Consulta agendada com sucesso!');
+        e.target.reset();
+        loadAppointments();
+      }
+    });
+  </script>
+</body>
+</html>
