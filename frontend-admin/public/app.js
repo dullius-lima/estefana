@@ -1,3 +1,360 @@
+// Variáveis Globais de Gravação
+window.gravandoAtivo = false;
+window.gravadorReconhecimento = null;
+window.transcricaoAcumulada = "";
+
+function alternarGravacaoEvolucao() {
+  if (window.gravandoAtivo) {
+    pararGravacaoEvolucao(true);
+  } else {
+    iniciarGravacaoEvolucao();
+  }
+}
+window.alternarGravacaoEvolucao = alternarGravacaoEvolucao;
+
+function iniciarGravacaoEvolucao() {
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("Reconhecimento de voz não suportado neste navegador. Utilize o Google Chrome ou Edge.");
+    return;
+  }
+
+  window.transcricaoAcumulada = "";
+  window.gravadorReconhecimento = new SpeechRecognition();
+  window.gravadorReconhecimento.lang = 'pt-BR';
+  window.gravadorReconhecimento.continuous = true;
+  window.gravadorReconhecimento.interimResults = true;
+
+  var btn = document.getElementById('btnGravarIA');
+  var lbl = document.getElementById('labelBtnGravarIA');
+  var status = document.getElementById('statusGravacaoIA');
+  var preview = document.getElementById('previewTranscricaoAoVivo');
+
+  window.gravadorReconhecimento.onstart = function() {
+    window.gravandoAtivo = true;
+    if (btn) btn.classList.add('gravando');
+    if (lbl) lbl.innerText = "Parar & Estruturar";
+    if (status) {
+      status.innerText = "🔴 Escutando em tempo real...";
+      status.style.color = "#c53030";
+    }
+    if (preview) {
+      preview.style.display = "block";
+      preview.innerText = "Ouvindo consulta...";
+    }
+  };
+
+  window.gravadorReconhecimento.onresult = function(event) {
+    var interim = "";
+    for (var i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        window.transcricaoAcumulada += event.results[i][0].transcript + " ";
+      } else {
+        interim += event.results[i][0].transcript;
+      }
+    }
+    if (preview) {
+      preview.innerText = window.transcricaoAcumulada + " (" + interim + ")";
+      preview.scrollTop = preview.scrollHeight;
+    }
+  };
+
+  window.gravadorReconhecimento.onerror = function(event) {
+    console.error("Erro na captura de áudio:", event.error);
+    if (status) status.innerText = "Erro ao capturar microfone: " + event.error;
+    pararGravacaoEvolucao(false);
+  };
+
+  window.gravadorReconhecimento.onend = function() {
+    if (window.gravandoAtivo) {
+      try { window.gravadorReconhecimento.start(); } catch(e) {}
+    }
+  };
+
+  try {
+    window.gravadorReconhecimento.start();
+  } catch(err) {
+    alert("Erro ao iniciar microfone: " + err.message);
+  }
+}
+window.iniciarGravacaoEvolucao = iniciarGravacaoEvolucao;
+
+function pararGravacaoEvolucao(processar) {
+  if (typeof processar === 'undefined') processar = true;
+  window.gravandoAtivo = false;
+  if (window.gravadorReconhecimento) {
+    try { window.gravadorReconhecimento.stop(); } catch(e) {}
+  }
+
+  var btn = document.getElementById('btnGravarIA');
+  var lbl = document.getElementById('labelBtnGravarIA');
+  var status = document.getElementById('statusGravacaoIA');
+
+  if (btn) btn.classList.remove('gravando');
+  if (lbl) lbl.innerText = "Assistente IA: Gravar Fala";
+
+  if (processar && window.transcricaoAcumulada.trim().length > 0) {
+    if (status) {
+      status.innerText = "⚡ Processando com o modelo IA...";
+      status.style.color = "#15803d";
+    }
+    processarTranscricaoComGroq(window.transcricaoAcumulada.trim());
+  } else {
+    if (status) {
+      status.innerText = "Pronto para escutar";
+      status.style.color = "var(--text-muted)";
+    }
+  }
+}
+window.pararGravacaoEvolucao = pararGravacaoEvolucao;
+
+// ==========================================================
+// CONFIGURAÇÃO GLOBAL DE IA (DEFINIDA PELO ADMINISTRADOR)
+// ==========================================================
+// Remova o valor literal da chave da Groq:
+var CONFIG_IA_PADRAO = {
+  provedor: "groq-llama3",
+  modelo: "llama3-70b-8192",
+  apiKey: "" // Deixe em branco aqui para não disparar o bloqueio do GitHub
+};
+
+function obterConfiguracaoIA() {
+  var salva = localStorage.getItem('leveh_config_ia');
+  if (salva) {
+    try { return JSON.parse(salva); } catch(e) {}
+  }
+  return CONFIG_IA_PADRAO;
+}
+
+function salvarConfiguracaoIAPadrao(novaConfig) {
+  localStorage.setItem('leveh_config_ia', JSON.stringify(novaConfig));
+}
+
+function configurarChaveIAPrompt() {
+  if (usuarioLogado.perfil !== 'Administrador') {
+    alert("Apenas o Administrador Geral pode alterar o modelo e a chave de IA padrão do sistema.");
+    return;
+  }
+  var conf = obterConfiguracaoIA();
+  var novaChave = prompt("Definir Chave API Padrão da Groq/IA:", conf.apiKey);
+  if (novaChave !== null) {
+    conf.apiKey = novaChave.trim() || CONFIG_IA_PADRAO.apiKey;
+    salvarConfiguracaoIAPadrao(conf);
+    alert("Configuração de IA atualizada com sucesso pelo Administrador.");
+  }
+}
+window.configurarChaveIAPrompt = configurarChaveIAPrompt;
+
+// ==========================================================
+// COMPILADOR DO BANCO DE DADOS & HISTÓRICO DO PACIENTE PARA A IA
+// ==========================================================
+function construirContextoClinicoCompleto(paciente) {
+  if (!paciente) return "";
+
+  // 1. Dados cadastrais e patológicos
+  var blocoCadastro = "PACIENTE: " + paciente.nome + " | PRONTUÁRIO: " + paciente.prontuario + "\n" +
+    "Idade: " + calcularIdade(paciente.nascimento) + " | Sexo: " + (paciente.sexo || "Não informado") + "\n" +
+    "Alergias: " + (paciente.alergias || "Nenhuma relatada") + "\n" +
+    "Condições Clínicas / Comorbidades: " + (paciente.condicoes || "Sem registos prévios") + "\n";
+
+  // 2. Histórico das últimas 5 evoluções
+  var blocoEvolucoes = "HISTÓRICO DE EVOLUÇÕES CLÍNICAS ANTERIORES:\n";
+  if (paciente.evolucoes && paciente.evolucoes.length > 0) {
+    var ultimasEvolucoes = paciente.evolucoes.slice(-5);
+    ultimasEvolucoes.forEach(function(ev, idx) {
+      blocoEvolucoes += "[" + ev.dataHora + " - " + ev.autor + " (" + ev.cargo + ")]:\n" + ev.texto + "\n---\n";
+    });
+  } else {
+    blocoEvolucoes += "Nenhuma evolução clínica registrada até o momento.\n";
+  }
+
+  // 3. Dados Antropométricos e Composição Corporal
+  var blocoAntropo = "DADOS ANTROPOMÉTRICOS & COMPOSIÇÃO CORPORAL:\n";
+  if (paciente.antropometria && paciente.antropometria.length > 0) {
+    var ultimaAntropo = paciente.antropometria[paciente.antropometria.length - 1];
+    blocoAntropo += "Última medição (" + (ultimaAntropo.data || "recente") + "):\n" +
+      "- Peso: " + (ultimaAntropo.peso || "--") + " kg | Altura: " + (ultimaAntropo.altura || "--") + " cm\n" +
+      "- IMC: " + (ultimaAntropo.imc || "--") + " | % Gordura Corporal (BF): " + (ultimaAntropo.bf || "--") + "%\n" +
+      "- Massa Magra: " + (ultimaAntropo.massaMagra || "--") + " kg | Massa Gorda: " + (ultimaAntropo.massaGorda || "--") + " kg\n" +
+      "- Parecer anterior: " + (ultimaAntropo.parecer || "Sem anotações") + "\n";
+  } else {
+    blocoAntropo += "Sem registos antropométricos prévios.\n";
+  }
+
+  // 4. Prescrição Nutricional / Dieta TACO
+  var blocoNutricao = "PLANO NUTRICIONAL & DIETA:\n";
+  if (paciente.dietas && paciente.dietas.length > 0) {
+    var ultimaDieta = paciente.dietas[paciente.dietas.length - 1];
+    blocoNutricao += "Plano Ativo (" + (ultimaDieta.titulo || "Dieta Prescrita") + "):\n" +
+      "- Meta Calórica: " + (ultimaDieta.calorias || "--") + " kcal\n" +
+      "- Distribuição: P: " + (ultimaDieta.proteinas || "--") + "g | C: " + (ultimaDieta.carbos || "--") + "g | G: " + (ultimaDieta.gorduras || "--") + "g\n" +
+      "- Observações: " + (ultimaDieta.observacoes || "Seguindo diretriz padrão") + "\n";
+  } else {
+    blocoNutricao += "Sem plano dietético ativo cadastrado.\n";
+  }
+
+  // 5. Exames Laboratoriais Relevantes
+  var blocoExames = "HISTÓRICO RECENTE DE EXAMES LABORATORIAIS:\n";
+  if (paciente.examesLaboratoriais && paciente.examesLaboratoriais.length > 0) {
+    var ultimoExame = paciente.examesLaboratoriais[paciente.examesLaboratoriais.length - 1];
+    blocoExames += "Última Coleta (" + ultimoExame.dataColeta + " - " + ultimoExame.laboratorio + "):\n";
+    for (var k in ultimoExame.valores) {
+      blocoExames += "- " + k + ": " + ultimoExame.valores[k] + "\n";
+    }
+  } else {
+    blocoExames += "Sem coletas laboratoriais arquivadas.\n";
+  }
+
+  // 6. Dados de Bioimpedância (InBody / Parâmetros Celulares)
+  var blocoBio = "DADOS DE BIOIMPEDÂNCIA (INBODY/COMPOSIÇÃO):\n";
+  if (paciente.bioimpedancia && paciente.bioimpedancia.length > 0) {
+    var uBio = paciente.bioimpedancia[0];
+    blocoBio += "Último Laudo de Bioimpedância (" + uBio.data + " - " + uBio.aparelho + "):\n" +
+      "- Peso: " + uBio.peso + " kg | % Gordura (BF): " + (uBio.bf || "--") + "%\n" +
+      "- Massa Muscular Esquelética (MME): " + (uBio.mme || "--") + " kg\n" +
+      "- Massa Livre de Gordura: " + (uBio.massaMagra || "--") + " kg | Massa de Gordura: " + (uBio.massaGorda || "--") + " kg\n" +
+      "- Gordura Visceral: Nível " + (uBio.visceral || "--") + "\n" +
+      "- Ângulo de Fase (Integridade Celular): " + (uBio.anguloFase || "--") + "°\n" +
+      "- Relação Água Extracelular/Total (AEC/ACT): " + (uBio.relacaoAgua || "--") + "\n" +
+      "- Parecer: " + (uBio.observacoes || "Sem observações adicionais") + "\n";
+  } else {
+    blocoBio += "Sem laudos de bioimpedância registrados.\n";
+  }
+
+  return blocoCadastro + "\n" + blocoEvolucoes + "\n" + blocoAntropo + "\n" + blocoNutricao + "\n" + blocoExames;
+}
+
+
+
+
+// ==========================================================
+// PROCESSAMENTO INTELIGENTE COM O CONTEXTO DO PACIENTE
+// ==========================================================
+function processarTranscricaoComGroq(textoTranscrito) {
+  if (!pacienteAtivo) {
+    alert("Nenhum paciente selecionado para contextualizar a evolução.");
+    return;
+  }
+
+  var conf = obterConfiguracaoIA();
+  var modeloEscolhido = conf.modelo;
+
+  // Permite selecionar outro modelo no select sem perder o padrão do adm
+  var selectModelo = document.getElementById('provedorIAEvolucao');
+  if (selectModelo) {
+    if (selectModelo.value === 'groq-llama3-8b') modeloEscolhido = "llama3-8b-8192";
+    else if (selectModelo.value === 'groq-mixtral') modeloEscolhido = "mixtral-8x7b-32768";
+    else if (selectModelo.value === 'groq-llama3') modeloEscolhido = "llama3-70b-8192";
+  }
+
+  // Compila todo o histórico do banco de dados do paciente
+  var dossiePaciente = construirContextoClinicoCompleto(pacienteAtivo);
+
+  var promptSistema = "Você é o assistente clínico avançado da Clínica LEVEH. " +
+    "Você possui acesso irrestrito ao histórico clínico, medidas corporais, exames e dieta do paciente fornecidos abaixo.\n\n" +
+    "--- BASE DE DADOS DO PACIENTE ATUAL ---\n" +
+    dossiePaciente + "\n" +
+    "---------------------------------------\n\n" +
+    "SUA TAREFA:\n" +
+    "O profissional clínico ditou em áudio a consulta/avaliação atual. Analise a nova transcrição cruzando-a criticamente com o histórico fornecido (verifique se houve melhora/piora de peso, adesão à dieta, alteração de condutas ou novos sintomas relatados).\n\n" +
+    "Regras de Processamento:\n" +
+    "1. Elimine gírias, hesitações (humm, ééé, tipo assim) e repetições de fala.\n" +
+    "2. Corrija termos gramaticais preservando a exatidão médica/nutricional.\n" +
+    "3. Se um termo técnico for ambíguo, marque com [Termo incerto].\n" +
+    "4. Se houver menção a códigos, exames específicos ou metas, formate com clareza técnica.\n\n" +
+    "Formate a resposta RIGOROSAMENTE nesta estrutura Markdown, sem prefácios:\n\n" +
+    "# 📝 RELATÓRIO DE AVALIAÇÃO TÉCNICA\n\n" +
+    "## 1. Resumo Executivo\n" +
+    "[Parágrafo direto resumindo a consulta atual em terceira pessoa e a resposta do paciente frente ao histórico]\n\n" +
+    "## 2. Pontos-Chave & Descobertas\n" +
+    "- **[Tópico/Métrica 1]:** [Achado ou conduta da consulta atual correlacionada com os dados prévios]\n" +
+    "- **[Tópico/Métrica 2]:** [Achado ou conduta da consulta atual]\n\n" +
+    "## 3. Impedimentos, Erros ou Pontos Críticos\n" +
+    "- **[Alerta/Ponto Crítico]:** [Dificuldade relatada, efeito adverso, desvio de dieta ou estagnação observada]\n\n" +
+    "## 4. Próximos Passos & Plano de Ação\n" +
+    "- [Conduta terapêutica ou alteração de prescrição/dieta 1]\n" +
+    "- [Conduta terapêutica ou meta para o próximo retorno 2]";
+
+  fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + conf.apiKey
+    },
+    body: JSON.stringify({
+      model: modeloEscolhido,
+      messages: [
+        { role: "system", content: promptSistema },
+        { role: "user", content: "Texto da transcrição de áudio da consulta atual para processar:\n" + textoTranscrito }
+      ],
+      temperature: 0.2
+    })
+  })
+  .then(function(res) {
+    if (!res.ok) throw new Error("Erro na API da IA (" + res.status + "): " + res.statusText);
+    return res.json();
+  })
+  .then(function(dados) {
+    var resposta = dados.choices && dados.choices[0] && dados.choices[0].message && dados.choices[0].message.content;
+    if (resposta) {
+      var textarea = document.getElementById('modalTextoEvolucao');
+      if (textarea) textarea.value = resposta.trim();
+
+      var status = document.getElementById('statusGravacaoIA');
+      if (status) {
+        status.innerText = "✓ Relatório clínico estruturado com acesso ao histórico completo!";
+        status.style.color = "#15803d";
+      }
+    }
+  })
+  .catch(function(err) {
+    console.error("Falha ao consultar IA com histórico:", err);
+    alert("Não foi possível processar a IA: " + err.message + "\nA transcrição bruta foi colada no campo.");
+    var textarea = document.getElementById('modalTextoEvolucao');
+    if (textarea) textarea.value = textoTranscrito;
+    var status = document.getElementById('statusGravacaoIA');
+    if (status) {
+      status.innerText = "Erro no processamento da IA.";
+      status.style.color = "#b91c1c";
+    }
+  });
+}
+
+// ==========================================================
+// ALIMENTAÇÃO IMEDIATA DO BANCO DE DADOS AO SALVAR A EVOLUÇÃO
+// ==========================================================
+function salvarEvolucao(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  if (!pacienteAtivo) return false;
+
+  var texto = document.getElementById('modalTextoEvolucao').value.trim();
+  if (!texto) {
+    alert("Preencha a evolução antes de salvar.");
+    return false;
+  }
+
+  if (!pacienteAtivo.evolucoes) pacienteAtivo.evolucoes = [];
+
+  var novaEv = {
+    id: Date.now(),
+    dataHora: new Date().toLocaleDateString('pt-BR') + ", " + new Date().toLocaleTimeString('pt-BR'),
+    autor: usuarioLogado.nome,
+    cargo: usuarioLogado.perfil,
+    texto: texto
+  };
+
+  // Alimenta o banco de dados do paciente ativo
+  pacienteAtivo.evolucoes.unshift(novaEv);
+
+  fecharModalEvolucao();
+  renderizarEvolucoes();
+  return false;
+}
+window.salvarEvolucao = salvarEvolucao;
+
 // --- DEFINIÇÃO DOS MÓDULOS PARA A MATRIZ DE LIBERAÇÃO ---
 // Nota: O módulo POP não faz parte da matriz pois é exclusivo do Administrador.
 var MODULOS_SISTEMA = [
@@ -798,13 +1155,38 @@ function montarFichaCompleta(p) {
     '<div class="ficha-dado-item" style="grid-column: 1 / -1;"><strong>Observações:</strong> ' + (p.obs || 'Nenhuma') + '</div>';
 }
 
-// --- NAVEGAÇÃO LATERAL ---
-function trocarAbaLateral(abaId) {
-  document.querySelectorAll('#menuProntuarioPaciente .nav-item').forEach(function(el) { el.classList.remove('active'); });
-  document.querySelectorAll('.tab-content-item').forEach(function(c) { c.style.display = 'none'; });
+function navegarPara(moduloId) {
+  if (moduloId === 'pop' && usuarioLogado.perfil !== 'Administrador') {
+    alert("Acesso Negado: O módulo POP é homologado estritamente para a Diretoria Clínica e Administrador.");
+    return;
+  }
 
-  var btnLateral = document.getElementById('side-' + abaId);
-  if (btnLateral) btnLateral.classList.add('active');
+  if (moduloId === 'equipe' && usuarioLogado.perfil !== 'Administrador') {
+    alert("Acesso Negado: Gestão de equipe é exclusiva do Administrador.");
+    return;
+  }
+
+  document.querySelectorAll('.view-section').forEach(function(sec) { sec.style.display = 'none'; });
+  document.querySelectorAll('#menuGeralSistema .nav-pill-btn').forEach(function(el) { el.classList.remove('active'); });
+
+  var view = document.getElementById('view-' + moduloId);
+  var navBtn = document.getElementById('nav-' + moduloId);
+
+  if (view) view.style.display = 'block';
+  if (navBtn) navBtn.classList.add('active');
+}
+
+// --- NAVEGAÇÃO DE ABAS DO PRONTUÁRIO CLÍNICO ---
+function trocarAbaLateral(abaId) {
+  document.querySelectorAll('#menuProntuarioPaciente .nav-pill-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.querySelectorAll('.tab-content-item').forEach(function(c) {
+    c.style.display = 'none';
+  });
+
+  var btn = document.getElementById('side-' + abaId);
+  if (btn) btn.classList.add('active');
 
   abaAtivaAtual = abaId;
   var target = document.getElementById(abaId);
@@ -818,10 +1200,19 @@ function trocarAbaLateral(abaId) {
     renderizarPrescricoesMedicas();
   } else if (abaId === 'aba-antropometria') {
     renderizarModuloAntropometria();
+  } else if (abaId === 'aba-bioimpedancia') {
+    renderizarModuloBioimpedancia();
   } else if (abaId === 'aba-exames') {
     renderizarPainelComparativoExames();
   }
 }
+
+// Expõe explicitamente no objeto window para garantir chamada em eventos HTML inline
+window.trocarAbaLateral = trocarAbaLateral;
+
+
+// Expõe explicitamente no objeto window para garantir chamada em eventos HTML inline
+window.trocarAbaLateral = trocarAbaLateral;
 
 
 function abrirProntuario(id) {
@@ -829,45 +1220,49 @@ function abrirProntuario(id) {
   if (!p) return;
   pacienteAtivo = p;
 
-  var title = document.getElementById('pageTitle');
-  if (title) {
-    title.innerHTML = '<div class="paciente-header-topbar">' +
-      '<span class="paciente-header-nome">' + p.nome + '</span>' +
-      '<span class="paciente-header-badge">' + p.prontuario + '</span>' +
-      '<span class="paciente-header-badge">' + calcularIdade(p.nascimento) + '</span>' +
-      '<span class="paciente-header-badge">' + (p.convenio || 'Particular') + '</span>' +
-    '</div>';
-  }
-
   montarFichaCompleta(p);
   var gaveta = document.getElementById('gavetaFichaPaciente');
   if (gaveta) gaveta.classList.remove('ativa');
   var btn = document.getElementById('btnToggleFicha');
   if (btn) btn.innerHTML = '<span>▼ Ficha Cadastral Completa</span>';
 
+  var banner = document.getElementById('pacienteHeaderDetalhes');
+  if (banner) {
+    banner.innerHTML =
+      '<span class="paciente-resumo-nome">' + p.nome + '</span>' +
+      '<span class="paciente-resumo-badge">📋 ' + p.prontuario + '</span>' +
+      '<span class="paciente-resumo-badge">🎂 ' + calcularIdade(p.nascimento) + '</span>' +
+      '<span class="paciente-resumo-badge">🏥 ' + (p.convenio || 'Particular') + '</span>';
+  }
+
+  // Oculta estritamente o menu geral e exibe apenas o menu do paciente
   var menuGeral = document.getElementById('menuGeralSistema');
   var menuPront = document.getElementById('menuProntuarioPaciente');
-  if (menuGeral) menuGeral.style.display = 'none';
-  if (menuPront) menuPront.style.display = 'block';
+  if (menuGeral) menuGeral.style.setProperty('display', 'none', 'important');
+  if (menuPront) menuPront.style.setProperty('display', 'inline-flex', 'important');
 
   trocarAbaLateral('aba-evolucao');
   renderizarEvolucoes();
   renderizarProcedimentos();
   renderizarChecagemPrescricao();
-  renderizarPainelComparativoExames();
-  renderizarModuloAntropometria();
   renderizarPrescricoesMedicas();
+  renderizarModuloAntropometria();
+  renderizarModuloBioimpedancia();
+  renderizarPainelComparativoExames();
   navegarPara('prontuario');
 }
+window.abrirProntuario = abrirProntuario;
 
 function voltarParaListaPacientes() {
+  // Exibe estritamente o menu geral e oculta o menu do prontuário
   var menuGeral = document.getElementById('menuGeralSistema');
   var menuPront = document.getElementById('menuProntuarioPaciente');
-  if (menuGeral) menuGeral.style.display = 'block';
-  if (menuPront) menuPront.style.display = 'none';
+  if (menuGeral) menuGeral.style.setProperty('display', 'inline-flex', 'important');
+  if (menuPront) menuPront.style.setProperty('display', 'none', 'important');
 
   navegarPara('pacientes');
 }
+window.voltarParaListaPacientes = voltarParaListaPacientes;
 
 function toggleSidebar() {
   var sidebar = document.getElementById('sidebar');
@@ -1952,6 +2347,162 @@ function salvarAvaliacaoAntropometrica(e) {
   return false;
 }
 
+// ==========================================================
+// MÓDULO DE BIOIMPEDÂNCIA CLÍNICA & ESPORTIVA
+// ==========================================================
+
+function abrirModalBioimpedancia() {
+  if (!pacienteAtivo) return;
+  var sub = document.getElementById('modalBioSubinfo');
+  if (sub) sub.innerText = "Paciente: " + pacienteAtivo.nome + " (" + pacienteAtivo.prontuario + ")";
+
+  document.getElementById('formBioimpedancia').reset();
+  var hoje = new Date().toISOString().split('T')[0];
+  document.getElementById('bioData').value = hoje;
+
+  var modal = document.getElementById('modalBioimpedancia');
+  if (modal) modal.style.display = 'flex';
+}
+window.abrirModalBioimpedancia = abrirModalBioimpedancia;
+
+function fecharModalBioimpedancia() {
+  var modal = document.getElementById('modalBioimpedancia');
+  if (modal) modal.style.display = 'none';
+}
+window.fecharModalBioimpedancia = fecharModalBioimpedancia;
+
+function salvarBioimpedancia(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  if (!pacienteAtivo) return false;
+
+  var novoRegistro = {
+    id: Date.now(),
+    data: document.getElementById('bioData').value,
+    aparelho: document.getElementById('bioAparelho').value || 'InBody / Balança Médica',
+    peso: parseFloat(document.getElementById('bioPeso').value) || 0,
+    bf: parseFloat(document.getElementById('bioBf').value) || 0,
+    mme: parseFloat(document.getElementById('bioMme').value) || 0,
+    massaMagra: parseFloat(document.getElementById('bioMassaMagra').value) || 0,
+    massaGorda: parseFloat(document.getElementById('bioMassaGorda').value) || 0,
+    imc: parseFloat(document.getElementById('bioImc').value) || 0,
+    tmb: parseFloat(document.getElementById('bioTmb').value) || 0,
+    visceral: parseFloat(document.getElementById('bioVisceral').value) || 0,
+    act: parseFloat(document.getElementById('bioAct').value) || 0,
+    aic: parseFloat(document.getElementById('bioAic').value) || 0,
+    aec: parseFloat(document.getElementById('bioAec').value) || 0,
+    relacaoAgua: parseFloat(document.getElementById('bioRelacaoAgua').value) || 0,
+    anguloFase: parseFloat(document.getElementById('bioAnguloFase').value) || 0,
+    massaOssea: parseFloat(document.getElementById('bioMassaOssea').value) || 0,
+    score: parseFloat(document.getElementById('bioScore').value) || 0,
+    segmentar: {
+      bracoD: parseFloat(document.getElementById('bioSegBracoD').value) || 0,
+      bracoE: parseFloat(document.getElementById('bioSegBracoE').value) || 0,
+      tronco: parseFloat(document.getElementById('bioSegTronco').value) || 0,
+      pernaD: parseFloat(document.getElementById('bioSegPernaD').value) || 0,
+      pernaE: parseFloat(document.getElementById('bioSegPernaE').value) || 0
+    },
+    observacoes: document.getElementById('bioObservacoes').value.trim()
+  };
+
+  if (!pacienteAtivo.bioimpedancia) pacienteAtivo.bioimpedancia = [];
+  pacienteAtivo.bioimpedancia.unshift(novoRegistro);
+
+  fecharModalBioimpedancia();
+  renderizarModuloBioimpedancia();
+  return false;
+}
+window.salvarBioimpedancia = salvarBioimpedancia;
+
+function renderizarModuloBioimpedancia() {
+  var historicoBox = document.getElementById('historicoBioimpedancia');
+  var resumoBox = document.getElementById('painelResumoUltimaBio');
+  if (!historicoBox) return;
+
+  if (!pacienteAtivo || !pacienteAtivo.bioimpedancia || pacienteAtivo.bioimpedancia.length === 0) {
+    if (resumoBox) resumoBox.innerHTML = '';
+    historicoBox.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); padding:16px; background:#fafcfa; border-radius:12px; border:1px dashed var(--border); text-align:center;">Nenhum exame de bioimpedância cadastrado para este paciente.</div>';
+    return;
+  }
+
+  var bios = pacienteAtivo.bioimpedancia;
+  var atual = bios[0];
+
+  // Painel de Destaque com Métricas Esportivas & Nutricionais
+  if (resumoBox) {
+    resumoBox.innerHTML =
+      '<div style="background:#ffffff; border:1px solid #cad6ca; border-radius:16px; padding:18px; box-shadow:0 4px 14px rgba(0,0,0,0.03);">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">' +
+          '<div><strong style="font-size:1.05rem; color:#3e4d3a;">Último Laudo (' + atual.data + ')</strong> — <span style="font-size:0.82rem; color:var(--text-muted);">' + atual.aparelho + '</span></div>' +
+          (atual.score ? '<span class="badge-role" style="background:#5e6f5a; color:#fff; font-size:0.82rem; padding:4px 12px;">Score Corporal: ' + atual.score + ' / 100</span>' : '') +
+        '</div>' +
+        '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; text-align:center;">' +
+          '<div style="background:#f4f7f4; padding:10px; border-radius:10px;">' +
+            '<div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">PESO</div>' +
+            '<div style="font-size:1.2rem; font-weight:800; color:#243328;">' + atual.peso + ' <small style="font-size:0.7rem;">kg</small></div>' +
+          '</div>' +
+          '<div style="background:#f4f7f4; padding:10px; border-radius:10px;">' +
+            '<div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">% GORDURA (BF)</div>' +
+            '<div style="font-size:1.2rem; font-weight:800; color:#1d4ed8;">' + (atual.bf || '--') + ' <small style="font-size:0.7rem;">%</small></div>' +
+          '</div>' +
+          '<div style="background:#f4f7f4; padding:10px; border-radius:10px;">' +
+            '<div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">MÚSCULO (MME)</div>' +
+            '<div style="font-size:1.2rem; font-weight:800; color:#15803d;">' + (atual.mme || '--') + ' <small style="font-size:0.7rem;">kg</small></div>' +
+          '</div>' +
+          '<div style="background:#f4f7f4; padding:10px; border-radius:10px;">' +
+            '<div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">GORDURA VISCERAL</div>' +
+            '<div style="font-size:1.2rem; font-weight:800; color:#b91c1c;">Nível ' + (atual.visceral || '--') + '</div>' +
+          '</div>' +
+          '<div style="background:#f4f7f4; padding:10px; border-radius:10px;">' +
+            '<div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">ÂNGULO DE FASE</div>' +
+            '<div style="font-size:1.2rem; font-weight:800; color:#854d0e;">' + (atual.anguloFase ? atual.anguloFase + '°' : '--') + '</div>' +
+          '</div>' +
+          '<div style="background:#f4f7f4; padding:10px; border-radius:10px;">' +
+            '<div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">RELAÇÃO AEC/ACT</div>' +
+            '<div style="font-size:1.2rem; font-weight:800; color:#475544;">' + (atual.relacaoAgua || '--') + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // Lista detalhada com tabela
+  historicoBox.innerHTML =
+    '<div class="table-responsive">' +
+      '<table>' +
+        '<thead>' +
+          '<tr>' +
+            '<th>Data</th>' +
+            '<th>Aparelho</th>' +
+            '<th>Peso (kg)</th>' +
+            '<th>BF %</th>' +
+            '<th>MME (kg)</th>' +
+            '<th>Massa Magra</th>' +
+            '<th>Gordura Visc.</th>' +
+            '<th>Ângulo Fase</th>' +
+            '<th>AEC/ACT</th>' +
+            '<th>TMB (kcal)</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody>' +
+          bios.map(function(b) {
+            return '<tr>' +
+              '<td><strong>' + b.data + '</strong></td>' +
+              '<td>' + b.aparelho + '</td>' +
+              '<td>' + b.peso + ' kg</td>' +
+              '<td><span style="color:#1d4ed8; font-weight:700;">' + (b.bf ? b.bf + '%' : '--') + '</span></td>' +
+              '<td><span style="color:#15803d; font-weight:700;">' + (b.mme ? b.mme + ' kg' : '--') + '</span></td>' +
+              '<td>' + (b.massaMagra ? b.massaMagra + ' kg' : '--') + '</td>' +
+              '<td>Nível ' + (b.visceral || '--') + '</td>' +
+              '<td>' + (b.anguloFase ? b.anguloFase + '°' : '--') + '</td>' +
+              '<td>' + (b.relacaoAgua || '--') + '</td>' +
+              '<td>' + (b.tmb ? b.tmb + ' kcal' : '--') + '</td>' +
+            '</tr>';
+          }).join('') +
+        '</tbody>' +
+      '</table>' +
+    '</div>';
+}
+window.renderizarModuloBioimpedancia = renderizarModuloBioimpedancia;
+
 function renderizarModuloAntropometria() {
   var painel = document.getElementById('painelComparativoAntropo');
   var historico = document.getElementById('historicoAntropometria');
@@ -2058,26 +2609,55 @@ function lancarGenericoAba(abaId) {
   }
 }
 
-// --- EVOLUÇÃO E IALEVEH ---
 function abrirModalEvolucao() {
-  if (!temPermissao('evolucoes', 'adicionar')) {
-    alert("Acesso Negado: Você não tem permissão para lançar evoluções clínicas.");
-    return;
+  if (!pacienteAtivo) return;
+  var sub = document.getElementById('modalEvolucaoSubinfo');
+  if (sub) sub.innerText = "Paciente: " + pacienteAtivo.nome + " (" + pacienteAtivo.prontuario + ")";
+  
+  var txt = document.getElementById('modalTextoEvolucao');
+  if (txt) txt.value = "";
+
+  var status = document.getElementById('statusGravacaoIA');
+  if (status) {
+    status.innerText = "Pronto para escutar";
+    status.style.color = "var(--text-muted)";
   }
 
-  var m = document.getElementById('modalEvolucao');
-  if (!m) return;
-  if (pacienteAtivo) {
-    document.getElementById('modalEvolucaoSubinfo').innerText = "Paciente: " + pacienteAtivo.nome + " (" + pacienteAtivo.prontuario + ")";
+  var btn = document.getElementById('btnGravarIA');
+  var lbl = document.getElementById('labelBtnGravarIA');
+  if (btn) btn.classList.remove('gravando');
+  if (lbl) lbl.innerText = "Assistente IA: Gravar Fala";
+
+  var preview = document.getElementById('previewTranscricaoAoVivo');
+  if (preview) {
+    preview.style.display = "none";
+    preview.innerText = "";
   }
-  document.getElementById('modalTextoEvolucao').value = "";
-  m.style.display = "flex";
+
+  // Exibe a configuração da IA apenas se o perfil autenticado for Administrador
+  var configAdmBox = document.getElementById('painelConfigIAAdm');
+  if (configAdmBox) {
+    if (typeof usuarioLogado !== 'undefined' && usuarioLogado && usuarioLogado.perfil === 'Administrador') {
+      configAdmBox.style.display = 'inline-flex';
+    } else {
+      configAdmBox.style.display = 'none';
+    }
+  }
+
+  var modal = document.getElementById('modalEvolucao');
+  if (modal) modal.style.display = 'flex';
 }
+window.abrirModalEvolucao = abrirModalEvolucao;
 
 function fecharModalEvolucao() {
-  var m = document.getElementById('modalEvolucao');
-  if (m) m.style.display = "none";
+  // Evita Uncaught ReferenceError cancelando de forma segura
+  if (typeof gravandoAtivo !== 'undefined' && gravandoAtivo) {
+    pararGravacaoEvolucao(false);
+  }
+  var modal = document.getElementById('modalEvolucao');
+  if (modal) modal.style.display = 'none';
 }
+window.fecharModalEvolucao = fecharModalEvolucao;
 
 function alternarGravacaoIA() {
   var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -2410,6 +2990,130 @@ function classificarResultadoExame(valor, min, max) {
     };
   }
 }
+
+// ==========================================================
+// FUNÇÕES DE ABERTURA E FECHAMENTO DO MODAL DE EVOLUÇÃO
+// ==========================================================
+
+function abrirModalEvolucao() {
+  if (!pacienteAtivo) {
+    alert("Selecione um paciente antes de abrir a evolução.");
+    return;
+  }
+
+  // Preenche o cabeçalho do modal com os dados do paciente ativo
+  var sub = document.getElementById('modalEvolucaoSubinfo');
+  if (sub) {
+    sub.innerText = "Paciente: " + pacienteAtivo.nome + " (" + pacienteAtivo.prontuario + ")";
+  }
+
+  // Limpa o campo de texto
+  var txt = document.getElementById('modalTextoEvolucao');
+  if (txt) {
+    txt.value = "";
+  }
+
+  // Reseta o status de gravação
+  var status = document.getElementById('statusGravacaoIA');
+  if (status) {
+    status.innerText = "Pronto para escutar";
+    status.style.color = "var(--text-muted)";
+  }
+
+  // Reseta o visual do botão do assistente IA
+  var btn = document.getElementById('btnGravarIA');
+  var lbl = document.getElementById('labelBtnGravarIA');
+  if (btn) btn.classList.remove('gravando');
+  if (lbl) lbl.innerText = "Assistente IA: Gravar Fala";
+
+  var preview = document.getElementById('previewTranscricaoAoVivo');
+  if (preview) {
+    preview.style.display = "none";
+    preview.innerText = "";
+  }
+
+  // Exibe a configuração da IA apenas se o perfil autenticado for Administrador
+  var configAdmBox = document.getElementById('painelConfigIAAdm');
+  if (configAdmBox) {
+    if (typeof usuarioLogado !== 'undefined' && usuarioLogado && usuarioLogado.perfil === 'Administrador') {
+      configAdmBox.style.display = 'inline-flex';
+    } else {
+      configAdmBox.style.display = 'none';
+    }
+  }
+
+  // Abre a janela na frente da tela
+  var modal = document.getElementById('modalEvolucao');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+window.abrirModalEvolucao = abrirModalEvolucao;
+
+function fecharModalEvolucao() {
+  // Encerra imediatamente qualquer gravação de voz ativa sem travar o console
+  if (typeof gravandoAtivo !== 'undefined' && gravandoAtivo) {
+    pararGravacaoEvolucao(false);
+  }
+
+  var modal = document.getElementById('modalEvolucao');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+window.fecharModalEvolucao = fecharModalEvolucao;
+
+// --- LEITURA E RENDERIZAÇÃO DE EVOLUÇÕES CLÍNICAS ---
+
+function abrirModalLeituraEvolucao(id) {
+  if (!pacienteAtivo || !pacienteAtivo.evolucoes) return;
+  var ev = pacienteAtivo.evolucoes.find(function(item) { return item.id === id; });
+  if (!ev) return;
+
+  var subinfo = document.getElementById('modalLeituraSubinfo');
+  var conteudo = document.getElementById('modalLeituraTextoCompleto');
+
+  if (subinfo) {
+    subinfo.innerText = ev.autor + " — " + ev.cargo + " | 📅 " + ev.dataHora;
+  }
+  if (conteudo) {
+    conteudo.innerText = ev.texto;
+  }
+
+  var modal = document.getElementById('modalLeituraEvolucao');
+  if (modal) modal.style.display = 'flex';
+}
+window.abrirModalLeituraEvolucao = abrirModalLeituraEvolucao;
+
+function fecharModalLeituraEvolucao() {
+  var modal = document.getElementById('modalLeituraEvolucao');
+  if (modal) modal.style.display = 'none';
+}
+window.fecharModalLeituraEvolucao = fecharModalLeituraEvolucao;
+
+function renderizarEvolucoes() {
+  var box = document.getElementById('historicoEvolucoes');
+  if (!box) return;
+  if (!pacienteAtivo || !pacienteAtivo.evolucoes || pacienteAtivo.evolucoes.length === 0) {
+    box.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); padding:14px; background:#fafcfa; border-radius:8px; border:1px dashed var(--border);">Nenhuma anotação registrada.</div>';
+    return;
+  }
+
+  box.innerHTML = pacienteAtivo.evolucoes.map(function(ev) {
+    var textoCompleto = ev.texto || '';
+    return '<div class="evolucao-card" id="evolucao-card-' + ev.id + '">' +
+      '<div class="evolucao-header">' +
+        '<div><span class="evolucao-autor">' + ev.autor + '</span> <span class="evolucao-cargo">— ' + ev.cargo + '</span></div>' +
+        '<div style="display:flex; align-items:center; gap:8px;">' +
+          '<span class="evolucao-datahora">📅 ' + ev.dataHora + '</span>' +
+          '<button class="btn-ler-evolucao" type="button" onclick="abrirModalLeituraEvolucao(' + ev.id + ')">📖 Ler Evolução</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="evolucao-resumo-uma-linha">' + textoCompleto + '</div>' +
+    '</div>';
+  }).join('');
+}
+window.renderizarEvolucoes = renderizarEvolucoes;
 
 function renderizarPainelComparativoExames() {
   var container = document.getElementById('containerTabelaComparativaExames');
