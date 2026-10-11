@@ -9,7 +9,7 @@
   --text-main: #19201d;
   --text-muted: #62726b;
   --border: #e2e8e5;
-  --sidebar-w-collapsed: 72px;
+  --sidebar-w-collapsed: 84px;
   --sidebar-w-expanded: 240px;
 }
 
@@ -29,12 +29,12 @@ body {
   overflow-x: hidden;
 }
 
-/* Sidebar */
+/* Sidebar com 84px na versão recolhida */
 aside.sidebar {
   width: var(--sidebar-w-collapsed);
   background-color: var(--primary);
   color: #fff;
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -60,37 +60,27 @@ aside.sidebar:hover {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.brand-wrapper {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
-aside.sidebar.expanded .brand-wrapper,
-aside.sidebar:hover .brand-wrapper {
-  opacity: 1;
-  pointer-events: auto;
-}
-
 .brand-title {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+  text-align: center;
 }
 
 .toggle-btn {
   background: transparent;
   border: none;
-  color: #fff;
-  font-size: 1.3rem;
+  color: #ffffff;
+  font-size: 1.25rem;
   cursor: pointer;
-  padding: 8px;
+  padding: 6px;
   border-radius: 6px;
 }
 
 .nav-list {
   list-style: none;
-  padding: 12px 8px;
+  padding: 14px 10px;
   flex: 1;
 }
 
@@ -104,18 +94,17 @@ aside.sidebar:hover .brand-wrapper {
   border-radius: 8px;
   margin-bottom: 4px;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 500;
-  transition: background 0.18s ease;
+  transition: background 0.16s ease;
 }
 
 .nav-item:hover, .nav-item.active {
-  background-color: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
 }
 
 .nav-item.active {
-  background-color: rgba(255, 255, 255, 0.16);
   border-left: 3px solid #85d69e;
 }
 
@@ -136,10 +125,10 @@ aside.sidebar:hover .nav-text {
   opacity: 1;
 }
 
-/* Área Central - Sem Scrollbars Desnecessárias */
+/* Área Central */
 main.main-content {
   flex: 1;
-  padding: 24px 32px;
+  padding: 20px 28px;
   max-width: 100%;
 }
 
@@ -147,13 +136,13 @@ main.main-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .topbar-title {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 700;
 }
 
@@ -161,8 +150,8 @@ main.main-content {
   background: #fdf3d8;
   color: #8c630f;
   border: 1px solid #ebd9a2;
-  font-size: 0.8rem;
-  padding: 6px 14px;
+  font-size: 0.78rem;
+  padding: 5px 12px;
   border-radius: 20px;
   font-weight: 600;
 }
@@ -171,8 +160,8 @@ main.main-content {
   background: var(--surface);
   border-radius: 12px;
   border: 1px solid var(--border);
-  padding: 24px;
-  margin-bottom: 24px;
+  padding: 22px;
+  margin-bottom: 20px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
 
@@ -180,8 +169,8 @@ main.main-content {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 9px 16px;
+  gap: 6px;
+  padding: 8px 16px;
   border-radius: 8px;
   font-size: 0.86rem;
   font-weight: 600;
@@ -209,117 +198,118 @@ main.main-content {
   background: #f1f4f2;
 }
 
-/* ÍCONES DISCRETOS, MENORES (34px) E SEM ROLAGEM */
-.nav-round-tabs {
+/* Topbar com dados do paciente */
+.paciente-header-topbar {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-bottom: 14px;
-  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.paciente-header-nome {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.paciente-header-badge {
+  background: #f0f4f2;
+  color: var(--primary);
+  border: 1px solid var(--border);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.btn-expandir-ficha {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-expandir-ficha:hover {
+  background: #f1f4f2;
+}
+
+.ficha-expansivel-paciente {
+  display: none;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+
+.ficha-expansivel-paciente.ativa {
+  display: block;
+}
+
+.ficha-grid-dados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+.ficha-dado-item strong {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+/* Cabeçalho de módulo */
+.tab-module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
 
-.round-tab-item {
-  position: relative;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 1.5px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  flex-shrink: 0;
-}
-
-.round-tab-item .tab-icon {
-  font-size: 0.95rem;
-}
-
-.round-tab-item:hover {
-  border-color: var(--primary);
-  transform: translateY(-1px);
-}
-
-.round-tab-item.active {
-  background: var(--primary);
-  border-color: var(--primary);
-}
-
-.round-tab-item.active .tab-icon {
-  filter: brightness(0) invert(1);
-}
-
-/* Botão + Inteligente */
-.round-tab-add {
-  background: #f4f8f5;
-  border-color: #cde2d3;
-  color: var(--primary);
+.tab-module-title {
+  font-size: 0.92rem;
   font-weight: 700;
-  font-size: 1.15rem;
-  margin-left: 4px;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.round-tab-add:hover {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-
-/* Tooltip */
-.round-tab-item::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: -28px;
-  left: 50%;
-  transform: translateX(-50%) translateY(3px);
-  background: rgba(15, 23, 20, 0.92);
-  color: #fff;
-  font-size: 0.72rem;
-  padding: 3px 8px;
-  border-radius: 5px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s ease;
-  z-index: 100;
-  font-weight: 500;
-}
-
-.round-tab-item:hover::after {
-  opacity: 1;
-}
-
-/* Evolução Compacta / Expansível */
+/* Card de Evolução com 'Ler Evolução' */
 .evolucao-card {
   background: #ffffff;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
+  border-left: 4px solid var(--accent);
   border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
-  transition: all 0.2s ease;
+  padding: 12px 16px;
+  margin-bottom: 12px;
 }
 
 .evolucao-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  cursor: pointer;
-  user-select: none;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .evolucao-autor {
-  font-size: 0.84rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--primary);
 }
 
 .evolucao-cargo {
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   font-weight: 500;
   color: var(--text-muted);
   margin-left: 6px;
@@ -331,35 +321,145 @@ main.main-content {
   color: var(--text-muted);
 }
 
-.btn-toggle-exp {
-  background: transparent;
-  border: none;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+.btn-ler-evolucao {
+  background: #f4f8f5;
+  border: 1px solid #cde2d3;
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
+  transition: all 0.16s ease;
 }
 
-.btn-toggle-exp:hover {
-  background: #f1f4f2;
+.btn-ler-evolucao:hover {
+  background: var(--primary);
+  color: #fff;
 }
 
-.evolucao-texto {
+.evolucao-resumo-uma-linha {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;
+}
+
+.evolucao-texto-completo {
   font-size: 0.9rem;
   color: var(--text-main);
-  line-height: 1.5;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word !important;
   overflow-wrap: anywhere !important;
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px dashed var(--border);
   display: none;
 }
 
-.evolucao-card.aberta .evolucao-texto {
+.evolucao-card.aberta .evolucao-resumo-uma-linha {
+  display: none;
+}
+
+.evolucao-card.aberta .evolucao-texto-completo {
   display: block;
+}
+
+/* Grid Dinâmico de Prescrição Médica */
+.linha-item-prescricao {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+  background: #fcfdfc;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.btn-remove-linha {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+/* Card de Checagem de Enfermagem */
+.item-checagem-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.item-checagem-card.checado {
+  border-left-color: #15803d;
+  background: #f9fdfa;
+}
+
+.item-checagem-info strong {
+  font-size: 0.92rem;
+  color: var(--text-main);
+  display: block;
+}
+
+.item-checagem-info span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.status-badge-checagem {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.status-pendente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-executado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.btn-checar {
+  background: #2e6f40;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+.btn-checar:hover {
+  background: #1e382b;
+}
+
+.btn-checar:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
 }
 
 /* Modais */
@@ -389,12 +489,16 @@ main.main-content {
   box-shadow: 0 16px 36px rgba(0,0,0,0.2);
 }
 
-.login-box {
-  background: #fff;
-  border-radius: 14px;
-  padding: 32px 28px;
-  width: 100%;
-  max-width: 380px;
+#modalEvolucao .modal-box {
+  max-width: 960px !important;
+  width: 92vw !important;
+  padding: 30px !important;
+}
+
+#modalTextoEvolucao {
+  min-height: 260px !important;
+  font-size: 0.95rem !important;
+  line-height: 1.6 !important;
 }
 
 .modal-header {
@@ -448,6 +552,32 @@ main.main-content {
   border-color: var(--accent);
 }
 
+.ia-mic-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.btn-ialeveh {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(135deg, #163023 0%, #205c36 50%, #2e7d4a 100%);
+  color: #ffffff;
+  border: 1px solid #3fa466;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-ialeveh.gravando {
+  background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%) !important;
+  border-color: #f87171 !important;
+}
+
 .table-responsive {
   width: 100%;
   overflow-x: auto;
@@ -490,199 +620,79 @@ th {
     transform: translateX(-100%);
     width: var(--sidebar-w-expanded);
   }
-
-  aside.sidebar.mobile-open {
+  aside.sidebar.expanded {
     transform: translateX(0);
   }
-
   .mobile-nav-btn {
     display: inline-block;
   }
-
   main.main-content {
-    padding: 16px;
+    padding: 14px;
   }
-
   .form-grid {
     grid-template-columns: 1fr;
   }
-
   .col-2, .col-3 {
     grid-column: span 1;
   }
 }
 
-/* Botão de Gravação com IA */
-.btn-gravacao-ia {
-  position: relative;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 1.5px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  margin-left: 6px;
-  color: #a11414;
+/* Folha de Impressão Timbrada para Fiscalização ANVISA */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #view-estoque, #view-estoque * {
+    visibility: visible;
+  }
+  #view-estoque {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  aside.sidebar, .topbar, .btn {
+    display: none !important;
+  }
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  th, td {
+    font-size: 8pt !important;
+    padding: 4px 6px !important;
+  }
 }
 
-.btn-gravacao-ia:hover {
-  border-color: #a11414;
-  background: #fff5f5;
-  transform: translateY(-1px);
-}
-
-.btn-gravacao-ia.gravando {
-  background: #d93838;
-  border-color: #d93838;
-  color: #ffffff;
-  animation: pulse-gravacao 1.4s infinite;
-}
-
-@keyframes pulse-gravacao {
-  0% { box-shadow: 0 0 0 0 rgba(217, 56, 56, 0.5); }
-  70% { box-shadow: 0 0 0 10px rgba(217, 56, 56, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(217, 56, 56, 0); }
-}
-
-.btn-gravacao-ia::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: -28px;
-  left: 50%;
-  transform: translateX(-50%) translateY(3px);
-  background: rgba(15, 23, 20, 0.92);
-  color: #fff;
-  font-size: 0.72rem;
-  padding: 3px 8px;
-  border-radius: 5px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s ease;
-  z-index: 100;
-  font-weight: 500;
-}
-
-.btn-gravacao-ia:hover::after {
-  opacity: 1;
-}
-
-/* Indicador de Processamento IA */
-.ia-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  background: #eef5f1;
-  color: var(--primary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-left: 8px;
-}
-
-/* Botão Copiloto IA dentro da janela de Evolução */
-.ia-mic-wrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.btn-ia-copilot {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: linear-gradient(135deg, #1e382b 0%, #2e6f40 100%);
-  color: #ffffff;
-  border: 1px solid #3d8c54;
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(46, 111, 64, 0.2);
-  transition: all 0.2s ease;
-}
-
-.btn-ia-copilot:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(46, 111, 64, 0.35);
-  background: linear-gradient(135deg, #254435 0%, #36824c 100%);
-}
-
-.btn-ia-copilot.gravando {
-  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
-  border-color: #ef4444;
-  animation: pulse-ia-recording 1.3s infinite;
-}
-
-@keyframes pulse-ia-recording {
-  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6); }
-  70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
-}
-
-.badge-ia-sparkle {
-  display: inline-block;
-  font-size: 0.9rem;
-}
-
-/* Modal de Evolução Mais Expandido */
-#modalEvolucao .modal-box {
-  max-width: 960px !important;
-  width: 92vw !important;
-  padding: 32px !important;
-  border-radius: 16px !important;
-}
-
-#modalTextoEvolucao {
-  min-height: 280px !important;
-  font-size: 0.95rem !important;
-  line-height: 1.6 !important;
-}
-
-/* Identidade Visual IALEVEH */
-.btn-ialeveh {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: linear-gradient(135deg, #163023 0%, #205c36 50%, #2e7d4a 100%);
-  color: #ffffff;
-  border: 1px solid #3fa466;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(32, 92, 54, 0.25);
-  transition: all 0.2s ease;
-}
-
-.btn-ialeveh:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(46, 125, 74, 0.4);
-  background: linear-gradient(135deg, #1c3c2c 0%, #276c40 50%, #379559 100%);
-}
-
-.btn-ialeveh.gravando {
-  background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%) !important;
-  border-color: #f87171 !important;
-  animation: pulse-ialeveh 1.3s infinite;
-}
-
-@keyframes pulse-ialeveh {
-  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6); }
-  70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
-}
-
-.badge-ialeveh-sparkle {
-  font-size: 0.95rem;
+/* Folha de Impressão Timbrada para Fiscalização ANVISA */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #view-estoque, #view-estoque * {
+    visibility: visible;
+  }
+  #view-estoque {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  aside.sidebar, .topbar, .btn {
+    display: none !important;
+  }
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  th, td {
+    font-size: 8pt !important;
+    padding: 4px 6px !important;
+  }
 }

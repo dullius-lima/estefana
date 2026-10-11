@@ -8,66 +8,108 @@
 </head>
 <body>
 
-  <!-- Tela de Login -->
+  <!-- Tela de Login Limpa (Apenas Email e Senha) -->
   <div class="login-overlay" id="loginModal">
     <div class="login-box">
       <div style="text-align: center; margin-bottom: 20px;">
         <h2 style="font-size: 1.5rem; color: var(--primary); font-weight: 700;">LEVEH</h2>
-        <p style="font-size: 0.8rem; color: var(--text-muted);">Acesso Restrito — Diretoria Clínica</p>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">Acesso Clínico Integrado</p>
       </div>
       <form id="formLogin" onsubmit="realizarLogin(event)">
         <div class="form-group">
           <label>E-mail</label>
-          <input type="email" id="loginEmail" class="form-control" value="admin@leveh.com.br" required>
+          <input type="email" id="loginEmail" class="form-control" value="admin@leveh.com.br" required placeholder="email@leveh.com.br">
         </div>
         <div class="form-group">
           <label>Senha</label>
-          <input type="password" id="loginSenha" class="form-control" value="admin123" required>
+          <input type="password" id="loginSenha" class="form-control" value="admin123" required placeholder="••••••••">
         </div>
+        <div id="loginFeedback" style="font-size:0.78rem; color:#b91c1c; margin-bottom:8px; display:none;"></div>
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 6px;">Acessar Sistema</button>
       </form>
     </div>
   </div>
 
-  <!-- Modal Nova Evolução Clínica (Com IALEVEH e Layout Expandido) -->
-  <div class="modal-overlay" id="modalEvolucao" style="display: none;">
-    <div class="modal-box">
+  <!-- Modal Alterar Senha do Próprio Usuário Logado -->
+  <div class="modal-overlay" id="modalTrocarMinhaSenha" style="display: none;">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <h2 style="font-size: 1.2rem; font-weight: 700;">Alterar Minha Senha</h2>
+        <button class="btn-close" type="button" onclick="fecharModalTrocarMinhaSenha()">✕</button>
+      </div>
+      <form onsubmit="salvarMinhaSenha(event)">
+        <div class="form-group">
+          <label>Senha Atual</label>
+          <input type="password" id="senhaAtualUser" class="form-control" required placeholder="Digite sua senha atual">
+        </div>
+        <div class="form-group">
+          <label>Nova Senha</label>
+          <input type="password" id="novaSenhaUser" class="form-control" required placeholder="Nova senha">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalTrocarMinhaSenha()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Nova Senha</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Cadastrar Funcionário com Funções Hospitalares Pré-Programadas -->
+  <div class="modal-overlay" id="modalColaborador" style="display: none;">
+    <div class="modal-box" style="max-width: 680px;">
       <div class="modal-header">
         <div>
-          <h2 style="font-size: 1.45rem; font-weight: 700;">Nova Evolução Clínica</h2>
-          <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 2px;" id="modalEvolucaoSubinfo">Paciente: --</p>
+          <h2 style="font-size: 1.25rem; font-weight: 700;" id="modalColabTitulo">Cadastrar Funcionário</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Perfil pré-programado com alçada hospitalar</p>
         </div>
-        <button class="btn-close" onclick="fecharModalEvolucao()">✕</button>
+        <button class="btn-close" type="button" onclick="fecharModalColaborador()">✕</button>
       </div>
-      <form id="formEvolucao" onsubmit="salvarEvolucaoComMemoria(event)">
-        
-        <!-- Barra de Ação IALEVEH -->
-        <div class="ia-mic-wrapper">
-          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
-            Registro Clínico / Anamnese / Conduta *
-          </label>
-          <button type="button" class="btn-ialeveh" id="btnCopilotoIA" onclick="alternarGravacaoIA()">
-            <span class="badge-ialeveh-sparkle" id="iconeCopilotoIA">✨</span>
-            <span id="labelCopilotoIA">IALEVEH (Gravar & Estruturar)</span>
-          </button>
-        </div>
-
-        <div class="form-group">
-          <textarea id="modalTextoEvolucao" class="form-control" rows="11" placeholder="Descreva os apontamentos clínicos, ou clique no IALEVEH para ditar a consulta em tempo real..." required></textarea>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
-          <div style="font-size: 0.8rem; color: var(--text-muted);">
-            Responsável: <strong style="color: var(--primary);">Dra. Estéfana Andrade — Nutricionista Clínica (CRN-3 10842)</strong>
+      <form id="formColaborador" onsubmit="salvarColaborador(event)">
+        <input type="hidden" id="colabId">
+        <div class="form-grid">
+          <div class="form-group col-2">
+            <label>Nome Completo do Funcionário *</label>
+            <input type="text" id="colabNome" class="form-control" placeholder="Ex: Dr. Roberto Costa" required>
           </div>
-          <span style="font-size: 0.76rem; color: var(--accent); font-weight: 600;" id="statusMemoriaIA">
-            🧠 Memória IALEVEH Ativa
-          </span>
+          <div class="form-group">
+            <label>Função Hospitalar Pré-Programada *</label>
+            <select id="colabPerfil" class="form-control" required onchange="aoMudarFuncaoHospitalar()">
+              <option value="Medico">Médico Assistencial / Prescritor (CRM)</option>
+              <option value="Enfermeiro">Enfermeiro Assistencial (COREN)</option>
+              <option value="TecnicoEnfermagem">Técnico de Enfermagem (COREN)</option>
+              <option value="Farmaceutico">Farmacêutico Clínico (CRF)</option>
+              <option value="Nutricionista">Nutricionista Clínico (CRN)</option>
+              <option value="Fisioterapeuta">Fisioterapeuta (CREFITO)</option>
+              <option value="Recepcao">Recepção / Atendimento</option>
+              <option value="Administrador">Administrador Geral</option>
+            </select>
+          </div>
+          <div class="form-group col-2">
+            <label>E-mail de Login *</label>
+            <input type="email" id="colabEmail" class="form-control" placeholder="colaborador@leveh.com.br" required>
+          </div>
+          <div class="form-group">
+            <label>Registro de Classe *</label>
+            <input type="text" id="colabRegistro" class="form-control" placeholder="Ex: CRM-MS 9421" required>
+          </div>
+          <div class="form-group col-2">
+            <label>Senha Inicial de Acesso *</label>
+            <input type="password" id="colabSenha" class="form-control" placeholder="Definir senha inicial" required>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="colabStatus" class="form-control">
+              <option value="Ativo">Ativo</option>
+              <option value="Inativo">Inativo</option>
+            </select>
+          </div>
+          <div class="form-group col-3" style="background:#f4f7f5; padding:10px; border-radius:6px; font-size:0.8rem; color:#2c4035;" id="infoEscopoFuncao">
+            <strong>Escopo da Função:</strong> Emissão de prescrições médicas, checagem e evolução clínica.
+          </div>
         </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-          <button type="button" class="btn btn-outline" onclick="fecharModalEvolucao()">Fechar</button>
-          <button type="submit" class="btn btn-primary" id="btnSalvarEvolucao">Salvar no Histórico</button>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalColaborador()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnSalvarColab">Salvar Funcionário</button>
         </div>
       </form>
     </div>
@@ -78,15 +120,14 @@
     <div class="modal-box">
       <div class="modal-header">
         <h2 id="modalPacienteTitulo">Cadastrar Paciente</h2>
-        <button class="btn-close" onclick="fecharModalPaciente()">✕</button>
+        <button class="btn-close" type="button" onclick="fecharModalPaciente()">✕</button>
       </div>
-      
       <form id="formPaciente" onsubmit="salvarPaciente(event)">
         <input type="hidden" id="pacienteId">
         <div class="form-grid">
           <div class="form-group col-2">
             <label>Nome Completo *</label>
-            <input type="text" id="pacNome" class="form-control" required placeholder="Ex: Maria Eduarda Silva">
+            <input type="text" id="pacNome" class="form-control" required placeholder="Ex: Mariana Souza">
           </div>
           <div class="form-group">
             <label>CPF *</label>
@@ -133,14 +174,14 @@
           </div>
           <div class="form-group col-3">
             <label style="color: #a11414;">Alergias & Intolerâncias Alimentares</label>
-            <input type="text" id="pacAlergias" class="form-control" placeholder="Ex: Glúten, Lactose...">
+            <input type="text" id="pacAlergias" class="form-control" placeholder="Ex: Glúten, Lactose, Penicilina...">
           </div>
           <div class="form-group col-3">
             <label>Comorbidades / Condições Clínicas</label>
             <input type="text" id="pacCondicoes" class="form-control" placeholder="Ex: Diabetes Tipo 2, Hipertensão...">
           </div>
           <div class="form-group col-3">
-            <label>Observações Iniciais</label>
+            <label>Observações Clínicas Iniciais</label>
             <textarea id="pacObs" class="form-control" rows="2"></textarea>
           </div>
         </div>
@@ -152,47 +193,275 @@
     </div>
   </div>
 
+  <!-- Modal Nova Evolução (IALEVEH) -->
+  <div class="modal-overlay" id="modalEvolucao" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 1.45rem; font-weight: 700;">Nova Evolução Clínica</h2>
+          <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 2px;" id="modalEvolucaoSubinfo">Paciente: --</p>
+        </div>
+        <button class="btn-close" type="button" onclick="fecharModalEvolucao()">✕</button>
+      </div>
+      <form id="formEvolucao" onsubmit="salvarEvolucaoComMemoria(event)">
+        <div class="ia-mic-wrapper">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+            Registro Clínico / Anamnese / Conduta *
+          </label>
+          <button type="button" class="btn-ialeveh" id="btnCopilotoIA" onclick="alternarGravacaoIA()">
+            <span class="badge-ialeveh-sparkle" id="iconeCopilotoIA">✨</span>
+            <span id="labelCopilotoIA">IALEVEH (Gravar & Estruturar)</span>
+          </button>
+        </div>
+        <div class="form-group">
+          <textarea id="modalTextoEvolucao" class="form-control" rows="10" placeholder="Descreva os apontamentos clínicos..." required></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalEvolucao()">Fechar</button>
+          <button type="submit" class="btn btn-primary">Salvar no Histórico</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Prescrição Médica -->
+  <div class="modal-overlay" id="modalPrescricao" style="display: none;">
+    <div class="modal-box" style="max-width: 900px;">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 700;">Nova Prescrição Médica</h2>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;" id="modalPrescricaoSubinfo">Paciente: --</p>
+        </div>
+        <button class="btn-close" type="button" onclick="fecharModalPrescricao()">✕</button>
+      </div>
+      <form id="formPrescricao" onsubmit="salvarPrescricaoMedicaModal(event)">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">
+            Itens Clínicos / Medicamentos
+          </span>
+          <button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem;" onclick="adicionarLinhaPrescricao()">+ Adicionar Item</button>
+        </div>
+        <div id="containerItensPrescricao" style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;"></div>
+        <div class="form-group">
+          <label>Orientações Gerais / Observações da Prescrição</label>
+          <textarea id="prescricaoObsGerais" class="form-control" rows="2" placeholder="Ex: Manter repouso relativo..."></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalPrescricao()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Assinar & Emitir Prescrição</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Checagem de Enfermagem -->
+  <div class="modal-overlay" id="modalConfirmacaoChecagem" style="display: none;">
+    <div class="modal-box" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 700;">Confirmar Administração & Baixa</h2>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;" id="checagemModalSubinfo">Item: --</p>
+        </div>
+        <button class="btn-close" type="button" onclick="fecharModalChecagem()">✕</button>
+      </div>
+      <form id="formConfirmarChecagem" onsubmit="salvarChecagemComBaixaEstoque(event)">
+        <input type="hidden" id="checagemPrescId">
+        <input type="hidden" id="checagemItemId">
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Insumos gastos:</label>
+          <div id="listaInsumosParaBaixa" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"></div>
+          <button type="button" class="btn btn-outline" style="margin-top: 8px; font-size: 0.78rem; padding: 4px 10px;" onclick="adicionarInsumoExtraChecagem()">+ Incluir Insumo Extra</button>
+        </div>
+        <div class="form-group">
+          <label>Observação / Intercorrência</label>
+          <input type="text" id="checagemObservacao" class="form-control" placeholder="Sem intercorrências.">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalChecagem()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Confirmar Checagem</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Procedimento Avulso -->
+  <div class="modal-overlay" id="modalProcedimentoAvulso" style="display: none;">
+    <div class="modal-box" style="max-width: 720px;">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 1.3rem; font-weight: 700;">Lançar Procedimento Clínico</h2>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;" id="modalProcedimentoSubinfo">Paciente: --</p>
+        </div>
+        <button class="btn-close" type="button" onclick="fecharModalProcedimentoAvulso()">✕</button>
+      </div>
+      <form id="formProcedimentoAvulso" onsubmit="salvarProcedimentoAvulsoModal(event)">
+        <div class="form-group">
+          <label>Descrição do Procedimento Realizado *</label>
+          <input type="text" id="procDescricao" class="form-control" placeholder="Ex: Curativo em ferida operatória / Acesso Venoso" required>
+        </div>
+        <div style="margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Insumos Utilizados (Baixa de Estoque)</label>
+            <button type="button" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem;" onclick="adicionarInsumoProcedimentoAvulso()">+ Insumo</button>
+          </div>
+          <div id="listaInsumosProcAvulso" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+        <div class="form-group">
+          <label>Observações Clínicas do Procedimento</label>
+          <textarea id="procObservacoes" class="form-control" rows="2" placeholder="Observações técnicas..."></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalProcedimentoAvulso()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Gravar Procedimento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Cadastro de Produto -->
+  <div class="modal-overlay" id="modalProdutoSanitario" style="display: none;">
+    <div class="modal-box" style="max-width: 820px;">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 1.3rem; font-weight: 700;" id="modalProdutoTitulo">Cadastrar Produto / Insumo</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Rastreabilidade de lote, validade e controle de armazenamento</p>
+        </div>
+        <button class="btn-close" type="button" onclick="fecharModalProdutoSanitario()">✕</button>
+      </div>
+      <form id="formProdutoSanitario" onsubmit="salvarProdutoSanitario(event)">
+        <input type="hidden" id="prodEditIndex" value="">
+        <div class="form-grid">
+          <div class="form-group col-2">
+            <label>Nome Comercial *</label>
+            <input type="text" id="prodNome" class="form-control" required placeholder="Ex: Dipirona Monoidratada">
+          </div>
+          <div class="form-group">
+            <label>Princípio Ativo (DCI) *</label>
+            <input type="text" id="prodPrincipio" class="form-control" required placeholder="Ex: Dipirona Sódica">
+          </div>
+          <div class="form-group">
+            <label>Registro Sanitário / Notificação *</label>
+            <input type="text" id="prodRegistroSanitario" class="form-control" required placeholder="Ex: 1.0043.0123.001-2">
+          </div>
+          <div class="form-group">
+            <label>Número do Lote *</label>
+            <input type="text" id="prodLote" class="form-control" required placeholder="Ex: LOT-2026-B89">
+          </div>
+          <div class="form-group">
+            <label>Data de Validade *</label>
+            <input type="date" id="prodValidade" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Data de Fabricação</label>
+            <input type="date" id="prodFabricacao" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Fabricante / Detentor *</label>
+            <input type="text" id="prodFabricante" class="form-control" required placeholder="Ex: Eurofarma">
+          </div>
+          <div class="form-group">
+            <label>Categoria do Item</label>
+            <select id="prodCategoria" class="form-control">
+              <option value="Medicamentos">Medicamentos</option>
+              <option value="Soluções Parenterais">Soluções Parenterais</option>
+              <option value="Descartáveis / Correlatos">Descartáveis / Correlatos</option>
+              <option value="Dispositivos / Acessos">Dispositivos / Acessos</option>
+              <option value="Saneantes / Antissépticos">Saneantes / Antissépticos</option>
+              <option value="Suplementação / Nutracêuticos">Suplementação / Nutracêuticos</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Armazenamento / Temperatura</label>
+            <select id="prodArmazenamento" class="form-control">
+              <option value="Ambiente (15°C a 30°C)">Ambiente (15°C a 30°C)</option>
+              <option value="Refrigerado (2°C a 8°C)">Refrigerado (2°C a 8°C - Termolábil)</option>
+              <option value="Congelado (< -15°C)">Congelado (< -15°C)</option>
+              <option value="Local Seco e Arejado">Local Seco e Arejado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Quantidade *</label>
+            <input type="number" id="prodQtd" class="form-control" min="0" value="10" required>
+          </div>
+          <div class="form-group">
+            <label>Estoque Mínimo *</label>
+            <input type="number" id="prodMin" class="form-control" min="1" value="5" required>
+          </div>
+          <div class="form-group">
+            <label>Unidade</label>
+            <select id="prodUnidade" class="form-control">
+              <option value="Ampola">Ampola</option>
+              <option value="Frasco">Frasco</option>
+              <option value="Unidade">Unidade</option>
+              <option value="Caixa">Caixa</option>
+              <option value="Bolsa">Bolsa</option>
+              <option value="Pacote">Pacote</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalProdutoSanitario()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnSalvarProduto">Salvar no Estoque</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Barra Lateral -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <div class="brand-wrapper">
-        <div class="brand-title">LEVEH</div>
-      </div>
-      <button class="toggle-btn" onclick="toggleSidebar()" title="Expandir/Recolher">☰</button>
+      <div class="brand-title">LEVEH</div>
+      <button class="toggle-btn" type="button" onclick="toggleSidebar()" title="Expandir/Recolher">☰</button>
     </div>
 
-    <ul class="nav-list">
+    <ul class="nav-list" id="menuGeralSistema">
       <li class="nav-item active" id="nav-pacientes" onclick="navegarPara('pacientes')">
-        <span class="nav-icon">👥</span>
-        <span class="nav-text">Pacientes</span>
+        <span class="nav-icon">👥</span><span class="nav-text">Pacientes</span>
       </li>
       <li class="nav-item" id="nav-agenda" onclick="navegarPara('agenda')">
-        <span class="nav-icon">📅</span>
-        <span class="nav-text">Agenda</span>
-      </li>
-      <li class="nav-item" id="nav-taco" onclick="navegarPara('taco')">
-        <span class="nav-icon">🥗</span>
-        <span class="nav-text">Tabela TACO</span>
-      </li>
-      <li class="nav-item" id="nav-substituicao" onclick="navegarPara('substituicao')">
-        <span class="nav-icon">🔄</span>
-        <span class="nav-text">Substituições</span>
+        <span class="nav-icon">📅</span><span class="nav-text">Agenda</span>
       </li>
       <li class="nav-item" id="nav-estoque" onclick="navegarPara('estoque')">
-        <span class="nav-icon">📦</span>
-        <span class="nav-text">Estoque</span>
-      </li>
-      <li class="nav-item" id="nav-pop" onclick="navegarPara('pop')">
-        <span class="nav-icon">📋</span>
-        <span class="nav-text">POP</span>
+        <span class="nav-icon">📦</span><span class="nav-text">Estoque</span>
       </li>
       <li class="nav-item" id="nav-equipe" onclick="navegarPara('equipe')">
-        <span class="nav-icon">⚙️</span>
-        <span class="nav-text">Equipe</span>
+        <span class="nav-icon">🛡️</span><span class="nav-text">Equipe Hospitalar</span>
+      </li>
+      <li class="nav-item" id="nav-taco" onclick="navegarPara('taco')">
+        <span class="nav-icon">🥗</span><span class="nav-text">Tabela TACO</span>
+      </li>
+      <li class="nav-item" id="nav-substituicao" onclick="navegarPara('substituicao')">
+        <span class="nav-icon">🔄</span><span class="nav-text">Substituições</span>
+      </li>
+      <li class="nav-item" id="nav-pop" onclick="navegarPara('pop')">
+        <span class="nav-icon">📋</span><span class="nav-text">POP</span>
       </li>
       <li class="nav-item" style="color: #ff9b9b; margin-top: 24px;" onclick="sairDoSistema()">
-        <span class="nav-icon">🚪</span>
-        <span class="nav-text">Sair</span>
+        <span class="nav-icon">🚪</span><span class="nav-text">Sair</span>
+      </li>
+    </ul>
+
+    <ul class="nav-list" id="menuProntuarioPaciente" style="display: none;">
+      <li class="nav-item active" id="side-aba-evolucao" onclick="trocarAbaLateral('aba-evolucao')">
+        <span class="nav-icon">🩺</span><span class="nav-text">Evolução Clínica</span>
+      </li>
+      <li class="nav-item" id="side-aba-procedimentos" onclick="trocarAbaLateral('aba-procedimentos')">
+        <span class="nav-icon">💉</span><span class="nav-text">Procedimentos & Checagem</span>
+      </li>
+      <li class="nav-item" id="side-aba-prescricao-medica" onclick="trocarAbaLateral('aba-prescricao-medica')">
+        <span class="nav-icon">💊</span><span class="nav-text">Prescrição Médica</span>
+      </li>
+      <li class="nav-item" id="side-aba-antropometria" onclick="trocarAbaLateral('aba-antropometria')">
+        <span class="nav-icon">📏</span><span class="nav-text">Antropometria</span>
+      </li>
+      <li class="nav-item" id="side-aba-bioimpedancia" onclick="trocarAbaLateral('aba-bioimpedancia')">
+        <span class="nav-icon">⚡</span><span class="nav-text">Bioimpedância</span>
+      </li>
+      <li class="nav-item" id="side-aba-prescricao" onclick="trocarAbaLateral('aba-prescricao')">
+        <span class="nav-icon">🥗</span><span class="nav-text">Nutrição TACO</span>
+      </li>
+      <li class="nav-item" style="color: #d1ded7; margin-top: 20px;" onclick="voltarParaListaPacientes()">
+        <span class="nav-icon">↩️</span><span class="nav-text">Voltar a Pacientes</span>
       </li>
     </ul>
   </aside>
@@ -201,36 +470,36 @@
   <main class="main-content">
     <div class="topbar">
       <div style="display: flex; align-items: center; gap: 12px;">
-        <button class="mobile-nav-btn" onclick="toggleSidebar()">☰</button>
+        <button class="mobile-nav-btn" type="button" onclick="toggleSidebar()">☰</button>
         <h1 class="topbar-title" id="pageTitle">Pacientes</h1>
       </div>
       <div style="display: flex; align-items: center; gap: 10px;">
-        <span class="badge-role">Diretoria Clínica</span>
-        <button class="btn btn-outline" style="padding: 6px 12px;" onclick="sairDoSistema()">Sair</button>
+        <span class="badge-role" id="badgePerfilAtivo">Perfil Ativo</span>
+        <button class="btn btn-outline" style="padding: 4px 10px; font-size:0.78rem;" type="button" onclick="abrirModalTrocarMinhaSenha()">🔑 Mudar Senha</button>
+        <button class="btn btn-outline" style="padding: 4px 10px; font-size:0.78rem;" type="button" onclick="sairDoSistema()">Sair</button>
       </div>
     </div>
 
-    <!-- Módulo: Lista de Pacientes -->
+    <!-- Lista de Pacientes -->
     <section id="view-pacientes" class="view-section">
       <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <div>
             <h2 style="font-size: 1.15rem; font-weight: 600;">Pacientes Cadastrados</h2>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">Usuário: Nome Completo | Senha: Nº do Prontuário</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Prontuários eletrônicos ativos</p>
           </div>
-          <button class="btn btn-primary" onclick="abrirModalNovoPaciente()">+ Novo Paciente</button>
+          <button class="btn btn-primary" type="button" onclick="abrirModalNovoPaciente()">+ Novo Paciente</button>
         </div>
         <div class="table-responsive">
           <table>
             <thead>
               <tr>
-                <th>Prontuário (Senha)</th>
-                <th>Nome Completo (Login)</th>
+                <th>Prontuário</th>
+                <th>Nome Completo</th>
                 <th>Idade</th>
                 <th>Sexo</th>
                 <th>Convênio</th>
                 <th>Telefone</th>
-                <th>Alergias</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -240,95 +509,139 @@
       </div>
     </section>
 
-    <!-- Módulo: Prontuário Clínico -->
+    <!-- Prontuário Clínico -->
     <section id="view-prontuario" class="view-section" style="display: none;">
-      <div style="margin-bottom: 14px;">
-        <button class="btn btn-outline" onclick="voltarParaListaPacientes()">← Voltar para Pacientes</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
+        <button class="btn btn-outline" type="button" onclick="voltarParaListaPacientes()">← Voltar para Pacientes</button>
+        <button class="btn-expandir-ficha" id="btnToggleFicha" type="button" onclick="alternarFichaCompleta()">
+          <span>▼ Ficha Cadastral Completa</span>
+        </button>
       </div>
-      
+
+      <div class="ficha-expansivel-paciente" id="gavetaFichaPaciente">
+        <div class="ficha-grid-dados" id="conteudoFichaPaciente"></div>
+      </div>
+
       <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
-          <div>
-            <h2 style="font-size: 1.4rem; font-weight: 700;" id="pronNome">Nome do Paciente</h2>
-            <p style="color: var(--text-muted); font-size: 0.88rem;" id="pronSubinfo">Prontuário: --</p>
-          </div>
-          <span class="badge-role" id="pronBadge">PRON-0000</span>
-        </div>
-
-        <!-- Abas com Ícones Redondos e Botão + -->
-        <div class="nav-round-tabs">
-          <div class="round-tab-item active" data-aba="aba-evolucao" data-tooltip="Evolução Clínica" onclick="trocarAbaProntuario(this, 'aba-evolucao')">
-            <span class="tab-icon">🩺</span>
-          </div>
-          <div class="round-tab-item" data-aba="aba-insumos" data-tooltip="Procedimentos & Insumos" onclick="trocarAbaProntuario(this, 'aba-insumos')">
-            <span class="tab-icon">💉</span>
-          </div>
-          <div class="round-tab-item" data-aba="aba-antropometria" data-tooltip="Antropometria & 7 Dobras" onclick="trocarAbaProntuario(this, 'aba-antropometria')">
-            <span class="tab-icon">📏</span>
-          </div>
-          <div class="round-tab-item" data-aba="aba-bioimpedancia" data-tooltip="Bioimpedância" onclick="trocarAbaProntuario(this, 'aba-bioimpedancia')">
-            <span class="tab-icon">⚡</span>
-          </div>
-          <div class="round-tab-item" data-aba="aba-prescricao" data-tooltip="Prescrição TACO" onclick="trocarAbaProntuario(this, 'aba-prescricao')">
-            <span class="tab-icon">🥗</span>
-          </div>
-          <div class="round-tab-item round-tab-add" data-tooltip="Nova Evolução" onclick="abrirModalEvolucao()">
-            +
-          </div>
-        </div>
-
-        <!-- Seções das Abas -->
         <div id="aba-evolucao" class="tab-content-item">
+          <div class="tab-module-header">
+            <span class="tab-module-title">🩺 Registro de Evoluções Clínicas</span>
+            <button class="btn btn-primary" type="button" onclick="abrirModalEvolucao()">+ Nova Evolução</button>
+          </div>
           <div id="historicoEvolucoes"></div>
         </div>
 
-        <div id="aba-insumos" class="tab-content-item" style="display:none; padding: 18px; color: var(--text-muted);">
-          Insumos e descartáveis gastos na consulta.
+        <div id="aba-procedimentos" class="tab-content-item" style="display:none;">
+          <div class="tab-module-header">
+            <span class="tab-module-title">💉 Procedimentos & Checagem da Enfermagem</span>
+            <button class="btn btn-primary" type="button" onclick="abrirModalProcedimentoAvulso()">+ Procedimento Avulso</button>
+          </div>
+          
+          <div style="margin-bottom: 22px;">
+            <h4 style="font-size:0.84rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;">
+              📋 Itens da Prescrição Médica para Checagem
+            </h4>
+            <div id="listaChecagemPrescricao"></div>
+          </div>
+
+          <div>
+            <h4 style="font-size:0.84rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;">
+              Histórico de Procedimentos Realizados & Baixas
+            </h4>
+            <div id="historicoProcedimentos"></div>
+          </div>
         </div>
-        <div id="aba-antropometria" class="tab-content-item" style="display:none; padding: 18px; color: var(--text-muted);">
-          Dobras cutâneas e perímetros corporais.
+
+        <div id="aba-prescricao-medica" class="tab-content-item" style="display:none;">
+          <div class="tab-module-header">
+            <span class="tab-module-title">💊 Prescrições Médicas Emitidas</span>
+            <button class="btn btn-primary" id="btnAbrirPrescricao" type="button" onclick="abrirModalPrescricao()">+ Adicionar Prescrição</button>
+          </div>
+          <div id="historicoPrescricoesMedicas"></div>
         </div>
-        <div id="aba-bioimpedancia" class="tab-content-item" style="display:none; padding: 18px; color: var(--text-muted);">
-          Exames de bioimpedância e ângulo de fase.
+
+        <div id="aba-antropometria" class="tab-content-item" style="display:none;">
+          <div class="tab-module-header"><span class="tab-module-title">📏 Antropometria</span><button class="btn btn-primary" type="button" onclick="lancarGenericoAba('aba-antropometria')">+ Nova Medição</button></div>
+          <div id="historicoAntropometria"></div>
         </div>
-        <div id="aba-prescricao" class="tab-content-item" style="display:none; padding: 18px; color: var(--text-muted);">
-          Prescrição dietoterápica (TACO).
+        <div id="aba-bioimpedancia" class="tab-content-item" style="display:none;">
+          <div class="tab-module-header"><span class="tab-module-title">⚡ Bioimpedância</span><button class="btn btn-primary" type="button" onclick="lancarGenericoAba('aba-bioimpedancia')">+ Novo Exame</button></div>
+          <div id="historicoBioimpedancia"></div>
+        </div>
+        <div id="aba-prescricao" class="tab-content-item" style="display:none;">
+          <div class="tab-module-header"><span class="tab-module-title">🥗 Nutrição TACO</span><button class="btn btn-primary" type="button" onclick="lancarGenericoAba('aba-prescricao')">+ Nova Dieta</button></div>
+          <div id="historicoPrescricao"></div>
         </div>
       </div>
     </section>
 
-    <!-- Outros módulos mantidos -->
+    <!-- Módulo de Estoque -->
     <section id="view-estoque" class="view-section" style="display: none;">
       <div class="card">
-        <h2>Estoque Clínico & Materiais</h2>
-        <div class="table-responsive" style="margin-top: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h2 style="font-size: 1.2rem; font-weight: 700;">Estoque Clínico & Rastreabilidade Técnica</h2>
+            <p style="font-size:0.82rem; color:var(--text-muted);">Controle de lote, validade, registro sanitário e baixa por procedimento</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline" style="background:#f4f8f5; border-color:#9fd4b0; color:var(--primary);" type="button" onclick="imprimirRelatorioEstoquePDF()">
+              📄 Exportar Livro de Registro (PDF)
+            </button>
+            <button class="btn btn-primary" type="button" onclick="abrirModalProdutoSanitario()">
+              + Adicionar Produto
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
           <table>
-            <thead><tr><th>Código</th><th>Item</th><th>Categoria</th><th>Qtd</th><th>Mínimo</th><th>Status</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Item / Princípio Ativo</th>
+                <th>Reg. Sanitário</th>
+                <th>Lote</th>
+                <th>Validade</th>
+                <th>Armazenamento</th>
+                <th>Saldo</th>
+                <th>Mín.</th>
+                <th>Situação</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
             <tbody id="listaEstoqueCorpo"></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <section id="view-substituicao" class="view-section" style="display: none;">
+    <!-- MÓDULO GESTÃO DE EQUIPE (ADMINISTRADOR GERAL) -->
+    <section id="view-equipe" class="view-section" style="display: none;">
       <div class="card">
-        <h2>Equivalências Nutricionais</h2>
-        <div class="table-responsive" style="margin-top: 14px;">
-          <table>
-            <thead><tr><th>Grupo</th><th>Alimento Base</th><th>Porção</th><th>Substituto</th><th>Equivalente</th></tr></thead>
-            <tbody id="listaSubstituicaoCorpo"></tbody>
-          </table>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h2 style="font-size: 1.2rem; font-weight: 700;">Equipe Hospitalar & Perfis de Acesso</h2>
+            <p style="font-size:0.82rem; color:var(--text-muted);">Administrador cadastra e gerencia as permissões dos profissionais hospitalares</p>
+          </div>
+          <button class="btn btn-primary" id="btnNovoColaborador" type="button" onclick="abrirModalColaborador()">
+            + Cadastrar Funcionário
+          </button>
         </div>
-      </div>
-    </section>
 
-    <section id="view-pop" class="view-section" style="display: none;">
-      <div class="card">
-        <h2>Procedimentos Operacionais Padrão</h2>
-        <div class="table-responsive" style="margin-top: 14px;">
+        <div class="table-responsive">
           <table>
-            <thead><tr><th>Código</th><th>Procedimento</th><th>Área</th><th>Versão</th><th>Revisão</th><th>Ação</th></tr></thead>
-            <tbody id="listaPOPCorpo"></tbody>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome do Profissional</th>
+                <th>E-mail</th>
+                <th>Função Hospitalar</th>
+                <th>Registro Profissional</th>
+                <th>Status</th>
+                <th>Ações do Administrador</th>
+              </tr>
+            </thead>
+            <tbody id="listaEquipeCorpo"></tbody>
           </table>
         </div>
       </div>
@@ -336,7 +649,8 @@
 
     <section id="view-agenda" class="view-section" style="display: none;"><div class="card"><h2>Agenda de Consultas</h2></div></section>
     <section id="view-taco" class="view-section" style="display: none;"><div class="card"><h2>Tabela TACO</h2></div></section>
-    <section id="view-equipe" class="view-section" style="display: none;"><div class="card"><h2>Gestão de Equipe & Permissões</h2></div></section>
+    <section id="view-substituicao" class="view-section" style="display: none;"><div class="card"><h2>Substituições</h2></div></section>
+    <section id="view-pop" class="view-section" style="display: none;"><div class="card"><h2>POP</h2></div></section>
   </main>
 
   <script src="app.js"></script>
