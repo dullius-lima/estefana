@@ -491,6 +491,9 @@
       <li class="nav-item" id="side-aba-bioimpedancia" onclick="trocarAbaLateral('aba-bioimpedancia')">
         <span class="nav-icon">⚡</span><span class="nav-text">Bioimpedância</span>
       </li>
+      <li class="nav-item" id="side-aba-exames" onclick="trocarAbaLateral('aba-exames')">
+        <span class="nav-icon">🧪</span><span class="nav-text">Exames Laboratoriais</span>
+      </li>
       <li class="nav-item" id="side-aba-prescricao" onclick="trocarAbaLateral('aba-prescricao')">
         <span class="nav-icon">🥗</span><span class="nav-text">Nutrição TACO</span>
       </li>
@@ -571,6 +574,17 @@
             <button class="btn btn-primary" id="btnNovoProcedimento" type="button" onclick="abrirModalProcedimentoAvulso()">+ Procedimento Avulso</button>
           </div>
           
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#f4f7f5; border:1px solid var(--border); border-radius:8px; padding:8px 14px; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:0.82rem; font-weight:700; color:var(--text-main); text-transform:uppercase;">📅 Data da Prescrição:</span>
+              <button type="button" class="btn btn-outline" style="padding:2px 8px; font-size:0.75rem;" onclick="navegarDataPrescricao(-1)">◀ Anterior</button>
+              <input type="date" id="filtroDataPrescricao" class="form-control" style="padding:3px 8px; font-size:0.8rem; width:auto;" onchange="aoMudarDataPrescricao()">
+              <button type="button" class="btn btn-outline" style="padding:2px 8px; font-size:0.75rem;" onclick="navegarDataPrescricao(1)">Próximo ▶</button>
+              <button type="button" class="btn btn-outline" style="padding:2px 8px; font-size:0.75rem;" onclick="definirDataPrescricaoHoje()">Hoje</button>
+            </div>
+            <div id="resumoDataPrescricaoBadge" style="font-size:0.78rem; font-weight:600; color:var(--primary);"></div>
+          </div>
+
           <div style="margin-bottom: 22px;">
             <h4 style="font-size:0.84rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;">
               📋 Itens da Prescrição Médica para Checagem
@@ -594,13 +608,41 @@
           <div id="historicoPrescricoesMedicas"></div>
         </div>
 
+        <!-- Aba 4: Antropometria Clínica & Esportiva com Comparativo -->
         <div id="aba-antropometria" class="tab-content-item" style="display:none;">
-          <div class="tab-module-header"><span class="tab-module-title">📏 Antropometria</span><button class="btn btn-primary" id="btnNovaAntropometria" type="button" onclick="lancarGenericoAba('aba-antropometria')">+ Nova Medição</button></div>
+          <div class="tab-module-header">
+            <span class="tab-module-title">📏 Avaliação Antropométrica & Composição Corporal</span>
+            <button class="btn btn-primary" id="btnNovaAntropometria" type="button" onclick="abrirModalAntropometria()">+ Nova Medição</button>
+          </div>
+          
+          <!-- Painel Comparativo Evolutivo -->
+          <div id="painelComparativoAntropo" style="margin-bottom: 18px;"></div>
+
+          <!-- Histórico Cronológico de Avaliações -->
+          <h4 style="font-size:0.84rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;">
+            Histórico de Avaliações Antropométricas
+          </h4>
           <div id="historicoAntropometria"></div>
         </div>
         <div id="aba-bioimpedancia" class="tab-content-item" style="display:none;">
           <div class="tab-module-header"><span class="tab-module-title">⚡ Bioimpedância</span><button class="btn btn-primary" id="btnNovaBioimpedancia" type="button" onclick="lancarGenericoAba('aba-bioimpedancia')">+ Novo Exame</button></div>
           <div id="historicoBioimpedancia"></div>
+        </div>
+        <!-- Aba: Exames Laboratoriais com Comparativo em Colunas -->
+        <div id="aba-exames" class="tab-content-item" style="display:none;">
+          <div class="tab-module-header">
+            <div>
+              <span class="tab-module-title">🧪 Painel Laboratorial & Comparativo Evolutivo</span>
+              <p style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">
+                Evolução comparativa por data com indicação de parâmetros e alertas (Alto / Baixo / Normal)
+              </p>
+            </div>
+            <button class="btn btn-primary" type="button" onclick="abrirModalLancamentoExame()">+ Lançar Novo Exame</button>
+          </div>
+
+          <div id="containerTabelaComparativaExames" class="table-responsive" style="margin-top:10px;">
+            <!-- Tabela com colunas cronológicas gerada dinamicamente -->
+          </div>
         </div>
         <div id="aba-prescricao" class="tab-content-item" style="display:none;">
           <div class="tab-module-header"><span class="tab-module-title">🥗 Nutrição TACO</span><button class="btn btn-primary" id="btnNovaNutricao" type="button" onclick="lancarGenericoAba('aba-prescricao')">+ Nova Dieta</button></div>
@@ -608,6 +650,127 @@
         </div>
       </div>
     </section>
+
+    <!-- Modal Lançar Exames Laboratoriais -->
+  <div class="modal-overlay" id="modalExamesLab" style="display: none;">
+    <div class="modal-box" style="max-width: 860px;">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 700;">Lançar Resultados de Exames</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;" id="modalExamesSubinfo">Paciente: --</p>
+        </div>
+        <button class="btn-close" type="button" onclick="fecharModalLancamentoExame()">✕</button>
+      </div>
+
+      <form id="formLancamentoExames" onsubmit="salvarLoteExames(event)">
+        <div class="form-grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 12px;">
+          <div class="form-group">
+            <label>Laboratório / Origem do Laudo</label>
+            <input type="text" id="exameLaboratorio" class="form-control" placeholder="Ex: Laboratório Sabin / Unimed / Fleury">
+          </div>
+          <div class="form-group">
+            <label>Data da Coleta / Realização *</label>
+            <input type="date" id="exameDataColeta" class="form-control" required>
+          </div>
+        </div>
+
+        <!-- Barra de Busca Rápida e Adição Dinâmica de Analito -->
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;">
+          <input type="text" class="form-control" placeholder="🔍 Digite para filtrar analitos (ex: hemoglobina, testosterona, tsh, ferro)..." oninput="filtrarAnalitosModalAoDigitar(event)" style="font-size:0.82rem; padding:6px 12px;">
+          <button type="button" class="btn btn-outline" style="white-space:nowrap; font-size:0.78rem; padding:6px 12px;" onclick="adicionarExamePersonalizadoAoCatalogo()">
+            + Cadastrar Novo Exame
+          </button>
+        </div>
+
+        <div id="gridAnalitosExames" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:10px; max-height: 55vh; overflow-y:auto; padding-right:6px;">
+          <!-- Campos gerados a partir do catálogo padrão -->
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalLancamentoExame()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Gravar Resultados & Atualizar Colunas</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+    <!-- Modal Antropometria Esportiva & Nutricional -->
+  <div class="modal-overlay" id="modalAntropometria" style="display: none;">
+    <div class="modal-box" style="max-width: 900px;">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 1.3rem; font-weight: 700;">Nova Avaliação Antropométrica & Esportiva</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;" id="modalAntropoSubinfo">Paciente: --</p>
+        </div>
+        <button class="btn-close" type="button" onclick="fecharModalAntropometria()">✕</button>
+      </div>
+
+      <form id="formAntropometria" onsubmit="salvarAvaliacaoAntropometrica(event)">
+        <!-- Painel de Resultados Automáticos em Tempo Real -->
+        <div style="background:#f0f6f2; border:1px solid #cce2d3; border-radius:8px; padding:12px; margin-bottom:14px; display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; text-align:center;">
+          <div><small style="color:var(--text-muted); font-weight:600;">IMC</small><div id="previewIMC" style="font-size:1.1rem; font-weight:700; color:var(--primary);">--</div></div>
+          <div><small style="color:var(--text-muted); font-weight:600;">% Gordura (BF)</small><div id="previewBF" style="font-size:1.1rem; font-weight:700; color:#1d4ed8;">--</div></div>
+          <div><small style="color:var(--text-muted); font-weight:600;">Massa Magra</small><div id="previewMassaMagra" style="font-size:1.1rem; font-weight:700; color:#15803d;">--</div></div>
+          <div><small style="color:var(--text-muted); font-weight:600;">Massa Gorda</small><div id="previewMassaGorda" style="font-size:1.1rem; font-weight:700; color:#b91c1c;">--</div></div>
+          <div><small style="color:var(--text-muted); font-weight:600;">RCQ</small><div id="previewRCQ" style="font-size:1.1rem; font-weight:700; color:#854d0e;">--</div></div>
+          <div><small style="color:var(--text-muted); font-weight:600;">TMB (Katch)</small><div id="previewTMB" style="font-size:1.1rem; font-weight:700; color:var(--primary);">--</div></div>
+        </div>
+
+        <!-- 1. Medidas Básicas -->
+        <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:4px;">1. Parâmetros Básicos</h4>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Peso Corporal (kg) *</label>
+            <input type="number" step="0.1" id="antropoPeso" class="form-control" placeholder="Ex: 72.5" required oninput="calcularMetricasAntropoAoVivo()">
+          </div>
+          <div class="form-group">
+            <label>Estatura / Altura (cm) *</label>
+            <input type="number" step="0.1" id="antropoAltura" class="form-control" placeholder="Ex: 175" required oninput="calcularMetricasAntropoAoVivo()">
+          </div>
+          <div class="form-group">
+            <label>Envergadura (cm)</label>
+            <input type="number" step="0.1" id="antropoEnvergadura" class="form-control" placeholder="Ex: 178">
+          </div>
+        </div>
+
+        <!-- 2. Circunferências (Perimetria) -->
+        <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin:12px 0 8px; border-bottom:1px solid var(--border); padding-bottom:4px;">2. Circunferências / Perímetros (cm)</h4>
+        <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="form-group"><label>Cintura (menor curvatura)</label><input type="number" step="0.1" id="antropoCintura" class="form-control" placeholder="cm" oninput="calcularMetricasAntropoAoVivo()"></div>
+          <div class="form-group"><label>Abdômen (cicatriz umbilical)</label><input type="number" step="0.1" id="antropoAbdomen" class="form-control" placeholder="cm"></div>
+          <div class="form-group"><label>Quadril (maior saliência)</label><input type="number" step="0.1" id="antropoQuadril" class="form-control" placeholder="cm" oninput="calcularMetricasAntropoAoVivo()"></div>
+          <div class="form-group"><label>Tórax</label><input type="number" step="0.1" id="antropoTorax" class="form-control" placeholder="cm"></div>
+          <div class="form-group"><label>Braço Relaxado (D)</label><input type="number" step="0.1" id="antropoBracoRelax" class="form-control" placeholder="cm"></div>
+          <div class="form-group"><label>Braço Contraído (D)</label><input type="number" step="0.1" id="antropoBracoContr" class="form-control" placeholder="cm"></div>
+          <div class="form-group"><label>Coxa Medial (D)</label><input type="number" step="0.1" id="antropoCoxaMed" class="form-control" placeholder="cm"></div>
+          <div class="form-group"><label>Panturrilha (D)</label><input type="number" step="0.1" id="antropoPanturrilha" class="form-control" placeholder="cm"></div>
+        </div>
+
+        <!-- 3. Dobras Cutâneas (Pollock 7) -->
+        <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin:12px 0 8px; border-bottom:1px solid var(--border); padding-bottom:4px;">3. Dobras Cutâneas (Protocolo Pollock 7 - mm)</h4>
+        <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="form-group"><label>Tríceps</label><input type="number" step="0.1" id="antropoTriceps" class="form-control" placeholder="mm" oninput="calcularMetricasAntropoAoVivo()"></div>
+          <div class="form-group"><label>Subescapular</label><input type="number" step="0.1" id="antropoSubescapular" class="form-control" placeholder="mm" oninput="calcularMetricasAntropoAoVivo()"></div>
+          <div class="form-group"><label>Peitoral</label><input type="number" step="0.1" id="antropoPeitoral" class="form-control" placeholder="mm" oninput="calcularMetricasAntropoAoVivo()"></div>
+          <div class="form-group"><label>Axilar Média</label><input type="number" step="0.1" id="antropoAxilar" class="form-control" placeholder="mm" oninput="calcularMetricasAntropoAoVivo()"></div>
+          <div class="form-group"><label>Suprailíaca</label><input type="number" step="0.1" id="antropoSuprailiaca" class="form-control" placeholder="mm" oninput="calcularMetricasAntropoAoVivo()"></div>
+          <div class="form-group"><label>Abdominal</label><input type="number" step="0.1" id="antropoDobraAbdomen" class="form-control" placeholder="mm" oninput="calcularMetricasAntropoAoVivo()"></div>
+          <div class="form-group"><label>Coxa</label><input type="number" step="0.1" id="antropoDobraCoxa" class="form-control" placeholder="mm" oninput="calcularMetricasAntropoAoVivo()"></div>
+          <div class="form-group"><label>$\Sigma$ 7 Dobras</label><input type="text" id="antropoSomaDobras" class="form-control" readonly style="background:#f4f6f5;"></div>
+        </div>
+
+        <div class="form-group" style="margin-top:10px;">
+          <label>Parecer / Observações do Profissional</label>
+          <input type="text" id="antropoParecer" class="form-control" placeholder="Ex: Paciente em fase de hipertrofia com redução de retenção hídrica...">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalAntropometria()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Avaliação Antropométrica</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
     <!-- Módulo de Estoque -->
     <section id="view-estoque" class="view-section" style="display: none;">
