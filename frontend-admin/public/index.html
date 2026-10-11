@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <!-- Tela de Login Limpa (Apenas Email e Senha) -->
+  <!-- Tela de Login Limpa -->
   <div class="login-overlay" id="loginModal">
     <div class="login-box">
       <div style="text-align: center; margin-bottom: 20px;">
@@ -30,7 +30,7 @@
     </div>
   </div>
 
-  <!-- Modal Alterar Senha do Próprio Usuário Logado -->
+  <!-- Modal Alterar Senha do Próprio Usuário -->
   <div class="modal-overlay" id="modalTrocarMinhaSenha" style="display: none;">
     <div class="modal-box" style="max-width: 420px;">
       <div class="modal-header">
@@ -54,13 +54,13 @@
     </div>
   </div>
 
-  <!-- Modal Cadastrar Funcionário com Funções Hospitalares Pré-Programadas -->
+  <!-- Modal Cadastrar / Editar Funcionário com Matriz de Permissões Completa -->
   <div class="modal-overlay" id="modalColaborador" style="display: none;">
-    <div class="modal-box" style="max-width: 680px;">
+    <div class="modal-box" style="max-width: 820px;">
       <div class="modal-header">
         <div>
           <h2 style="font-size: 1.25rem; font-weight: 700;" id="modalColabTitulo">Cadastrar Funcionário</h2>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Perfil pré-programado com alçada hospitalar</p>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Definição de perfil e liberação detalhada de permissões (Ver, Adicionar, Editar e Excluir)</p>
         </div>
         <button class="btn-close" type="button" onclick="fecharModalColaborador()">✕</button>
       </div>
@@ -72,13 +72,13 @@
             <input type="text" id="colabNome" class="form-control" placeholder="Ex: Dr. Roberto Costa" required>
           </div>
           <div class="form-group">
-            <label>Função Hospitalar Pré-Programada *</label>
+            <label>Função / Cargo *</label>
             <select id="colabPerfil" class="form-control" required onchange="aoMudarFuncaoHospitalar()">
-              <option value="Medico">Médico Assistencial / Prescritor (CRM)</option>
+              <option value="Medico">Médico Assistencial (CRM)</option>
               <option value="Enfermeiro">Enfermeiro Assistencial (COREN)</option>
               <option value="TecnicoEnfermagem">Técnico de Enfermagem (COREN)</option>
-              <option value="Farmaceutico">Farmacêutico Clínico (CRF)</option>
-              <option value="Nutricionista">Nutricionista Clínico (CRN)</option>
+              <option value="Farmaceutico">Farmacêutico (CRF)</option>
+              <option value="Nutricionista">Nutricionista (CRN)</option>
               <option value="Fisioterapeuta">Fisioterapeuta (CREFITO)</option>
               <option value="Recepcao">Recepção / Atendimento</option>
               <option value="Administrador">Administrador Geral</option>
@@ -93,7 +93,7 @@
             <input type="text" id="colabRegistro" class="form-control" placeholder="Ex: CRM-MS 9421" required>
           </div>
           <div class="form-group col-2">
-            <label>Senha Inicial de Acesso *</label>
+            <label>Senha de Acesso *</label>
             <input type="password" id="colabSenha" class="form-control" placeholder="Definir senha inicial" required>
           </div>
           <div class="form-group">
@@ -103,11 +103,44 @@
               <option value="Inativo">Inativo</option>
             </select>
           </div>
-          <div class="form-group col-3" style="background:#f4f7f5; padding:10px; border-radius:6px; font-size:0.8rem; color:#2c4035;" id="infoEscopoFuncao">
-            <strong>Escopo da Função:</strong> Emissão de prescrições médicas, checagem e evolução clínica.
+        </div>
+
+        <!-- Matriz de Liberações Granulares -->
+        <div style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <div>
+              <span style="font-size:0.85rem; font-weight:700; color:var(--text-main); text-transform:uppercase;">
+                Matriz de Liberações de Acesso
+              </span>
+              <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                O módulo <strong>POP</strong> é de gestão exclusiva do Administrador e não pode ser concedido a terceiros.
+              </p>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn btn-outline" style="padding:3px 8px; font-size:0.75rem;" onclick="marcarTodasPermissoes(true)">Marcar Tudo</button>
+              <button type="button" class="btn btn-outline" style="padding:3px 8px; font-size:0.75rem;" onclick="marcarTodasPermissoes(false)">Desmarcar Tudo</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table style="font-size:0.82rem; background:#fff;">
+              <thead>
+                <tr style="background:#f4f7f5;">
+                  <th style="padding:8px 10px;">Módulo do Sistema</th>
+                  <th style="padding:8px 10px; text-align:center;">Visualizar (Ver)</th>
+                  <th style="padding:8px 10px; text-align:center;">Adicionar / Criar</th>
+                  <th style="padding:8px 10px; text-align:center;">Editar / Alterar</th>
+                  <th style="padding:8px 10px; text-align:center;">Excluir / Cancelar</th>
+                </tr>
+              </thead>
+              <tbody id="corpoMatrizPermissoes">
+                <!-- Linhas de permissão geradas dinamicamente -->
+              </tbody>
+            </table>
           </div>
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px;">
           <button type="button" class="btn btn-outline" onclick="fecharModalColaborador()">Cancelar</button>
           <button type="submit" class="btn btn-primary" id="btnSalvarColab">Salvar Funcionário</button>
         </div>
@@ -433,8 +466,9 @@
       <li class="nav-item" id="nav-substituicao" onclick="navegarPara('substituicao')">
         <span class="nav-icon">🔄</span><span class="nav-text">Substituições</span>
       </li>
+      <!-- O módulo POP é exibido estritamente para o Administrador -->
       <li class="nav-item" id="nav-pop" onclick="navegarPara('pop')">
-        <span class="nav-icon">📋</span><span class="nav-text">POP</span>
+        <span class="nav-icon">📋</span><span class="nav-text">POP (Diretoria)</span>
       </li>
       <li class="nav-item" style="color: #ff9b9b; margin-top: 24px;" onclick="sairDoSistema()">
         <span class="nav-icon">🚪</span><span class="nav-text">Sair</span>
@@ -488,7 +522,7 @@
             <h2 style="font-size: 1.15rem; font-weight: 600;">Pacientes Cadastrados</h2>
             <p style="font-size: 0.85rem; color: var(--text-muted);">Prontuários eletrônicos ativos</p>
           </div>
-          <button class="btn btn-primary" type="button" onclick="abrirModalNovoPaciente()">+ Novo Paciente</button>
+          <button class="btn btn-primary" id="btnNovoPaciente" type="button" onclick="abrirModalNovoPaciente()">+ Novo Paciente</button>
         </div>
         <div class="table-responsive">
           <table>
@@ -526,7 +560,7 @@
         <div id="aba-evolucao" class="tab-content-item">
           <div class="tab-module-header">
             <span class="tab-module-title">🩺 Registro de Evoluções Clínicas</span>
-            <button class="btn btn-primary" type="button" onclick="abrirModalEvolucao()">+ Nova Evolução</button>
+            <button class="btn btn-primary" id="btnNovaEvolucao" type="button" onclick="abrirModalEvolucao()">+ Nova Evolução</button>
           </div>
           <div id="historicoEvolucoes"></div>
         </div>
@@ -534,7 +568,7 @@
         <div id="aba-procedimentos" class="tab-content-item" style="display:none;">
           <div class="tab-module-header">
             <span class="tab-module-title">💉 Procedimentos & Checagem da Enfermagem</span>
-            <button class="btn btn-primary" type="button" onclick="abrirModalProcedimentoAvulso()">+ Procedimento Avulso</button>
+            <button class="btn btn-primary" id="btnNovoProcedimento" type="button" onclick="abrirModalProcedimentoAvulso()">+ Procedimento Avulso</button>
           </div>
           
           <div style="margin-bottom: 22px;">
@@ -561,15 +595,15 @@
         </div>
 
         <div id="aba-antropometria" class="tab-content-item" style="display:none;">
-          <div class="tab-module-header"><span class="tab-module-title">📏 Antropometria</span><button class="btn btn-primary" type="button" onclick="lancarGenericoAba('aba-antropometria')">+ Nova Medição</button></div>
+          <div class="tab-module-header"><span class="tab-module-title">📏 Antropometria</span><button class="btn btn-primary" id="btnNovaAntropometria" type="button" onclick="lancarGenericoAba('aba-antropometria')">+ Nova Medição</button></div>
           <div id="historicoAntropometria"></div>
         </div>
         <div id="aba-bioimpedancia" class="tab-content-item" style="display:none;">
-          <div class="tab-module-header"><span class="tab-module-title">⚡ Bioimpedância</span><button class="btn btn-primary" type="button" onclick="lancarGenericoAba('aba-bioimpedancia')">+ Novo Exame</button></div>
+          <div class="tab-module-header"><span class="tab-module-title">⚡ Bioimpedância</span><button class="btn btn-primary" id="btnNovaBioimpedancia" type="button" onclick="lancarGenericoAba('aba-bioimpedancia')">+ Novo Exame</button></div>
           <div id="historicoBioimpedancia"></div>
         </div>
         <div id="aba-prescricao" class="tab-content-item" style="display:none;">
-          <div class="tab-module-header"><span class="tab-module-title">🥗 Nutrição TACO</span><button class="btn btn-primary" type="button" onclick="lancarGenericoAba('aba-prescricao')">+ Nova Dieta</button></div>
+          <div class="tab-module-header"><span class="tab-module-title">🥗 Nutrição TACO</span><button class="btn btn-primary" id="btnNovaNutricao" type="button" onclick="lancarGenericoAba('aba-prescricao')">+ Nova Dieta</button></div>
           <div id="historicoPrescricao"></div>
         </div>
       </div>
@@ -587,7 +621,7 @@
             <button class="btn btn-outline" style="background:#f4f8f5; border-color:#9fd4b0; color:var(--primary);" type="button" onclick="imprimirRelatorioEstoquePDF()">
               📄 Exportar Livro de Registro (PDF)
             </button>
-            <button class="btn btn-primary" type="button" onclick="abrirModalProdutoSanitario()">
+            <button class="btn btn-primary" id="btnNovoProdutoEstoque" type="button" onclick="abrirModalProdutoSanitario()">
               + Adicionar Produto
             </button>
           </div>
@@ -615,13 +649,13 @@
       </div>
     </section>
 
-    <!-- MÓDULO GESTÃO DE EQUIPE (ADMINISTRADOR GERAL) -->
+    <!-- MÓDULO GESTÃO DE EQUIPE (ADMINISTRADOR) -->
     <section id="view-equipe" class="view-section" style="display: none;">
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
           <div>
-            <h2 style="font-size: 1.2rem; font-weight: 700;">Equipe Hospitalar & Perfis de Acesso</h2>
-            <p style="font-size:0.82rem; color:var(--text-muted);">Administrador cadastra e gerencia as permissões dos profissionais hospitalares</p>
+            <h2 style="font-size: 1.2rem; font-weight: 700;">Equipe Hospitalar & Liberações de Acesso</h2>
+            <p style="font-size:0.82rem; color:var(--text-muted);">O Administrador cadastra os funcionários e seleciona as liberações de ver, criar, editar e excluir</p>
           </div>
           <button class="btn btn-primary" id="btnNovoColaborador" type="button" onclick="abrirModalColaborador()">
             + Cadastrar Funcionário
@@ -635,8 +669,9 @@
                 <th>ID</th>
                 <th>Nome do Profissional</th>
                 <th>E-mail</th>
-                <th>Função Hospitalar</th>
-                <th>Registro Profissional</th>
+                <th>Função</th>
+                <th>Registro</th>
+                <th>Acessos Liberados</th>
                 <th>Status</th>
                 <th>Ações do Administrador</th>
               </tr>
@@ -647,10 +682,29 @@
       </div>
     </section>
 
+    <!-- Módulo POP (Exclusivo do Administrador) -->
+    <section id="view-pop" class="view-section" style="display: none;">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div>
+            <h2>Procedimentos Operacionais Padrão (POP)</h2>
+            <p style="font-size:0.84rem; color:var(--text-muted);">Gestão e homologação documental de diretrizes clínicas — <strong>Exclusivo do Administrador</strong></p>
+          </div>
+        </div>
+        <div style="padding:16px; background:#fbfdfc; border:1px dashed var(--border); border-radius:8px; font-size:0.88rem; line-height:1.6;">
+          <p><strong>Status de Acesso:</strong> Módulo homologado estritamente para a Diretoria Clínica e Administrador Geral.</p>
+          <ul style="margin-top:8px; margin-left:20px;">
+            <li>POP-001: Protocolo de Higienização e Antissepsia de Acessos Venosos</li>
+            <li>POP-002: Diretriz de Notificação de Validades e Quarentena de Insumos</li>
+            <li>POP-003: Auditoria Interna e Termo de Consentimento Livre e Esclarecido</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
     <section id="view-agenda" class="view-section" style="display: none;"><div class="card"><h2>Agenda de Consultas</h2></div></section>
     <section id="view-taco" class="view-section" style="display: none;"><div class="card"><h2>Tabela TACO</h2></div></section>
     <section id="view-substituicao" class="view-section" style="display: none;"><div class="card"><h2>Substituições</h2></div></section>
-    <section id="view-pop" class="view-section" style="display: none;"><div class="card"><h2>POP</h2></div></section>
   </main>
 
   <script src="app.js"></script>

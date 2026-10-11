@@ -1,4 +1,29 @@
-// --- BANCO DE USUÁRIOS (APENAS O ADM COMO PADRÃO) ---
+// --- DEFINIÇÃO DOS MÓDULOS PARA A MATRIZ DE LIBERAÇÃO ---
+// Nota: O módulo POP não faz parte da matriz pois é exclusivo do Administrador.
+var MODULOS_SISTEMA = [
+  { chave: "pacientes", rotulo: "Pacientes (Cadastro / Prontuários)" },
+  { chave: "evolucoes", rotulo: "Prontuário (Evoluções Clínicas)" },
+  { chave: "prescricao", rotulo: "Prescrição Médica" },
+  { chave: "procedimentos", rotulo: "Procedimentos & Checagem" },
+  { chave: "estoque", rotulo: "Estoque & Insumos Clínicos" },
+  { chave: "agenda", rotulo: "Agenda de Atendimentos" },
+  { chave: "nutricao", rotulo: "Nutrição & TACO / Substituições" }
+];
+
+function gerarPermissoesPadrao(valorBooleano) {
+  var perms = {};
+  MODULOS_SISTEMA.forEach(function(m) {
+    perms[m.chave] = {
+      ver: valorBooleano,
+      adicionar: valorBooleano,
+      editar: valorBooleano,
+      excluir: valorBooleano
+    };
+  });
+  return perms;
+}
+
+// --- BANCO DE USUÁRIOS (APENAS O ADM POR PADRÃO) ---
 var usuariosSistema = [
   {
     id: 1,
@@ -7,44 +32,24 @@ var usuariosSistema = [
     senha: "admin123",
     perfil: "Administrador",
     registro: "ADM-01",
-    status: "Ativo"
+    status: "Ativo",
+    permissoes: gerarPermissoesPadrao(true)
   }
 ];
 
-// Carrega usuários criados pelo Administrador que foram persistidos
+// Carrega usuários persistidos
 try {
-  var dadosPersistidos = localStorage.getItem('leveh_usuarios_bd_v2');
+  var dadosPersistidos = localStorage.getItem('leveh_usuarios_bd_v3');
   if (dadosPersistidos) {
     usuariosSistema = JSON.parse(dadosPersistidos);
   }
 } catch (e) {}
 
 function salvarUsuariosNoStorage() {
-  localStorage.setItem('leveh_usuarios_bd_v2', JSON.stringify(usuariosSistema));
+  localStorage.setItem('leveh_usuarios_bd_v3', JSON.stringify(usuariosSistema));
 }
 
-// Descrições hospitalares pré-programadas
-var descricoesHospitalares = {
-  "Medico": "Emissão de prescrições médicas (CRM), solicitações de exames, checagem e evoluções clínicas completas.",
-  "Enfermeiro": "Checagem de prescrições (COREN), administração de medicamentos, realização de procedimentos e baixa de estoque.",
-  "TecnicoEnfermagem": "Execução de procedimentos de enfermagem, checagem sob supervisão e baixa de materiais.",
-  "Farmaceutico": "Controle e dispensação de estoque clínico, rastreabilidade de lotes, validades e auditoria técnica.",
-  "Nutricionista": "Avaliações antropométricas, bioimpedância, prescrições dietéticas (TACO) e condutas alimentares.",
-  "Fisioterapeuta": "Evoluções respiratórias e motoras, registro de condutas e procedimentos ventilatórios.",
-  "Recepcao": "Atendimento, admissão, cadastro de pacientes e gestão da agenda.",
-  "Administrador": "Acesso mestre e irrestrito a todos os módulos, relatórios e gestão de funcionários."
-};
-
-function aoMudarFuncaoHospitalar() {
-  var sel = document.getElementById('colabPerfil');
-  var info = document.getElementById('infoEscopoFuncao');
-  if (sel && info) {
-    var desc = descricoesHospitalares[sel.value] || "Acesso aos recursos clínicos.";
-    info.innerHTML = "<strong>Escopo da Função:</strong> " + desc;
-  }
-}
-
-// Sessão ativa
+// Usuário ativo na sessão
 var usuarioLogado = usuariosSistema[0];
 var abaAtivaAtual = "aba-evolucao";
 var gravandoAudio = false;
@@ -181,7 +186,7 @@ var bancoPacientes = [
       {
         id: 101,
         autor: "Administrador Geral",
-        cargo: "Diretoria Clínica",
+        cargo: "Administrador",
         dataHora: "10/10/2026, 22:51:38",
         texto: "Paciente comparece para retorno clínico com boa evolução."
       }
@@ -190,7 +195,7 @@ var bancoPacientes = [
       {
         id: 201,
         autor: "Dr. Responsável",
-        cargo: "Médico Assistencial (CRM)",
+        cargo: "Médico Assistencial",
         dataHora: "10/10/2026, 23:05:00",
         obsGerais: "Administrar em caso de dor ou náuseas.",
         itens: [
@@ -244,6 +249,13 @@ function atualizarIdadePreview() {
   if (dt && out) out.value = calcularIdade(dt.value);
 }
 
+// --- FUNÇÃO AUXILIAR DE VERIFICAÇÃO DE PERMISSÃO ---
+function temPermissao(modulo, acao) {
+  if (usuarioLogado.perfil === "Administrador") return true;
+  if (!usuarioLogado.permissoes || !usuarioLogado.permissoes[modulo]) return false;
+  return !!usuarioLogado.permissoes[modulo][acao];
+}
+
 // --- AUTENTICAÇÃO LIMPA ---
 function verificarAutenticacao() {
   var emailLogado = localStorage.getItem('leveh_email_sessao');
@@ -254,13 +266,13 @@ function verificarAutenticacao() {
     if (usr && usr.status === "Ativo") {
       usuarioLogado = usr;
       if (modal) modal.style.display = 'none';
-      atualizarBadgePerfil();
+      atualizarInterfacePorPermissoes();
       return;
     }
   }
 
   if (modal) modal.style.display = 'flex';
-  atualizarBadgePerfil();
+  atualizarInterfacePorPermissoes();
 }
 
 function realizarLogin(e) {
@@ -289,7 +301,7 @@ function realizarLogin(e) {
 
   if (user.status === "Inativo") {
     if (fb) {
-      fb.innerText = "Esta conta de colaborador está inativa.";
+      fb.innerText = "Esta conta de colaborador está desativada pela administração.";
       fb.style.display = 'block';
     }
     return false;
@@ -302,7 +314,7 @@ function realizarLogin(e) {
     var modal = document.getElementById('loginModal');
     if (modal) modal.style.display = 'none';
 
-    atualizarBadgePerfil();
+    atualizarInterfacePorPermissoes();
     renderizarPacientes();
     renderizarEstoque();
     renderizarEquipe();
@@ -322,24 +334,40 @@ function sairDoSistema() {
   if (modal) modal.style.display = 'flex';
 }
 
-function atualizarBadgePerfil() {
+function atualizarInterfacePorPermissoes() {
   var b = document.getElementById('badgePerfilAtivo');
   if (b) b.innerText = usuarioLogado.nome + " — " + usuarioLogado.perfil + " (" + usuarioLogado.registro + ")";
 
-  // Restrição do botão de prescrição no prontuário
-  var btnPrescr = document.getElementById('btnAbrirPrescricao');
-  if (btnPrescr) {
-    btnPrescr.style.display = (usuarioLogado.perfil === 'Medico' || usuarioLogado.perfil === 'Administrador') ? 'inline-flex' : 'none';
+  // Módulo POP: Visível EXCLUSIVAMENTE para o Administrador
+  var navPop = document.getElementById('nav-pop');
+  if (navPop) {
+    navPop.style.display = (usuarioLogado.perfil === 'Administrador') ? 'flex' : 'none';
   }
 
-  // Visibilidade do botão de cadastrar novos funcionários (Apenas Administrador)
-  var btnNovoColab = document.getElementById('btnNovoColaborador');
-  if (btnNovoColab) {
-    btnNovoColab.style.display = (usuarioLogado.perfil === 'Administrador') ? 'inline-flex' : 'none';
+  // Módulo Equipe: Visível EXCLUSIVAMENTE para o Administrador
+  var navEquipe = document.getElementById('nav-equipe');
+  if (navEquipe) {
+    navEquipe.style.display = (usuarioLogado.perfil === 'Administrador') ? 'flex' : 'none';
   }
+
+  // Botões de Adicionar de acordo com as permissões
+  var btnNovoPaciente = document.getElementById('btnNovoPaciente');
+  if (btnNovoPaciente) btnNovoPaciente.style.display = temPermissao('pacientes', 'adicionar') ? 'inline-flex' : 'none';
+
+  var btnNovaEvolucao = document.getElementById('btnNovaEvolucao');
+  if (btnNovaEvolucao) btnNovaEvolucao.style.display = temPermissao('evolucoes', 'adicionar') ? 'inline-flex' : 'none';
+
+  var btnAbrirPrescricao = document.getElementById('btnAbrirPrescricao');
+  if (btnAbrirPrescricao) btnAbrirPrescricao.style.display = temPermissao('prescricao', 'adicionar') ? 'inline-flex' : 'none';
+
+  var btnNovoProcedimento = document.getElementById('btnNovoProcedimento');
+  if (btnNovoProcedimento) btnNovoProcedimento.style.display = temPermissao('procedimentos', 'adicionar') ? 'inline-flex' : 'none';
+
+  var btnNovoProdutoEstoque = document.getElementById('btnNovoProdutoEstoque');
+  if (btnNovoProdutoEstoque) btnNovoProdutoEstoque.style.display = temPermissao('estoque', 'adicionar') ? 'inline-flex' : 'none';
 }
 
-// --- MODAL DE TROCAR A PRÓPRIA SENHA ---
+// --- MODAL DE TROCA DE SENHA DO PRÓPRIO USUÁRIO ---
 function abrirModalTrocarMinhaSenha() {
   document.getElementById('senhaAtualUser').value = "";
   document.getElementById('novaSenhaUser').value = "";
@@ -368,10 +396,69 @@ function salvarMinhaSenha(e) {
   usuarioLogado.senha = nova;
   salvarUsuariosNoStorage();
   fecharModalTrocarMinhaSenha();
-  alert("Senha alterada com sucesso!");
+  alert("Senha atualizada com sucesso!");
 }
 
-// --- GESTÃO DE EQUIPE (ADMINISTRADOR CRIA OS OUTROS) ---
+// --- GESTÃO DE EQUIPE & MATRIZ DE PERMISSÕES ---
+function renderizarTabelaMatrizPermissoes(permissoesObj) {
+  var tbody = document.getElementById('corpoMatrizPermissoes');
+  if (!tbody) return;
+
+  tbody.innerHTML = MODULOS_SISTEMA.map(function(m) {
+    var p = (permissoesObj && permissoesObj[m.chave]) ? permissoesObj[m.chave] : { ver: false, adicionar: false, editar: false, excluir: false };
+    return '<tr>' +
+      '<td style="padding:8px 10px;"><strong>' + m.rotulo + '</strong></td>' +
+      '<td style="text-align:center;"><input type="checkbox" class="chk-perm" data-modulo="' + m.chave + '" data-acao="ver" ' + (p.ver ? 'checked' : '') + '></td>' +
+      '<td style="text-align:center;"><input type="checkbox" class="chk-perm" data-modulo="' + m.chave + '" data-acao="adicionar" ' + (p.adicionar ? 'checked' : '') + '></td>' +
+      '<td style="text-align:center;"><input type="checkbox" class="chk-perm" data-modulo="' + m.chave + '" data-acao="editar" ' + (p.editar ? 'checked' : '') + '></td>' +
+      '<td style="text-align:center;"><input type="checkbox" class="chk-perm" data-modulo="' + m.chave + '" data-acao="excluir" ' + (p.excluir ? 'checked' : '') + '></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function marcarTodasPermissoes(marcar) {
+  document.querySelectorAll('.chk-perm').forEach(function(chk) {
+    chk.checked = !!marcar;
+  });
+}
+
+function aoMudarFuncaoHospitalar() {
+  // Ajuste automático das permissões sugeridas ao trocar o perfil
+  var perfil = document.getElementById('colabPerfil').value;
+  var sugeridas = gerarPermissoesPadrao(false);
+
+  if (perfil === "Administrador") {
+    sugeridas = gerarPermissoesPadrao(true);
+  } else if (perfil === "Medico") {
+    sugeridas.pacientes = { ver: true, adicionar: true, editar: true, excluir: false };
+    sugeridas.evolucoes = { ver: true, adicionar: true, editar: true, excluir: false };
+    sugeridas.prescricao = { ver: true, adicionar: true, editar: true, excluir: true };
+    sugeridas.procedimentos = { ver: true, adicionar: true, editar: true, excluir: false };
+    sugeridas.estoque = { ver: true, adicionar: false, editar: false, excluir: false };
+    sugeridas.agenda = { ver: true, adicionar: true, editar: true, excluir: false };
+    sugeridas.nutricao = { ver: true, adicionar: false, editar: false, excluir: false };
+  } else if (perfil === "Enfermeiro" || perfil === "TecnicoEnfermagem") {
+    sugeridas.pacientes = { ver: true, adicionar: false, editar: false, excluir: false };
+    sugeridas.evolucoes = { ver: true, adicionar: true, editar: false, excluir: false };
+    sugeridas.prescricao = { ver: true, adicionar: false, editar: false, excluir: false };
+    sugeridas.procedimentos = { ver: true, adicionar: true, editar: true, excluir: false };
+    sugeridas.estoque = { ver: true, adicionar: false, editar: true, excluir: false };
+    sugeridas.agenda = { ver: true, adicionar: false, editar: false, excluir: false };
+  } else if (perfil === "Farmaceutico") {
+    sugeridas.estoque = { ver: true, adicionar: true, editar: true, excluir: true };
+    sugeridas.prescricao = { ver: true, adicionar: false, editar: false, excluir: false };
+  } else if (perfil === "Nutricionista") {
+    sugeridas.pacientes = { ver: true, adicionar: true, editar: true, excluir: false };
+    sugeridas.evolucoes = { ver: true, adicionar: true, editar: true, excluir: false };
+    sugeridas.nutricao = { ver: true, adicionar: true, editar: true, excluir: true };
+  } else if (perfil === "Recepcao") {
+    sugeridas.pacientes = { ver: true, adicionar: true, editar: true, excluir: false };
+    sugeridas.agenda = { ver: true, adicionar: true, editar: true, excluir: true };
+  }
+
+  renderizarTabelaMatrizPermissoes(sugeridas);
+}
+
 function abrirModalColaborador(id) {
   if (usuarioLogado.perfil !== 'Administrador') {
     alert("Acesso Restrito: Apenas o Administrador pode cadastrar funcionários.");
@@ -384,7 +471,7 @@ function abrirModalColaborador(id) {
   document.getElementById('modalColabTitulo').innerText = "Cadastrar Funcionário";
   document.getElementById('btnSalvarColab').innerText = "Salvar Funcionário";
 
-  aoMudarFuncaoHospitalar();
+  var permsIniciais = gerarPermissoesPadrao(false);
 
   if (id) {
     var u = usuariosSistema.find(function(item) { return item.id === id; });
@@ -396,17 +483,39 @@ function abrirModalColaborador(id) {
       document.getElementById('colabRegistro').value = u.registro;
       document.getElementById('colabSenha').value = u.senha;
       document.getElementById('colabStatus').value = u.status;
-      document.getElementById('modalColabTitulo').innerText = "Editar Funcionário — " + u.nome;
+      document.getElementById('modalColabTitulo').innerText = "Editar Funcionário & Liberações — " + u.nome;
       document.getElementById('btnSalvarColab').innerText = "Gravar Alterações";
-      aoMudarFuncaoHospitalar();
+      permsIniciais = u.permissoes || gerarPermissoesPadrao(false);
     }
+  } else {
+    aoMudarFuncaoHospitalar();
+    document.getElementById('modalColaborador').style.display = 'flex';
+    return;
   }
 
+  renderizarTabelaMatrizPermissoes(permsIniciais);
   document.getElementById('modalColaborador').style.display = 'flex';
 }
 
 function fecharModalColaborador() {
   document.getElementById('modalColaborador').style.display = 'none';
+}
+
+function coletarPermissoesDoFormulario() {
+  var perms = {};
+  MODULOS_SISTEMA.forEach(function(m) {
+    perms[m.chave] = { ver: false, adicionar: false, editar: false, excluir: false };
+  });
+
+  document.querySelectorAll('.chk-perm').forEach(function(chk) {
+    var mod = chk.getAttribute('data-modulo');
+    var acao = chk.getAttribute('data-acao');
+    if (perms[mod] && chk.checked) {
+      perms[mod][acao] = true;
+    }
+  });
+
+  return perms;
 }
 
 function salvarColaborador(e) {
@@ -418,6 +527,7 @@ function salvarColaborador(e) {
   var registro = document.getElementById('colabRegistro').value.trim();
   var senha = document.getElementById('colabSenha').value.trim();
   var status = document.getElementById('colabStatus').value;
+  var permissoes = coletarPermissoesDoFormulario();
 
   if (id) {
     var idx = usuariosSistema.findIndex(function(u) { return u.id == id; });
@@ -428,6 +538,7 @@ function salvarColaborador(e) {
       usuariosSistema[idx].registro = registro;
       usuariosSistema[idx].senha = senha;
       usuariosSistema[idx].status = status;
+      usuariosSistema[idx].permissoes = permissoes;
     }
   } else {
     var ids = usuariosSistema.map(function(u) { return u.id || 0; });
@@ -439,7 +550,8 @@ function salvarColaborador(e) {
       email: email,
       registro: registro,
       senha: senha,
-      status: status
+      status: status,
+      permissoes: permissoes
     });
   }
 
@@ -463,6 +575,25 @@ function alternarStatusColaborador(id) {
   renderizarEquipe();
 }
 
+function excluirColaborador(id) {
+  if (usuarioLogado.perfil !== 'Administrador') {
+    alert("Apenas o Administrador pode excluir contas.");
+    return;
+  }
+  if (id === 1) {
+    alert("A conta do Administrador Geral não pode ser excluída.");
+    return;
+  }
+  var u = usuariosSistema.find(function(item) { return item.id === id; });
+  if (!u) return;
+
+  if (confirm("Deseja realmente excluir permanentemente a conta de " + u.nome + "?")) {
+    usuariosSistema = usuariosSistema.filter(function(item) { return item.id !== id; });
+    salvarUsuariosNoStorage();
+    renderizarEquipe();
+  }
+}
+
 function renderizarEquipe() {
   var tbody = document.getElementById('listaEquipeCorpo');
   if (!tbody) return;
@@ -473,325 +604,42 @@ function renderizarEquipe() {
       badgeStatus = '<span class="status-badge-checagem status-pendente">Inativo</span>';
     }
 
+    // Resumo de permissões liberadas
+    var totalLiberadas = 0;
+    if (u.permissoes) {
+      Object.keys(u.permissoes).forEach(function(k) {
+        if (u.permissoes[k].ver) totalLiberadas++;
+        if (u.permissoes[k].adicionar) totalLiberadas++;
+        if (u.permissoes[k].editar) totalLiberadas++;
+        if (u.permissoes[k].excluir) totalLiberadas++;
+      });
+    }
+
     return '<tr>' +
       '<td><code>FUNC-0' + u.id + '</code></td>' +
       '<td><strong>' + u.nome + '</strong></td>' +
       '<td>' + u.email + '</td>' +
       '<td><span class="badge-role">' + u.perfil + '</span></td>' +
       '<td>' + u.registro + '</td>' +
+      '<td><small style="color:var(--text-muted);">' + (u.perfil === "Administrador" ? "Acesso Total (Irrestrito)" : (totalLiberadas + " permissões ativas")) + '</small></td>' +
       '<td>' + badgeStatus + '</td>' +
       '<td>' +
         '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
-          '<button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" type="button" onclick="abrirModalColaborador(' + u.id + ')">✏️ Editar / Senha</button>' +
+          '<button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" type="button" onclick="abrirModalColaborador(' + u.id + ')">✏️ Liberações / Editar</button>' +
           (u.id !== 1 ? '<button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" type="button" onclick="alternarStatusColaborador(' + u.id + ')">' + (u.status === "Ativo" ? "Desativar" : "Ativar") + '</button>' : '') +
+          (u.id !== 1 ? '<button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; color:#b91c1c; border-color:#fca5a5;" type="button" onclick="excluirColaborador(' + u.id + ')">🗑️ Excluir</button>' : '') +
         '</div>' +
       '</td>' +
     '</tr>';
   }).join('');
 }
 
-// --- PROCEDIMENTO AVULSO ---
-var contadorInsumosProcAvulso = 0;
-
-function abrirModalProcedimentoAvulso() {
-  if (usuarioLogado.perfil !== 'Medico' && usuarioLogado.perfil !== 'Enfermeiro' && usuarioLogado.perfil !== 'TecnicoEnfermagem' && usuarioLogado.perfil !== 'Administrador') {
-    alert("Acesso Restrito: Somente equipe de enfermagem e médica pode registrar procedimentos.");
-    return;
-  }
-
-  var modal = document.getElementById('modalProcedimentoAvulso');
-  if (!modal) return;
-
-  if (pacienteAtivo) {
-    document.getElementById('modalProcedimentoSubinfo').innerText = "Paciente: " + pacienteAtivo.nome + " (" + pacienteAtivo.prontuario + ")";
-  }
-
-  document.getElementById('procDescricao').value = "";
-  document.getElementById('procObservacoes').value = "";
-  var container = document.getElementById('listaInsumosProcAvulso');
-  container.innerHTML = "";
-  contadorInsumosProcAvulso = 0;
-
-  adicionarInsumoProcedimentoAvulso();
-  modal.style.display = "flex";
-}
-
-function fecharModalProcedimentoAvulso() {
-  var modal = document.getElementById('modalProcedimentoAvulso');
-  if (modal) modal.style.display = "none";
-}
-
-function adicionarInsumoProcedimentoAvulso() {
-  contadorInsumosProcAvulso++;
-  var container = document.getElementById('listaInsumosProcAvulso');
-  if (!container) return;
-
-  var options = '<option value="">-- Sem Insumo / Selecionar do Estoque --</option>';
-  estoqueInsumos.forEach(function(item) {
-    options += '<option value="' + item.cod + '">' + item.nome + ' (Lote: ' + item.lote + ' | Saldo: ' + item.qtd + ')</option>';
-  });
-
-  var div = document.createElement('div');
-  div.id = "linha-proc-avulso-" + contadorInsumosProcAvulso;
-  div.style.cssText = "display:grid; grid-template-columns: 3fr 1fr auto; gap:8px; align-items:center;";
-  div.innerHTML = '<select class="form-control proc-avulso-select">' + options + '</select>' +
-    '<input type="number" class="form-control proc-avulso-qtd" value="1" min="1" placeholder="Qtd">' +
-    '<button type="button" class="btn-remove-linha" onclick="removerInsumoProcedimentoAvulso(' + contadorInsumosProcAvulso + ')">✕</button>';
-  container.appendChild(div);
-}
-
-function removerInsumoProcedimentoAvulso(id) {
-  var el = document.getElementById("linha-proc-avulso-" + id);
-  if (el) el.remove();
-}
-
-function salvarProcedimentoAvulsoModal(e) {
-  if (e) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  var descInput = document.getElementById('procDescricao');
-  if (!descInput || !descInput.value.trim()) {
-    alert("Informe a descrição do procedimento realizado.");
-    return false;
-  }
-
-  var linhas = document.querySelectorAll('#listaInsumosProcAvulso > div');
-  var insumosParaBaixa = [];
-
-  for (var i = 0; i < linhas.length; i++) {
-    var linha = linhas[i];
-    var select = linha.querySelector('.proc-avulso-select');
-    var qtdInput = linha.querySelector('.proc-avulso-qtd');
-    var cod = select ? select.value : '';
-    var qtd = qtdInput ? parseInt(qtdInput.value) : 0;
-
-    if (cod && qtd > 0) {
-      var itemEst = estoqueInsumos.find(function(est) { return est.cod === cod; });
-      if (!itemEst) {
-        alert("Insumo selecionado não localizado.");
-        return false;
-      }
-      if (itemEst.qtd < qtd) {
-        alert('Saldo insuficiente de "' + itemEst.nome + '"! Saldo disponível: ' + itemEst.qtd + ', solicitado: ' + qtd + '.');
-        return false;
-      }
-      insumosParaBaixa.push({ cod: itemEst.cod, nome: itemEst.nome, qtd: qtd, lote: itemEst.lote });
-    }
-  }
-
-  var resumoBaixaTexto = [];
-  insumosParaBaixa.forEach(function(insumo) {
-    var itemEst = estoqueInsumos.find(function(est) { return est.cod === insumo.cod; });
-    if (itemEst) {
-      itemEst.qtd -= insumo.qtd;
-      resumoBaixaTexto.push(insumo.qtd + "x " + itemEst.nome + " (Lote: " + insumo.lote + ")");
-    }
-  });
-
-  var dataHora = new Date().toLocaleString('pt-BR');
-  var obs = document.getElementById('procObservacoes').value.trim();
-  var logInsumos = resumoBaixaTexto.length > 0 ? resumoBaixaTexto.join(', ') : "Nenhum insumo debitado";
-
-  if (!pacienteAtivo.procedimentos) pacienteAtivo.procedimentos = [];
-  pacienteAtivo.procedimentos.unshift({
-    autor: usuarioLogado.nome,
-    cargo: usuarioLogado.perfil + " (" + usuarioLogado.registro + ")",
-    dataHora: dataHora,
-    procedimento: descInput.value.trim() + (obs ? (" — " + obs) : ""),
-    insumos: logInsumos
-  });
-
-  fecharModalProcedimentoAvulso();
-  renderizarEstoque();
-  renderizarProcedimentos();
-  return false;
-}
-
-// --- PRODUTOS DO ESTOQUE ---
-function abrirModalProdutoSanitario(cod) {
-  var form = document.getElementById('formProdutoSanitario');
-  if (form) form.reset();
-  document.getElementById('prodEditIndex').value = "";
-  document.getElementById('modalProdutoTitulo').innerText = "Cadastrar Produto / Insumo";
-  document.getElementById('btnSalvarProduto').innerText = "Salvar no Estoque";
-
-  if (cod) {
-    var p = estoqueInsumos.find(function(i) { return i.cod === cod; });
-    if (p) {
-      document.getElementById('prodEditIndex').value = p.cod;
-      document.getElementById('prodNome').value = p.nome;
-      document.getElementById('prodPrincipio').value = p.principio || '';
-      document.getElementById('prodRegistroSanitario').value = p.registroSanitario || '';
-      document.getElementById('prodLote').value = p.lote || '';
-      document.getElementById('prodValidade').value = p.validade || '';
-      document.getElementById('prodFabricacao').value = p.fabricacao || '';
-      document.getElementById('prodFabricante').value = p.fabricante || '';
-      document.getElementById('prodCategoria').value = p.cat || 'Medicamentos';
-      document.getElementById('prodArmazenamento').value = p.armazenamento || 'Ambiente (15°C a 30°C)';
-      document.getElementById('prodQtd').value = p.qtd;
-      document.getElementById('prodMin').value = p.min;
-      document.getElementById('prodUnidade').value = p.unidade || 'Ampola';
-      document.getElementById('modalProdutoTitulo').innerText = "Editar Produto (" + p.cod + ")";
-      document.getElementById('btnSalvarProduto').innerText = "Gravar Alterações";
-    }
-  }
-
-  var modal = document.getElementById('modalProdutoSanitario');
-  if (modal) modal.style.display = "flex";
-}
-
-function fecharModalProdutoSanitario() {
-  var modal = document.getElementById('modalProdutoSanitario');
-  if (modal) modal.style.display = "none";
-}
-
-function salvarProdutoSanitario(e) {
-  if (e) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  var nomeInput = document.getElementById('prodNome');
-  if (!nomeInput || !nomeInput.value.trim()) {
-    alert("Informe ao menos o nome comercial do produto.");
-    return false;
-  }
-
-  var codEdit = document.getElementById('prodEditIndex').value;
-
-  var dadosProduto = {
-    nome: nomeInput.value.trim(),
-    principio: document.getElementById('prodPrincipio') ? document.getElementById('prodPrincipio').value.trim() : '',
-    registroSanitario: document.getElementById('prodRegistroSanitario') ? document.getElementById('prodRegistroSanitario').value.trim() : 'Isento/Notificado',
-    lote: document.getElementById('prodLote') ? document.getElementById('prodLote').value.trim() : 'LOTE-PADRAO',
-    validade: document.getElementById('prodValidade') ? document.getElementById('prodValidade').value : '',
-    fabricacao: document.getElementById('prodFabricacao') ? document.getElementById('prodFabricacao').value : '',
-    fabricante: document.getElementById('prodFabricante') ? document.getElementById('prodFabricante').value.trim() : '',
-    cat: document.getElementById('prodCategoria') ? document.getElementById('prodCategoria').value : 'Medicamentos',
-    armazenamento: document.getElementById('prodArmazenamento') ? document.getElementById('prodArmazenamento').value : 'Ambiente (15°C a 30°C)',
-    qtd: parseInt(document.getElementById('prodQtd').value) || 0,
-    min: parseInt(document.getElementById('prodMin').value) || 1,
-    unidade: document.getElementById('prodUnidade') ? document.getElementById('prodUnidade').value : 'Unidade'
-  };
-
-  if (codEdit) {
-    var idx = estoqueInsumos.findIndex(function(i) { return i.cod === codEdit; });
-    if (idx !== -1) {
-      estoqueInsumos[idx] = Object.assign({}, estoqueInsumos[idx], dadosProduto);
-    }
-  } else {
-    var novoCod = "INS-" + String(estoqueInsumos.length + 1).padStart(3, '0');
-    estoqueInsumos.push(Object.assign({ cod: novoCod }, dadosProduto));
-  }
-
-  fecharModalProdutoSanitario();
-  renderizarEstoque();
-  return false;
-}
-
-function formatarDataBR(dataStr) {
-  if (!dataStr) return "--";
-  var p = dataStr.split('-');
-  return (p.length === 3) ? (p[2] + "/" + p[1] + "/" + p[0]) : dataStr;
-}
-
-function verificarStatusValidade(validadeStr) {
-  if (!validadeStr) return { texto: "Sem Data", classe: "status-pendente" };
-  var hoje = new Date();
-  var dtVal = new Date(validadeStr);
-  var diffDias = Math.floor((dtVal - hoje) / (1000 * 60 * 60 * 24));
-
-  if (diffDias < 0) {
-    return { texto: "VENCIDO", classe: "status-vencido" };
-  } else if (diffDias <= 90) {
-    return { texto: "Vence em " + diffDias + " dias", classe: "status-alerta" };
-  } else {
-    return { texto: "Vigente / Regular", classe: "status-executado" };
-  }
-}
-
-function renderizarEstoque() {
-  var tbody = document.getElementById('listaEstoqueCorpo');
-  if (!tbody) return;
-
-  tbody.innerHTML = estoqueInsumos.map(function(item) {
-    var criticoQtd = item.qtd <= item.min;
-    var statusVal = verificarStatusValidade(item.validade);
-
-    return '<tr>' +
-      '<td><code>' + item.cod + '</code></td>' +
-      '<td><strong>' + item.nome + '</strong><br><small style="color:var(--text-muted);">' + (item.principio || item.cat) + '</small></td>' +
-      '<td><small><strong>' + (item.registroSanitario || 'Isento/Notificado') + '</strong></small></td>' +
-      '<td><code>' + (item.lote || 'N/A') + '</code></td>' +
-      '<td>' + formatarDataBR(item.validade) + '</td>' +
-      '<td><small>' + (item.armazenamento || 'Ambiente') + '</small></td>' +
-      '<td><strong style="color: ' + (criticoQtd ? '#b91c1c' : '#1e382b') + '">' + item.qtd + ' ' + (item.unidade || 'un') + '</strong></td>' +
-      '<td>' + item.min + '</td>' +
-      '<td><span class="status-badge-checagem ' + statusVal.classe + '">' + statusVal.texto + '</span>' +
-      (criticoQtd ? '<br><small style="color:#b91c1c; font-weight:700;">Estoque Crítico</small>' : '') + '</td>' +
-      '<td><button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" type="button" onclick="abrirModalProdutoSanitario(\'' + item.cod + '\')">✏️ Editar</button></td>' +
-    '</tr>';
-  }).join('');
-}
-
-function imprimirRelatorioEstoquePDF() {
-  var agora = new Date();
-  var dataExtenso = agora.toLocaleDateString('pt-BR');
-  var hora = agora.toLocaleTimeString('pt-BR');
-
-  var printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert("Permita pop-ups no navegador para emitir o relatório em PDF.");
-    return;
-  }
-
-  var linhasHtml = estoqueInsumos.map(function(item, idx) {
-    var stVal = verificarStatusValidade(item.validade);
-    var bg = (idx % 2 === 0) ? 'background-color: #fafbfb;' : '';
-    return '<tr style="border-bottom: 1px solid #ddd; ' + bg + '">' +
-      '<td style="padding: 6px; font-family: monospace;">' + item.cod + '</td>' +
-      '<td style="padding: 6px;"><strong>' + item.nome + '</strong><br><span style="font-size: 8pt; color: #555;">DCI: ' + (item.principio || '-') + ' | Fabr: ' + (item.fabricante || '-') + '</span></td>' +
-      '<td style="padding: 6px; font-size: 8pt;">' + (item.registroSanitario || 'N/A') + '</td>' +
-      '<td style="padding: 6px; font-family: monospace;">' + (item.lote || 'N/A') + '</td>' +
-      '<td style="padding: 6px;">' + formatarDataBR(item.validade) + '</td>' +
-      '<td style="padding: 6px; font-size: 8pt;">' + (item.armazenamento || 'Ambiente') + '</td>' +
-      '<td style="padding: 6px; text-align: center; font-weight: bold;">' + item.qtd + ' ' + (item.unidade || 'un') + '</td>' +
-      '<td style="padding: 6px; text-align: center;">' + item.min + '</td>' +
-      '<td style="padding: 6px; font-size: 8pt;">' + stVal.texto + '</td>' +
-    '</tr>';
-  }).join('');
-
-  printWindow.document.write(
-    '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Livro de Registro e Rastreabilidade — LEVEH</title>' +
-    '<style>' +
-    'body { font-family: Arial, sans-serif; font-size: 9pt; color: #222; margin: 20mm 15mm; }' +
-    '.cabecalho { border-bottom: 2px solid #1e382b; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }' +
-    '.logo-title { font-size: 18pt; font-weight: 800; color: #1e382b; letter-spacing: 1px; }' +
-    '.subinfo { font-size: 8pt; color: #555; line-height: 1.4; }' +
-    '.doc-title { text-align: center; font-size: 12pt; font-weight: bold; text-transform: uppercase; margin: 16px 0 8px; color: #1e382b; }' +
-    '.doc-meta { font-size: 8.5pt; color: #444; margin-bottom: 14px; background: #f4f6f5; padding: 8px 12px; border-radius: 4px; }' +
-    'table { width: 100%; border-collapse: collapse; margin-top: 8px; }' +
-    'th { background: #1e382b; color: #fff; font-size: 8pt; font-weight: 600; text-align: left; padding: 6px; text-transform: uppercase; }' +
-    '.rodape { margin-top: 24px; padding-top: 12px; border-top: 1px solid #ccc; font-size: 8pt; color: #777; display: flex; justify-content: space-between; }' +
-    '@media print { @page { size: A4 landscape; margin: 12mm 10mm; } body { margin: 0; } }' +
-    '</style></head><body>' +
-    '<div class="cabecalho"><div><div class="logo-title">CLÍNICA LEVEH</div><div class="subinfo">LEVEH SERVIÇOS EM SAÚDE E NUTRIÇÃO INTEGRADA LTDA<br>CNPJ: 00.000.000/0001-00 | Campo Grande - MS<br>Responsabilidade Técnica: Dra. Estéfana Andrade (CRN-3 10842) / Dr. Roberto Costa (CRM-MS 9421)</div></div><div style="text-align: right;" class="subinfo"><strong>LIVRO DE REGISTRO E CONTROLE TÉCNICO</strong><br>Apresentação Oficial de Rastreabilidade<br>Data/Hora: ' + dataExtenso + ', às ' + hora + '</div></div>' +
-    '<div class="doc-title">Inventário Físico e Rastreabilidade de Medicamentos & Insumos</div>' +
-    '<div class="doc-meta"><strong>Finalidade do Documento:</strong> Registro de inventário contínuo e comprovação de rastreabilidade de lote, prazo de validade, acondicionamento térmico e quantitativo em estoque físico.</div>' +
-    '<table><thead><tr><th>Cód.</th><th>Item / Princípio Ativo / Fabricante</th><th>Reg. Sanitário</th><th>Lote</th><th>Validade</th><th>Armazenamento</th><th style="text-align: center;">Saldo</th><th style="text-align: center;">Mín.</th><th>Situação</th></tr></thead><tbody>' +
-    linhasHtml +
-    '</tbody></table>' +
-    '<div class="rodape"><div>Documento gerado eletronicamente pelo Sistema de Prontuário e Gestão Clínica LEVEH.</div><div>Assinatura do Responsável Técnico: ___________________________________________</div></div>' +
-    '<script>window.onload = function() { window.print(); };</script>' +
-    '</body></html>'
-  );
-  printWindow.document.close();
-}
-
 // --- PACIENTES ---
 function abrirModalNovoPaciente() {
+  if (!temPermissao('pacientes', 'adicionar')) {
+    alert("Acesso Negado: Você não tem permissão para adicionar novos pacientes.");
+    return;
+  }
   var form = document.getElementById('formPaciente');
   if (form) form.reset();
   var idField = document.getElementById('pacienteId');
@@ -805,6 +653,10 @@ function abrirModalNovoPaciente() {
 }
 
 function abrirModalEdicaoPaciente(id) {
+  if (!temPermissao('pacientes', 'editar')) {
+    alert("Acesso Negado: Você não tem permissão para editar os dados cadastrais deste paciente.");
+    return;
+  }
   var p = bancoPacientes.find(function(item) { return item.id === id; });
   if (!p) return;
 
@@ -825,6 +677,20 @@ function abrirModalEdicaoPaciente(id) {
 
   document.getElementById('modalPacienteTitulo').innerText = "Editar Cadastro — " + p.prontuario;
   document.getElementById('modalPaciente').style.display = "flex";
+}
+
+function excluirPaciente(id) {
+  if (!temPermissao('pacientes', 'excluir')) {
+    alert("Acesso Negado: Você não tem permissão para excluir prontuários de pacientes.");
+    return;
+  }
+  var p = bancoPacientes.find(function(item) { return item.id === id; });
+  if (!p) return;
+
+  if (confirm("Deseja realmente excluir o prontuário de " + p.nome + " (" + p.prontuario + ")? Esta ação é irreversível.")) {
+    bancoPacientes = bancoPacientes.filter(function(item) { return item.id !== id; });
+    renderizarPacientes();
+  }
 }
 
 function fecharModalPaciente() {
@@ -886,7 +752,11 @@ function salvarPaciente(e) {
 function renderizarPacientes() {
   var tbody = document.getElementById('listaPacientesCorpo');
   if (!tbody) return;
+
   tbody.innerHTML = bancoPacientes.map(function(p) {
+    var podeEditar = temPermissao('pacientes', 'editar');
+    var podeExcluir = temPermissao('pacientes', 'excluir');
+
     return '<tr>' +
       '<td><strong>' + p.prontuario + '</strong></td>' +
       '<td><strong>' + p.nome + '</strong></td>' +
@@ -895,8 +765,9 @@ function renderizarPacientes() {
       '<td>' + (p.convenio || 'Particular') + '</td>' +
       '<td>' + (p.telefone || '-') + '</td>' +
       '<td><div style="display:flex; gap:6px;">' +
-        '<button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" type="button" onclick="abrirModalEdicaoPaciente(' + p.id + ')">✏️ Editar</button>' +
         '<button class="btn btn-primary" style="padding:4px 8px; font-size:0.75rem;" type="button" onclick="abrirProntuario(' + p.id + ')">📋 Prontuário</button>' +
+        (podeEditar ? '<button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" type="button" onclick="abrirModalEdicaoPaciente(' + p.id + ')">✏️ Editar</button>' : '') +
+        (podeExcluir ? '<button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; color:#b91c1c; border-color:#fca5a5;" type="button" onclick="excluirPaciente(' + p.id + ')">🗑️</button>' : '') +
       '</div></td>' +
     '</tr>';
   }).join('');
@@ -996,6 +867,18 @@ function toggleSidebar() {
 }
 
 function navegarPara(moduloId) {
+  // Verificação de permissão do POP: estritamente Administrador
+  if (moduloId === 'pop' && usuarioLogado.perfil !== 'Administrador') {
+    alert("Acesso Negado: O módulo POP é homologado estritamente para a Diretoria Clínica e Administrador.");
+    return;
+  }
+
+  // Verificação de permissão da Equipe: estritamente Administrador
+  if (moduloId === 'equipe' && usuarioLogado.perfil !== 'Administrador') {
+    alert("Acesso Negado: Gestão de equipe é exclusiva do Administrador.");
+    return;
+  }
+
   document.querySelectorAll('.view-section').forEach(function(sec) { sec.style.display = 'none'; });
   document.querySelectorAll('.nav-item').forEach(function(el) { el.classList.remove('active'); });
 
@@ -1011,10 +894,10 @@ function navegarPara(moduloId) {
     prontuario: "Prontuário Clínico",
     agenda: "Agenda & Calendário",
     estoque: "Estoque & Insumos",
-    equipe: "Equipe Hospitalar & Perfis",
+    equipe: "Equipe Hospitalar & Liberações",
     taco: "Tabela TACO",
     substituicao: "Listas de Substituição",
-    pop: "Procedimentos (POP)"
+    pop: "POP (Diretoria Clínica)"
   };
   if (pageTitle && moduloId !== 'prontuario' && titulos[moduloId]) {
     pageTitle.innerText = titulos[moduloId];
@@ -1034,7 +917,7 @@ function renderizarEvolucoes() {
   var box = document.getElementById('historicoEvolucoes');
   if (!box) return;
   if (!pacienteAtivo || !pacienteAtivo.evolucoes || pacienteAtivo.evolucoes.length === 0) {
-    box.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); padding:14px; background:#fafcfa; border-radius:8px; border:1px dashed var(--border);">Nenhuma anotação registrada. Clique em <strong>+ Nova Evolução</strong> acima.</div>';
+    box.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); padding:14px; background:#fafcfa; border-radius:8px; border:1px dashed var(--border);">Nenhuma anotação registrada.</div>';
     return;
   }
   box.innerHTML = pacienteAtivo.evolucoes.map(function(ev) {
@@ -1066,8 +949,8 @@ function gerarOptionsEstoque() {
 }
 
 function abrirModalPrescricao() {
-  if (usuarioLogado.perfil !== 'Medico' && usuarioLogado.perfil !== 'Administrador') {
-    alert("Acesso Negado: Apenas o Médico (CRM) tem permissão legal para emitir prescrições médicas.");
+  if (!temPermissao('prescricao', 'adicionar')) {
+    alert("Acesso Negado: Você não tem permissão para emitir prescrições médicas.");
     return;
   }
 
@@ -1203,13 +1086,27 @@ function salvarPrescricaoMedicaModal(e) {
   renderizarChecagemPrescricao();
 }
 
+function excluirPrescricaoMedica(prescId) {
+  if (!temPermissao('prescricao', 'excluir')) {
+    alert("Acesso Negado: Você não tem permissão para excluir prescrições médicas.");
+    return;
+  }
+  if (confirm("Deseja realmente excluir esta prescrição médica emitida?")) {
+    pacienteAtivo.prescricoesMedicas = pacienteAtivo.prescricoesMedicas.filter(function(p) { return p.id !== prescId; });
+    renderizarPrescricoesMedicas();
+    renderizarChecagemPrescricao();
+  }
+}
+
 function renderizarPrescricoesMedicas() {
   var box = document.getElementById('historicoPrescricoesMedicas');
   if (!box) return;
   if (!pacienteAtivo || !pacienteAtivo.prescricoesMedicas || pacienteAtivo.prescricoesMedicas.length === 0) {
-    box.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); padding:14px; background:#fafcfa; border-radius:8px; border:1px dashed var(--border);">Nenhuma prescrição ativa. Médicos podem clicar em <strong>+ Adicionar Prescrição</strong> acima.</div>';
+    box.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); padding:14px; background:#fafcfa; border-radius:8px; border:1px dashed var(--border);">Nenhuma prescrição ativa.</div>';
     return;
   }
+
+  var podeExcluir = temPermissao('prescricao', 'excluir');
 
   box.innerHTML = pacienteAtivo.prescricoesMedicas.map(function(pr) {
     var linhasItens = pr.itens.map(function(it) {
@@ -1227,7 +1124,10 @@ function renderizarPrescricoesMedicas() {
     return '<div class="evolucao-card" style="border-left-color: #2b5585; margin-bottom: 14px;">' +
       '<div class="evolucao-header">' +
         '<div><span class="evolucao-autor" style="color:#1d3d63;">' + pr.autor + '</span><span class="evolucao-cargo">— ' + pr.cargo + '</span></div>' +
-        '<span class="evolucao-datahora">📅 Emitida em: ' + pr.dataHora + '</span>' +
+        '<div style="display:flex; align-items:center; gap:8px;">' +
+          '<span class="evolucao-datahora">📅 Emitida em: ' + pr.dataHora + '</span>' +
+          (podeExcluir ? '<button class="btn btn-outline" style="padding:2px 6px; font-size:0.72rem; color:#b91c1c; border-color:#fca5a5;" onclick="excluirPrescricaoMedica(' + pr.id + ')">🗑️</button>' : '') +
+        '</div>' +
       '</div>' +
       '<div style="margin-top:10px;">' +
         '<table style="width:100%; border:1px solid var(--border); font-size:0.85rem; background:#fff;">' +
@@ -1250,6 +1150,8 @@ function renderizarChecagemPrescricao() {
     return;
   }
 
+  var podeChecar = temPermissao('procedimentos', 'adicionar') || temPermissao('procedimentos', 'editar');
+
   var todosItens = [];
   pacienteAtivo.prescricoesMedicas.forEach(function(presc) {
     presc.itens.forEach(function(item) {
@@ -1269,7 +1171,10 @@ function renderizarChecagemPrescricao() {
       '<div>' +
         (it.checado ?
           '<button class="btn btn-outline" style="padding:5px 10px; font-size:0.75rem;" disabled>✓ Já Administrado</button>' :
-          '<button class="btn-checar" type="button" onclick="abrirModalChecagem(' + it.prescId + ', ' + it.id + ')">✓ Checar / Executar</button>'
+          (podeChecar ?
+            '<button class="btn-checar" type="button" onclick="abrirModalChecagem(' + it.prescId + ', ' + it.id + ')">✓ Checar / Executar</button>' :
+            '<span style="font-size:0.75rem; color:var(--text-muted);">Sem permissão para checar</span>'
+          )
         ) +
       '</div>' +
     '</div>';
@@ -1279,8 +1184,8 @@ function renderizarChecagemPrescricao() {
 var contadorInsumosChecagem = 0;
 
 function abrirModalChecagem(prescId, itemId) {
-  if (usuarioLogado.perfil !== 'Enfermeiro' && usuarioLogado.perfil !== 'TecnicoEnfermagem' && usuarioLogado.perfil !== 'Medico' && usuarioLogado.perfil !== 'Administrador') {
-    alert("Apenas a equipe de enfermagem ou médica pode checar e administrar itens da prescrição.");
+  if (!temPermissao('procedimentos', 'adicionar') && !temPermissao('procedimentos', 'editar')) {
+    alert("Acesso Negado: Você não tem permissão para executar checagens de medicação.");
     return;
   }
 
@@ -1417,11 +1322,130 @@ function salvarChecagemComBaixaEstoque(e) {
   renderizarPrescricoesMedicas();
 }
 
+// --- PROCEDIMENTOS AVULSOS ---
+var contadorInsumosProcAvulso = 0;
+
+function abrirModalProcedimentoAvulso() {
+  if (!temPermissao('procedimentos', 'adicionar')) {
+    alert("Acesso Negado: Você não tem permissão para registrar procedimentos avulsos.");
+    return;
+  }
+
+  var modal = document.getElementById('modalProcedimentoAvulso');
+  if (!modal) return;
+
+  if (pacienteAtivo) {
+    document.getElementById('modalProcedimentoSubinfo').innerText = "Paciente: " + pacienteAtivo.nome + " (" + pacienteAtivo.prontuario + ")";
+  }
+
+  document.getElementById('procDescricao').value = "";
+  document.getElementById('procObservacoes').value = "";
+  var container = document.getElementById('listaInsumosProcAvulso');
+  container.innerHTML = "";
+  contadorInsumosProcAvulso = 0;
+
+  adicionarInsumoProcedimentoAvulso();
+  modal.style.display = "flex";
+}
+
+function fecharModalProcedimentoAvulso() {
+  var modal = document.getElementById('modalProcedimentoAvulso');
+  if (modal) modal.style.display = "none";
+}
+
+function adicionarInsumoProcedimentoAvulso() {
+  contadorInsumosProcAvulso++;
+  var container = document.getElementById('listaInsumosProcAvulso');
+  if (!container) return;
+
+  var options = '<option value="">-- Sem Insumo / Selecionar do Estoque --</option>';
+  estoqueInsumos.forEach(function(item) {
+    options += '<option value="' + item.cod + '">' + item.nome + ' (Lote: ' + item.lote + ' | Saldo: ' + item.qtd + ')</option>';
+  });
+
+  var div = document.createElement('div');
+  div.id = "linha-proc-avulso-" + contadorInsumosProcAvulso;
+  div.style.cssText = "display:grid; grid-template-columns: 3fr 1fr auto; gap:8px; align-items:center;";
+  div.innerHTML = '<select class="form-control proc-avulso-select">' + options + '</select>' +
+    '<input type="number" class="form-control proc-avulso-qtd" value="1" min="1" placeholder="Qtd">' +
+    '<button type="button" class="btn-remove-linha" onclick="removerInsumoProcedimentoAvulso(' + contadorInsumosProcAvulso + ')">✕</button>';
+  container.appendChild(div);
+}
+
+function removerInsumoProcedimentoAvulso(id) {
+  var el = document.getElementById("linha-proc-avulso-" + id);
+  if (el) el.remove();
+}
+
+function salvarProcedimentoAvulsoModal(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  var descInput = document.getElementById('procDescricao');
+  if (!descInput || !descInput.value.trim()) {
+    alert("Informe a descrição do procedimento realizado.");
+    return false;
+  }
+
+  var linhas = document.querySelectorAll('#listaInsumosProcAvulso > div');
+  var insumosParaBaixa = [];
+
+  for (var i = 0; i < linhas.length; i++) {
+    var linha = linhas[i];
+    var select = linha.querySelector('.proc-avulso-select');
+    var qtdInput = linha.querySelector('.proc-avulso-qtd');
+    var cod = select ? select.value : '';
+    var qtd = qtdInput ? parseInt(qtdInput.value) : 0;
+
+    if (cod && qtd > 0) {
+      var itemEst = estoqueInsumos.find(function(est) { return est.cod === cod; });
+      if (!itemEst) {
+        alert("Insumo selecionado não localizado.");
+        return false;
+      }
+      if (itemEst.qtd < qtd) {
+        alert('Saldo insuficiente de "' + itemEst.nome + '"! Saldo disponível: ' + itemEst.qtd + ', solicitado: ' + qtd + '.');
+        return false;
+      }
+      insumosParaBaixa.push({ cod: itemEst.cod, nome: itemEst.nome, qtd: qtd, lote: itemEst.lote });
+    }
+  }
+
+  var resumoBaixaTexto = [];
+  insumosParaBaixa.forEach(function(insumo) {
+    var itemEst = estoqueInsumos.find(function(est) { return est.cod === insumo.cod; });
+    if (itemEst) {
+      itemEst.qtd -= insumo.qtd;
+      resumoBaixaTexto.push(insumo.qtd + "x " + itemEst.nome + " (Lote: " + insumo.lote + ")");
+    }
+  });
+
+  var dataHora = new Date().toLocaleString('pt-BR');
+  var obs = document.getElementById('procObservacoes').value.trim();
+  var logInsumos = resumoBaixaTexto.length > 0 ? resumoBaixaTexto.join(', ') : "Nenhum insumo debitado";
+
+  if (!pacienteAtivo.procedimentos) pacienteAtivo.procedimentos = [];
+  pacienteAtivo.procedimentos.unshift({
+    autor: usuarioLogado.nome,
+    cargo: usuarioLogado.perfil + " (" + usuarioLogado.registro + ")",
+    dataHora: dataHora,
+    procedimento: descInput.value.trim() + (obs ? (" — " + obs) : ""),
+    insumos: logInsumos
+  });
+
+  fecharModalProcedimentoAvulso();
+  renderizarEstoque();
+  renderizarProcedimentos();
+  return false;
+}
+
 function renderizarProcedimentos() {
   var box = document.getElementById('historicoProcedimentos');
   if (!box) return;
   if (!pacienteAtivo || !pacienteAtivo.procedimentos || pacienteAtivo.procedimentos.length === 0) {
-    box.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); padding:14px; background:#fafcfa; border-radius:8px; border:1px dashed var(--border);">Nenhum procedimento avulso registrado. Clique em <strong>+ Procedimento Avulso</strong> acima.</div>';
+    box.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); padding:14px; background:#fafcfa; border-radius:8px; border:1px dashed var(--border);">Nenhum procedimento registrado.</div>';
     return;
   }
   box.innerHTML = pacienteAtivo.procedimentos.map(function(p) {
@@ -1438,7 +1462,228 @@ function renderizarProcedimentos() {
   }).join('');
 }
 
+// --- PRODUTOS DO ESTOQUE ---
+function abrirModalProdutoSanitario(cod) {
+  if (cod && !temPermissao('estoque', 'editar')) {
+    alert("Acesso Negado: Você não tem permissão para editar insumos no estoque.");
+    return;
+  }
+  if (!cod && !temPermissao('estoque', 'adicionar')) {
+    alert("Acesso Negado: Você não tem permissão para cadastrar novos produtos no estoque.");
+    return;
+  }
+
+  var form = document.getElementById('formProdutoSanitario');
+  if (form) form.reset();
+  document.getElementById('prodEditIndex').value = "";
+  document.getElementById('modalProdutoTitulo').innerText = "Cadastrar Produto / Insumo";
+  document.getElementById('btnSalvarProduto').innerText = "Salvar no Estoque";
+
+  if (cod) {
+    var p = estoqueInsumos.find(function(i) { return i.cod === cod; });
+    if (p) {
+      document.getElementById('prodEditIndex').value = p.cod;
+      document.getElementById('prodNome').value = p.nome;
+      document.getElementById('prodPrincipio').value = p.principio || '';
+      document.getElementById('prodRegistroSanitario').value = p.registroSanitario || '';
+      document.getElementById('prodLote').value = p.lote || '';
+      document.getElementById('prodValidade').value = p.validade || '';
+      document.getElementById('prodFabricacao').value = p.fabricacao || '';
+      document.getElementById('prodFabricante').value = p.fabricante || '';
+      document.getElementById('prodCategoria').value = p.cat || 'Medicamentos';
+      document.getElementById('prodArmazenamento').value = p.armazenamento || 'Ambiente (15°C a 30°C)';
+      document.getElementById('prodQtd').value = p.qtd;
+      document.getElementById('prodMin').value = p.min;
+      document.getElementById('prodUnidade').value = p.unidade || 'Ampola';
+      document.getElementById('modalProdutoTitulo').innerText = "Editar Produto (" + p.cod + ")";
+      document.getElementById('btnSalvarProduto').innerText = "Gravar Alterações";
+    }
+  }
+
+  document.getElementById('modalProdutoSanitario').style.display = "flex";
+}
+
+function fecharModalProdutoSanitario() {
+  document.getElementById('modalProdutoSanitario').style.display = "none";
+}
+
+function salvarProdutoSanitario(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  var nomeInput = document.getElementById('prodNome');
+  if (!nomeInput || !nomeInput.value.trim()) {
+    alert("Informe ao menos o nome comercial do produto.");
+    return false;
+  }
+
+  var codEdit = document.getElementById('prodEditIndex').value;
+
+  var dadosProduto = {
+    nome: nomeInput.value.trim(),
+    principio: document.getElementById('prodPrincipio') ? document.getElementById('prodPrincipio').value.trim() : '',
+    registroSanitario: document.getElementById('prodRegistroSanitario') ? document.getElementById('prodRegistroSanitario').value.trim() : 'Isento/Notificado',
+    lote: document.getElementById('prodLote') ? document.getElementById('prodLote').value.trim() : 'LOTE-PADRAO',
+    validade: document.getElementById('prodValidade') ? document.getElementById('prodValidade').value : '',
+    fabricacao: document.getElementById('prodFabricacao') ? document.getElementById('prodFabricacao').value : '',
+    fabricante: document.getElementById('prodFabricante') ? document.getElementById('prodFabricante').value.trim() : '',
+    cat: document.getElementById('prodCategoria') ? document.getElementById('prodCategoria').value : 'Medicamentos',
+    armazenamento: document.getElementById('prodArmazenamento') ? document.getElementById('prodArmazenamento').value : 'Ambiente (15°C a 30°C)',
+    qtd: parseInt(document.getElementById('prodQtd').value) || 0,
+    min: parseInt(document.getElementById('prodMin').value) || 1,
+    unidade: document.getElementById('prodUnidade') ? document.getElementById('prodUnidade').value : 'Unidade'
+  };
+
+  if (codEdit) {
+    var idx = estoqueInsumos.findIndex(function(i) { return i.cod === codEdit; });
+    if (idx !== -1) {
+      estoqueInsumos[idx] = Object.assign({}, estoqueInsumos[idx], dadosProduto);
+    }
+  } else {
+    var novoCod = "INS-" + String(estoqueInsumos.length + 1).padStart(3, '0');
+    estoqueInsumos.push(Object.assign({ cod: novoCod }, dadosProduto));
+  }
+
+  fecharModalProdutoSanitario();
+  renderizarEstoque();
+  return false;
+}
+
+function excluirProdutoEstoque(cod) {
+  if (!temPermissao('estoque', 'excluir')) {
+    alert("Acesso Negado: Você não tem permissão para excluir produtos do estoque.");
+    return;
+  }
+  var p = estoqueInsumos.find(function(i) { return i.cod === cod; });
+  if (!p) return;
+
+  if (confirm("Deseja realmente remover o produto " + p.nome + " (" + p.cod + ") do catálogo de estoque?")) {
+    estoqueInsumos = estoqueInsumos.filter(function(i) { return i.cod !== cod; });
+    renderizarEstoque();
+  }
+}
+
+function formatarDataBR(dataStr) {
+  if (!dataStr) return "--";
+  var p = dataStr.split('-');
+  return (p.length === 3) ? (p[2] + "/" + p[1] + "/" + p[0]) : dataStr;
+}
+
+function verificarStatusValidade(validadeStr) {
+  if (!validadeStr) return { texto: "Sem Data", classe: "status-pendente" };
+  var hoje = new Date();
+  var dtVal = new Date(validadeStr);
+  var diffDias = Math.floor((dtVal - hoje) / (1000 * 60 * 60 * 24));
+
+  if (diffDias < 0) {
+    return { texto: "VENCIDO", classe: "status-vencido" };
+  } else if (diffDias <= 90) {
+    return { texto: "Vence em " + diffDias + " dias", classe: "status-alerta" };
+  } else {
+    return { texto: "Vigente / Regular", classe: "status-executado" };
+  }
+}
+
+function renderizarEstoque() {
+  var tbody = document.getElementById('listaEstoqueCorpo');
+  if (!tbody) return;
+
+  var podeEditar = temPermissao('estoque', 'editar');
+  var podeExcluir = temPermissao('estoque', 'excluir');
+
+  tbody.innerHTML = estoqueInsumos.map(function(item) {
+    var criticoQtd = item.qtd <= item.min;
+    var statusVal = verificarStatusValidade(item.validade);
+
+    return '<tr>' +
+      '<td><code>' + item.cod + '</code></td>' +
+      '<td><strong>' + item.nome + '</strong><br><small style="color:var(--text-muted);">' + (item.principio || item.cat) + '</small></td>' +
+      '<td><small><strong>' + (item.registroSanitario || 'Isento/Notificado') + '</strong></small></td>' +
+      '<td><code>' + (item.lote || 'N/A') + '</code></td>' +
+      '<td>' + formatarDataBR(item.validade) + '</td>' +
+      '<td><small>' + (item.armazenamento || 'Ambiente') + '</small></td>' +
+      '<td><strong style="color: ' + (criticoQtd ? '#b91c1c' : '#1e382b') + '">' + item.qtd + ' ' + (item.unidade || 'un') + '</strong></td>' +
+      '<td>' + item.min + '</td>' +
+      '<td><span class="status-badge-checagem ' + statusVal.classe + '">' + statusVal.texto + '</span>' +
+      (criticoQtd ? '<br><small style="color:#b91c1c; font-weight:700;">Estoque Crítico</small>' : '') + '</td>' +
+      '<td><div style="display:flex; gap:4px;">' +
+        (podeEditar ? '<button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" type="button" onclick="abrirModalProdutoSanitario(\'' + item.cod + '\')">✏️</button>' : '') +
+        (podeExcluir ? '<button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; color:#b91c1c; border-color:#fca5a5;" type="button" onclick="excluirProdutoEstoque(\'' + item.cod + '\')">🗑️</button>' : '') +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function imprimirRelatorioEstoquePDF() {
+  var agora = new Date();
+  var dataExtenso = agora.toLocaleDateString('pt-BR');
+  var hora = agora.toLocaleTimeString('pt-BR');
+
+  var printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert("Permita pop-ups no navegador para emitir o relatório em PDF.");
+    return;
+  }
+
+  var linhasHtml = estoqueInsumos.map(function(item, idx) {
+    var stVal = verificarStatusValidade(item.validade);
+    var bg = (idx % 2 === 0) ? 'background-color: #fafbfb;' : '';
+    return '<tr style="border-bottom: 1px solid #ddd; ' + bg + '">' +
+      '<td style="padding: 6px; font-family: monospace;">' + item.cod + '</td>' +
+      '<td style="padding: 6px;"><strong>' + item.nome + '</strong><br><span style="font-size: 8pt; color: #555;">DCI: ' + (item.principio || '-') + ' | Fabr: ' + (item.fabricante || '-') + '</span></td>' +
+      '<td style="padding: 6px; font-size: 8pt;">' + (item.registroSanitario || 'N/A') + '</td>' +
+      '<td style="padding: 6px; font-family: monospace;">' + (item.lote || 'N/A') + '</td>' +
+      '<td style="padding: 6px;">' + formatarDataBR(item.validade) + '</td>' +
+      '<td style="padding: 6px; font-size: 8pt;">' + (item.armazenamento || 'Ambiente') + '</td>' +
+      '<td style="padding: 6px; text-align: center; font-weight: bold;">' + item.qtd + ' ' + (item.unidade || 'un') + '</td>' +
+      '<td style="padding: 6px; text-align: center;">' + item.min + '</td>' +
+      '<td style="padding: 6px; font-size: 8pt;">' + stVal.texto + '</td>' +
+    '</tr>';
+  }).join('');
+
+  printWindow.document.write(
+    '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Livro de Registro e Rastreabilidade — LEVEH</title>' +
+    '<style>' +
+    'body { font-family: Arial, sans-serif; font-size: 9pt; color: #222; margin: 20mm 15mm; }' +
+    '.cabecalho { border-bottom: 2px solid #1e382b; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }' +
+    '.logo-title { font-size: 18pt; font-weight: 800; color: #1e382b; letter-spacing: 1px; }' +
+    '.subinfo { font-size: 8pt; color: #555; line-height: 1.4; }' +
+    '.doc-title { text-align: center; font-size: 12pt; font-weight: bold; text-transform: uppercase; margin: 16px 0 8px; color: #1e382b; }' +
+    '.doc-meta { font-size: 8.5pt; color: #444; margin-bottom: 14px; background: #f4f6f5; padding: 8px 12px; border-radius: 4px; }' +
+    'table { width: 100%; border-collapse: collapse; margin-top: 8px; }' +
+    'th { background: #1e382b; color: #fff; font-size: 8pt; font-weight: 600; text-align: left; padding: 6px; text-transform: uppercase; }' +
+    '.rodape { margin-top: 24px; padding-top: 12px; border-top: 1px solid #ccc; font-size: 8pt; color: #777; display: flex; justify-content: space-between; }' +
+    '@media print { @page { size: A4 landscape; margin: 12mm 10mm; } body { margin: 0; } }' +
+    '</style></head><body>' +
+    '<div class="cabecalho"><div><div class="logo-title">CLÍNICA LEVEH</div><div class="subinfo">LEVEH SERVIÇOS EM SAÚDE E NUTRIÇÃO INTEGRADA LTDA<br>CNPJ: 00.000.000/0001-00 | Campo Grande - MS<br>Responsabilidade Técnica: Dra. Estéfana Andrade (CRN-3 10842) / Dr. Roberto Costa (CRM-MS 9421)</div></div><div style="text-align: right;" class="subinfo"><strong>LIVRO DE REGISTRO E CONTROLE TÉCNICO</strong><br>Apresentação Oficial de Rastreabilidade<br>Data/Hora: ' + dataExtenso + ', às ' + hora + '</div></div>' +
+    '<div class="doc-title">Inventário Físico e Rastreabilidade de Medicamentos & Insumos</div>' +
+    '<div class="doc-meta"><strong>Finalidade do Documento:</strong> Registro de inventário contínuo e comprovação de rastreabilidade de lote, prazo de validade, acondicionamento térmico e quantitativo em estoque físico.</div>' +
+    '<table><thead><tr><th>Cód.</th><th>Item / Princípio Ativo / Fabricante</th><th>Reg. Sanitário</th><th>Lote</th><th>Validade</th><th>Armazenamento</th><th style="text-align: center;">Saldo</th><th style="text-align: center;">Mín.</th><th>Situação</th></tr></thead><tbody>' +
+    linhasHtml +
+    '</tbody></table>' +
+    '<div class="rodape"><div>Documento gerado eletronicamente pelo Sistema de Prontuário e Gestão Clínica LEVEH.</div><div>Assinatura do Responsável Técnico: ___________________________________________</div></div>' +
+    '<script>window.onload = function() { window.print(); };</script>' +
+    '</body></html>'
+  );
+  printWindow.document.close();
+}
+
+// --- LANÇAMENTO GENÉRICO POR ABA (ANTROPOMETRIA, BIOIMPEDÂNCIA, DIETAS) ---
 function lancarGenericoAba(abaId) {
+  var mapaPermissao = {
+    'aba-antropometria': 'nutricao',
+    'aba-bioimpedancia': 'nutricao',
+    'aba-prescricao': 'nutricao'
+  };
+
+  var mod = mapaPermissao[abaId] || 'evolucoes';
+  if (!temPermissao(mod, 'adicionar')) {
+    alert("Acesso Negado: Você não tem permissão para adicionar avaliações neste módulo.");
+    return;
+  }
+
   var titulos = {
     'aba-antropometria': 'Registro de Antropometria (Peso, Dobras, Altura)',
     'aba-bioimpedancia': 'Registro de Exame de Bioimpedância (% Gordura, Massa Magra)',
@@ -1464,6 +1709,11 @@ function lancarGenericoAba(abaId) {
 
 // --- EVOLUÇÃO E IALEVEH ---
 function abrirModalEvolucao() {
+  if (!temPermissao('evolucoes', 'adicionar')) {
+    alert("Acesso Negado: Você não tem permissão para lançar evoluções clínicas.");
+    return;
+  }
+
   var m = document.getElementById('modalEvolucao');
   if (!m) return;
   if (pacienteAtivo) {
