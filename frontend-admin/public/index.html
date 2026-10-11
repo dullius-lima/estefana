@@ -2,2220 +2,343 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clínica LEVEH — Gestão & Prontuário</title>
-  <style>
-    :root {
-      --primary: #5B6E53;
-      --primary-dark: #43523D;
-      --primary-light: #EBF0E9;
-      --bg: #F4F6F2;
-      --card-bg: #FFFFFF;
-      --text: #2A3327;
-      --text-muted: #6B7866;
-      --border: #DCE3D8;
-      --admin-badge: #78350F;
-      --admin-bg: #FEF3C7;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); min-height: 100vh; }
-
-    /* AUTH OVERLAY */
-    .auth-overlay { position: fixed; inset: 0; background: rgba(42, 51, 39, 0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 1.5rem; backdrop-filter: blur(5px); }
-    .auth-card { background: var(--card-bg); border-radius: 1.25rem; width: 100%; max-width: 440px; padding: 2.2rem; box-shadow: 0 20px 30px rgba(0,0,0,0.2); }
-    
-    .logo-container { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
-    .logo-circle { width: 75px; height: 75px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #F4F6F2; margin-bottom: 0.5rem; }
-    .logo-text-title { font-size: 1.35rem; font-weight: 700; letter-spacing: 3px; color: var(--primary); text-transform: uppercase; }
-    .logo-text-sub { font-size: 0.65rem; letter-spacing: 2.5px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
-
-    .form-group { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
-    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-    .form-group input, .form-group select, .form-group textarea { padding: 0.75rem 1rem; border: 1.5px solid var(--border); border-radius: 0.5rem; font-size: 0.95rem; outline: none; background: #FAFCF9; }
-    .form-group input:focus { border-color: var(--primary); background: #fff; }
-
-    .btn { padding: 0.75rem 1.25rem; border: none; border-radius: 0.5rem; background: var(--primary); color: white; font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: 0.2s; }
-    .btn:hover { background: var(--primary-dark); }
-    .btn-secondary { background: #8E998B; }
-    .btn-danger { background: #C25454; }
-    .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
-    .btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
-    .btn-outline:hover { background: var(--primary-light); }
-
-    .app-layout { display: flex; min-height: 100vh; }
-    .sidebar { width: 270px; background: #2E382A; color: #F4F6F2; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
-    .sidebar-header { text-align: center; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 0.5rem; }
-    .nav-btn { background: none; border: none; color: #BAC4B7; text-align: left; padding: 0.85rem 1rem; border-radius: 0.5rem; font-size: 0.9rem; cursor: pointer; width: 100%; font-weight: 500; text-decoration: none; display: block; }
-    .nav-btn.active, .nav-btn:hover { background: #404D3B; color: #FFFFFF; font-weight: 600; }
-    .logout-btn { margin-top: auto; background: transparent; border: 1px solid #C25454; color: #E88E8E; padding: 0.75rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600; }
-    .logout-btn:hover { background: #C25454; color: #FFFFFF; }
-
-    .content { flex: 1; padding: 2.2rem; overflow-y: auto; max-width: 1400px; margin: 0 auto; width: 100%; }
-    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: var(--card-bg); padding: 1rem 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border); }
-    .top-actions { display: flex; align-items: center; gap: 1rem; position: relative; }
-    .card { background: var(--card-bg); border-radius: 0.85rem; padding: 1.75rem; border: 1px solid var(--border); margin-bottom: 1.5rem; }
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; margin-top: 1rem; }
-    th { padding: 0.75rem 0.85rem; background: #F6F8F4; border-bottom: 2px solid var(--border); color: var(--text-muted); font-weight: 700; }
-    td { padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-
-    .subtabs { display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; flex-wrap: wrap; }
-    .subtab-btn { background: none; border: none; padding: 0.65rem 1.1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; border-radius: 0.375rem 0.375rem 0 0; }
-    .subtab-btn.active { color: var(--primary); border-bottom: 2.5px solid var(--primary); background: var(--primary-light); }
-    .hidden { display: none !important; }
-
-    .role-badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 0.35rem; font-size: 0.75rem; font-weight: 700; }
-    .role-admin { background: var(--admin-bg); color: var(--admin-badge); border: 1px solid #FCD34D; }
-
-    /* NOTIFICACOES NO CANTO SUPERIOR DIREITO */
-    .notif-btn { position: relative; background: #FAFCF9; border: 1.5px solid var(--border); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-size: 1.1rem; }
-    .notif-btn:hover { background: var(--primary-light); border-color: var(--primary); }
-    .notif-badge { position: absolute; top: -4px; right: -4px; background: #DC2626; color: white; border-radius: 999px; font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.35rem; border: 2px solid white; line-height: 1; }
-    .notif-dropdown { position: absolute; right: 0; top: 50px; background: white; border: 1.5px solid var(--border); border-radius: 0.75rem; width: 340px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 9999; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
-    .notif-item { padding: 0.65rem 0.8rem; border-radius: 0.4rem; font-size: 0.82rem; border-left: 4px solid var(--primary); background: #F8FAF6; }
-    .notif-item.warning { border-left-color: #D97706; background: #FFFBEB; color: #92400E; }
-    .notif-item.danger { border-left-color: #DC2626; background: #FEF2F2; color: #991B1B; }
-    .notif-item.info { border-left-color: var(--primary); background: #F0FDF4; color: #166534; }
-
-    /* CALENDÁRIO COM FOLHINHA */
-    .calendar-card { background: white; border: 1.5px solid var(--border); border-radius: 0.85rem; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
-    .calendar-topbar { background: var(--primary); color: white; padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-    .cal-nav-btn { background: rgba(255,255,255,0.2); border: none; color: white; font-weight: bold; font-size: 1.1rem; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); background: #F6F8F4; border-bottom: 2px solid var(--border); text-align: center; font-weight: 700; font-size: 0.8rem; color: var(--text-muted); padding: 0.6rem 0; }
-    .cal-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); }
-    .cal-day-box { background: white; min-height: 105px; padding: 0.6rem; cursor: pointer; display: flex; flex-direction: column; }
-    .cal-day-box:hover { background: #F8FAF6; }
-    .cal-day-box.empty { background: #FAFCF9; cursor: default; }
-    .cal-day-num { font-size: 0.95rem; font-weight: 700; color: var(--text); display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; }
-
-    /* MODAL HORÁRIOS */
-    .schedule-modal { position: fixed; inset: 0; background: rgba(42, 51, 39, 0.75); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 1.5rem; backdrop-filter: blur(4px); }
-    .schedule-modal-content { background: white; border-radius: 1rem; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 1.75rem; border: 1.5px solid var(--border); }
-    .schedule-hour-row { display: flex; align-items: center; padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
-    .schedule-hour-time { width: 75px; font-weight: 700; color: var(--text-muted); }
-    .audit-tag { font-family: monospace; font-size: 0.8rem; background: #F3F4F6; padding: 0.2rem 0.5rem; border-radius: 0.25rem; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LEVEH — Painel Clínico</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- MODAL DE LOGIN -->
-  <div class="auth-overlay" id="authOverlay">
-    <div class="auth-card">
-      <div class="logo-container">
-        <div class="logo-circle">
-          <svg width="40" height="40" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4">
-            <rect x="25" y="25" width="50" height="50" transform="rotate(45 50 50)" stroke="#F4F6F2" stroke-width="5"/>
-            <line x1="38" y1="38" x2="62" y2="62" stroke="#F4F6F2" stroke-width="3"/>
-            <line x1="62" y1="38" x2="38" y2="62" stroke="#F4F6F2" stroke-width="3"/>
-          </svg>
-        </div>
-        <div class="logo-text-title">LEVEH</div>
-        <div class="logo-text-sub">Acesso Administrativo & Clínico</div>
+  <!-- Tela de Login -->
+  <div class="login-overlay" id="loginModal">
+    <div class="login-box">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.5rem; color: var(--primary); font-weight: 700;">LEVEH</h2>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">Acesso Restrito — Diretoria Clínica</p>
       </div>
-
-      <form onsubmit="handleLoginSubmit(event)">
+      <form id="formLogin" onsubmit="realizarLogin(event)">
         <div class="form-group">
-          <label>Email de Acesso</label>
-          <input type="email" id="inputEmail" placeholder="admin@leveh.com.br" required>
+          <label>E-mail</label>
+          <input type="email" id="loginEmail" class="form-control" value="admin@leveh.com.br" required>
         </div>
-        <div class="form-group" style="margin-bottom:1.5rem;">
+        <div class="form-group">
           <label>Senha</label>
-          <input type="password" id="inputSenha" placeholder="••••••••" required>
+          <input type="password" id="loginSenha" class="form-control" value="admin123" required>
         </div>
-        <button type="submit" class="btn" style="width:100%;">Entrar no Sistema</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 6px;">Acessar Sistema</button>
       </form>
-      <p style="font-size:0.75rem; color:var(--text-muted); text-align:center; margin-top:1rem;">
-        Usuário fixo mestre: <strong>admin@leveh.com.br</strong> (senha: <strong>admin123</strong>)
-      </p>
     </div>
   </div>
 
-  <div class="app-layout">
-    <!-- MENU LATERAL -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div style="font-size:1.3rem; font-weight:700; letter-spacing:2px; color:#F4F6F2;">LEVEH</div>
-        <div id="sidebarRoleLabel" style="font-size:0.65rem; letter-spacing:1.5px; color:#BAC4B7; text-transform:uppercase;">Painel Clínico</div>
+  <!-- Modal Nova Evolução Clínica (Com IALEVEH e Layout Expandido) -->
+  <div class="modal-overlay" id="modalEvolucao" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 1.45rem; font-weight: 700;">Nova Evolução Clínica</h2>
+          <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 2px;" id="modalEvolucaoSubinfo">Paciente: --</p>
+        </div>
+        <button class="btn-close" onclick="fecharModalEvolucao()">✕</button>
       </div>
-      
-      <button class="nav-btn active" id="btnNavPacientes" onclick="switchNav('pacientes')">Pacientes</button>
-      <button class="nav-btn" id="btnNavAgenda" onclick="switchNav('agenda')">Agenda & Calendário</button>
-      <button class="nav-btn" id="btnNavAlimentos" onclick="switchNav('alimentos')">Tabela de Alimentos (TACO)</button>
-      <a href="/frontend-admin/public/estoque.html" class="nav-btn" id="btnNavEstoque">Estoque & Insumos</a>
-      <a href="/frontend-admin/public/pops.html" class="nav-btn" id="btnNavPops">Procedimentos (POP)</a>
-      <a href="/frontend-admin/public/substituicoes.html" class="nav-btn" id="btnNavSubstituicoes">🔄 Listas de Substituição</a>
-
-      <!-- EXCLUSIVO ADMIN GLOBAL -->
-      <div id="menuAdminGlobal" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:0.75rem; margin-top:0.5rem;">
-        <span style="font-size:0.65rem; letter-spacing:1px; color:#9CA3AF; text-transform:uppercase; display:block; margin-bottom:0.35rem; padding-left:0.5rem;">Governança Master</span>
-        <button class="nav-btn" onclick="switchNav('profissionais')">Gestão de Equipe & Permissões</button>
-        <button class="nav-btn" onclick="switchNav('auditoriaGlobal')">Auditoria Global (Logs)</button>
-      </div>
-
-      <button class="logout-btn" onclick="handleLogout()">Sair do Sistema</button>
-    </aside>
-
-    <main class="content">
-      <div class="top-bar">
-        <h2 id="viewTitle" style="color:var(--text); font-size:1.3rem;">Pacientes</h2>
+      <form id="formEvolucao" onsubmit="salvarEvolucaoComMemoria(event)">
         
-        <div class="top-actions">
-          <div id="sessaoBadge"></div>
-          <button class="btn btn-outline btn-sm" onclick="abrirModalMinhaSenha()" title="Alterar minha senha de acesso">🔑 Mudar Senha</button>
-          
-          <!-- SINO DE NOTIFICAÇÕES -->
-          <div style="position:relative;">
-            <button class="notif-btn" id="btnNotificacoes" onclick="toggleDropdownNotificacoes()" title="Avisos e Lembretes">
-              🔔
-              <span class="notif-badge hidden" id="badgeNotifCount">0</span>
-            </button>
-            
-            <div class="notif-dropdown hidden" id="dropdownNotificacoes">
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">
-                <strong style="font-size:0.85rem; color:var(--text);">Alertas do Seu Perfil</strong>
-                <small style="color:var(--text-muted); cursor:pointer;" onclick="toggleDropdownNotificacoes()">✕</small>
-              </div>
-              <div id="listaAlertasDropdown" style="display:flex; flex-direction:column; gap:0.5rem; max-height:280px; overflow-y:auto; margin-top:0.3rem;">
-                <p style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:1rem 0;">Tudo em dia! Nenhum alerta no momento.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TELA 1: PACIENTES -->
-      <div id="pagePacientes">
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-            <div>
-              <h3 style="color:var(--text);">Pacientes Cadastrados</h3>
-              <p style="font-size:0.8rem; color:var(--text-muted);">Usuário: Nome Completo | Senha: Nº do Prontuário</p>
-            </div>
-            <button class="btn" onclick="toggleForm('formNovoPaciente')">+ Novo Paciente</button>
-          </div>
-
-          <div id="formNovoPaciente" class="hidden" style="background:#F8FAF6; padding:1.25rem; border-radius:0.5rem; margin-bottom:1.5rem; border:1px solid var(--border);">
-            <h4 style="margin-bottom:1rem; color:var(--primary);">Cadastrar Paciente</h4>
-            <form onsubmit="salvarPaciente(event)">
-              <div class="form-grid">
-                <div class="form-group"><label>Nome Completo (Login)</label><input type="text" id="pacNome" required placeholder="Ex: Roberto Gomes"></div>
-                <div class="form-group"><label>Sexo Biológico</label><select id="pacSexo" required><option value="F">Feminino</option><option value="M">Masculino</option></select></div>
-                <div class="form-group"><label>Data de Nascimento</label><input type="date" id="pacNasc" required></div>
-                <div class="form-group"><label>Telefone / WhatsApp</label><input type="tel" id="pacTelefone" placeholder="(67) 99999-9999" required></div>
-                <div class="form-group"><label>Email</label><input type="email" id="pacEmail" placeholder="paciente@email.com" required></div>
-                <div class="form-group"><label>Objetivo</label><input type="text" id="pacObjetivo" placeholder="Hipertrofia, Redução Gordura"></div>
-              </div>
-              <div style="display:flex; gap:0.5rem;">
-                <button type="submit" class="btn">Concluir Cadastro</button>
-                <button type="button" class="btn btn-secondary" onclick="toggleForm('formNovoPaciente')">Cancelar</button>
-              </div>
-            </form>
-          </div>
-
-          <table>
-            <thead>
-              <tr><th>Prontuário (Senha)</th><th>Nome Completo (Login)</th><th>Idade</th><th>Sexo</th><th>Telefone</th><th>Ações</th></tr>
-            </thead>
-            <tbody id="tabelaPacientesBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- TELA 2: PRONTUÁRIO INDIVIDUAL -->
-      <div id="pageProntuarioExclusivo" class="hidden">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-          <button class="btn btn-outline" onclick="switchNav('pacientes')">← Voltar para Pacientes</button>
-          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">🔒 Prontuário Clínico & Procedimentos</span>
+        <!-- Barra de Ação IALEVEH -->
+        <div class="ia-mic-wrapper">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+            Registro Clínico / Anamnese / Conduta *
+          </label>
+          <button type="button" class="btn-ialeveh" id="btnCopilotoIA" onclick="alternarGravacaoIA()">
+            <span class="badge-ialeveh-sparkle" id="iconeCopilotoIA">✨</span>
+            <span id="labelCopilotoIA">IALEVEH (Gravar & Estruturar)</span>
+          </button>
         </div>
 
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:1rem; margin-bottom:1.5rem;">
-            <div>
-              <h2 id="pronNomeHeader" style="color:var(--primary); font-size:1.4rem;">Prontuário</h2>
-              <p id="pronDetalhesHeader" style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;"></p>
-            </div>
-            <span id="pronIdBadge" style="background:var(--primary); color:white; padding:0.4rem 0.8rem; border-radius:0.4rem; font-weight:700;"></span>
-          </div>
-
-          <!-- SUB-ABAS -->
-          <div class="subtabs" id="containerSubtabsProntuario">
-            <button class="subtab-btn active" id="tabBtnEvolucao" onclick="switchSubTab('subEvolucao')">Evolução Clínica</button>
-            <button class="subtab-btn" id="tabBtnProcedimentos" onclick="switchSubTab('subProcedimentos')">Procedimentos & Insumos Gastos</button>
-            <button class="subtab-btn" id="tabBtnAntropometria" onclick="switchSubTab('subAntropometria')">Antropometria & 7 Dobras</button>
-            <button class="subtab-btn" id="tabBtnBioimpedancia" onclick="switchSubTab('subBioimpedancia')">Bioimpedância</button>
-            <button class="subtab-btn" id="tabBtnExames" onclick="switchSubTab('subExames')">Matriz de Exames</button>
-            <button class="subtab-btn" id="tabBtnDieta" onclick="switchSubTab('subDieta')">Prescrição Nutricional (TACO)</button>
-          </div>
-
-          <!-- 1. EVOLUÇÃO -->
-          <div id="subEvolucao" class="subtab-content">
-            <form onsubmit="adicionarEvolucao(event)">
-              <div class="form-group">
-                <label>Registro Clínico / Anamnese / Conduta</label>
-                <textarea id="evoTexto" rows="5" placeholder="Digite os apontamentos clínicos..." required></textarea>
-              </div>
-              <button type="submit" class="btn" style="margin-top:0.5rem;">Assinar e Gravar no Prontuário</button>
-            </form>
-            <div id="listaEvolucoes" style="margin-top:1.5rem;"></div>
-          </div>
-
-          <!-- 2. PROCEDIMENTOS & BAIXA REAL COM MULTI-INSUMOS -->
-          <div id="subProcedimentos" class="subtab-content hidden">
-            <!-- QUADRO DE INSUMOS PRESENTES -->
-            <div style="background:#FFFFFF; border:1.5px solid var(--border); border-radius:0.5rem; padding:1.25rem; margin-bottom:1.5rem;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-                <h4 style="color:var(--primary); font-size:1rem;">📦 Insumos Presentes em Estoque (Tempo Real)</h4>
-                <a href="/frontend-admin/public/estoque.html" class="btn btn-outline btn-sm">+ Gerenciar Estoque</a>
-              </div>
-              <div style="max-height: 200px; overflow-y: auto;">
-                <table>
-                  <thead>
-                    <tr><th>Produto</th><th>Lote</th><th>Validade</th><th>Saldo Disponível</th></tr>
-                  </thead>
-                  <tbody id="corpoTabelaInsumosPresentes"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- FORMULÁRIO DE PROCEDIMENTO COM MULTI-INSUMOS -->
-            <div style="background:#F8FAF6; border:1px solid var(--border); padding:1.25rem; border-radius:0.5rem; margin-bottom:1.5rem;">
-              <h4 style="color:var(--primary); margin-bottom:0.75rem;">+ Registrar Procedimento com Múltiplos Insumos</h4>
-              <form onsubmit="executarProcedimentoMultiInsumos(event)">
-                <div class="form-group" style="margin-bottom:1rem;">
-                  <label>Nome / Descrição do Procedimento</label>
-                  <input type="text" id="procNome" placeholder="Ex: Terapia Injetável Intramuscular, Curativo Complexo, Punção" required>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-                  <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Insumos Utilizados no Procedimento</label>
-                  <button type="button" class="btn btn-outline btn-sm" onclick="adicionarLinhaInsumoProcedimento()">+ Adicionar Outro Insumo</button>
-                </div>
-
-                <div id="containerLinhasInsumos" style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1rem;"></div>
-
-                <button type="submit" class="btn">Gravar Procedimento & Baixar Todos os Insumos do Estoque</button>
-              </form>
-            </div>
-
-            <h4 style="margin-bottom:0.5rem;">Histórico de Procedimentos Realizados no Paciente</h4>
-            <div style="overflow-x:auto;">
-              <table>
-                <thead>
-                  <tr><th>Data / Hora</th><th>Procedimento</th><th>Insumos & Lotes Utilizados</th><th>Profissional</th></tr>
-                </thead>
-                <tbody id="corpoHistoricoProcedimentos"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- 3. ANTROPOMETRIA -->
-          <div id="subAntropometria" class="subtab-content hidden">
-            <form onsubmit="salvarAntropometria(event)">
-              <div class="form-grid">
-                <div class="form-group"><label>Estatura (cm)</label><input type="number" step="0.1" id="antAltura" required></div>
-                <div class="form-group"><label>Massa Corporal (kg)</label><input type="number" step="0.1" id="antPeso" required></div>
-              </div>
-              <h4 style="color:var(--primary); margin:1rem 0 0.5rem 0;">7 Dobras Cutâneas (mm)</h4>
-              <div class="form-grid">
-                <div class="form-group"><label>Subescapular</label><input type="number" step="0.1" id="dcSubescapular" required></div>
-                <div class="form-group"><label>Tricipital</label><input type="number" step="0.1" id="dcTricipital" required></div>
-                <div class="form-group"><label>Peitoral</label><input type="number" step="0.1" id="dcPeitoral" required></div>
-                <div class="form-group"><label>Axilar Média</label><input type="number" step="0.1" id="dcAxilar" required></div>
-                <div class="form-group"><label>Suprailíaca</label><input type="number" step="0.1" id="dcSuprailiaca" required></div>
-                <div class="form-group"><label>Abdominal</label><input type="number" step="0.1" id="dcAbdominal" required></div>
-                <div class="form-group"><label>Coxa</label><input type="number" step="0.1" id="dcCoxa" required></div>
-              </div>
-              <button type="submit" class="btn" style="margin-top:1rem;">Calcular & Salvar</button>
-            </form>
-          </div>
-
-          <!-- 4. BIOIMPEDÂNCIA -->
-          <div id="subBioimpedancia" class="subtab-content hidden">
-            <form onsubmit="salvarBioimpedancia(event)">
-              <div class="form-grid">
-                <div class="form-group"><label>Massa Total (kg)</label><input type="number" step="0.1" id="bioPeso" required></div>
-                <div class="form-group"><label>% Gordura</label><input type="number" step="0.1" id="bioGordura" required></div>
-                <div class="form-group"><label>Massa Muscular (kg)</label><input type="number" step="0.1" id="bioMassaMuscular" required></div>
-                <div class="form-group"><label>TMB (kcal)</label><input type="number" id="bioTmb" required></div>
-                <div class="form-group"><label>Gordura Visceral</label><input type="number" id="bioVisceral"></div>
-              </div>
-              <button type="submit" class="btn">Gravar Avaliação</button>
-            </form>
-          </div>
-
-          <!-- 5. MATRIZ EXAMES -->
-          <div id="subExames" class="subtab-content hidden">
-            <div style="background:#F8FAF6; border:1px solid var(--border); padding:1.25rem; border-radius:0.5rem; margin-bottom:1.5rem;">
-              <form onsubmit="adicionarExame(event)" style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:flex-end;">
-                <div class="form-group" style="flex:2; min-width:200px;">
-                  <label>Biomarcador</label>
-                  <select id="matrizExameSelect" required>
-                    <option value="Glicemia de Jejum (mg/dL)">Glicemia de Jejum (mg/dL)</option>
-                    <option value="HbA1c (%)">HbA1c (%)</option>
-                    <option value="Insulina Basal (uUI/mL)">Insulina Basal (uUI/mL)</option>
-                    <option value="Colesterol Total (mg/dL)">Colesterol Total (mg/dL)</option>
-                    <option value="HDL (mg/dL)">HDL (mg/dL)</option>
-                    <option value="LDL (mg/dL)">LDL (mg/dL)</option>
-                    <option value="Triglicerídeos (mg/dL)">Triglicerídeos (mg/dL)</option>
-                    <option value="TSH (uUI/mL)">TSH (uUI/mL)</option>
-                    <option value="Testosterona Total (ng/dL)">Testosterona Total (ng/dL)</option>
-                    <option value="Vitamina D 25-OH (ng/mL)">Vitamina D 25-OH (ng/mL)</option>
-                  </select>
-                </div>
-                <div class="form-group" style="flex:1;"><label>Data</label><input type="date" id="matrizDataInput" required></div>
-                <div class="form-group" style="flex:1;"><label>Valor</label><input type="text" id="matrizValorInput" required></div>
-                <button type="submit" class="btn" style="height:42px;">Anexar</button>
-              </form>
-            </div>
-          </div>
-
-          <!-- 6. DIETA -->
-          <div id="subDieta" class="subtab-content hidden">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-              <h4 style="color:var(--primary);">Prescrição Nutricional</h4>
-              <button class="btn btn-sm" onclick="adicionarNovaRefeicao()">+ Refeição</button>
-            </div>
-            <div class="form-group"><label>Título do Plano</label><input type="text" id="planoTitulo" placeholder="Ex: Protocolo Hipertrofia 2200 kcal" required></div>
-            <div id="containerRefeicoes"></div>
-            <button class="btn" onclick="salvarPlanoCompleto()" style="margin-top:1rem;">Salvar e Publicar</button>
-          </div>
+        <div class="form-group">
+          <textarea id="modalTextoEvolucao" class="form-control" rows="11" placeholder="Descreva os apontamentos clínicos, ou clique no IALEVEH para ditar a consulta em tempo real..." required></textarea>
         </div>
-      </div>
 
-      <!-- TELA 3: AGENDA & CALENDÁRIO -->
-      <div id="pageAgenda" class="hidden">
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <div>
-              <h3>Agenda Clínica & Calendário</h3>
-              <p style="font-size:0.8rem; color:var(--text-muted);">Para marcar um atendimento, selecione obrigatoriamente o dia desejado no calendário abaixo e escolha um horário disponível.</p>
-            </div>
-            <div style="display:flex; gap:0.5rem;">
-              <button class="btn btn-secondary" onclick="toggleForm('formBloqueioAusencia')">🚫 Registrar Ausência / Bloqueio</button>
-            </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 0.8rem; color: var(--text-muted);">
+            Responsável: <strong style="color: var(--primary);">Dra. Estéfana Andrade — Nutricionista Clínica (CRN-3 10842)</strong>
           </div>
-
-          <!-- FORMULÁRIO DE BLOQUEIO DE FUNCIONÁRIO -->
-          <div id="formBloqueioAusencia" class="hidden" style="background:#FEF2F2; border:1px solid #FECACA; padding:1.25rem; border-radius:0.5rem; margin-bottom:1.5rem;">
-            <h4 style="color:#991B1B; margin-bottom:0.75rem;">🚫 Registrar Indisponibilidade ou Ausência de Funcionário</h4>
-            <form onsubmit="salvarBloqueioAusencia(event)">
-              <div class="form-grid">
-                <div class="form-group">
-                  <label>Data da Ausência</label>
-                  <input type="date" id="bloqData" required>
-                </div>
-                <div class="form-group">
-                  <label>Profissional Ausente</label>
-                  <select id="bloqProfSelect" required></select>
-                </div>
-                <div class="form-group">
-                  <label>Motivo da Ausência</label>
-                  <input type="text" id="bloqMotivo" placeholder="Ex: Congresso, Atestado, Folga Plantão" required>
-                </div>
-              </div>
-              <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
-                <button type="submit" class="btn btn-danger">Confirmar Bloqueio</button>
-                <button type="button" class="btn btn-secondary" onclick="toggleForm('formBloqueioAusencia')">Cancelar</button>
-              </div>
-            </form>
-          </div>
-
-          <div id="formAgendamento" class="hidden" style="background:#F8FAF6; border:1px solid var(--border); padding:1.25rem; border-radius:0.5rem; margin-bottom:1.5rem;">
-            <form onsubmit="salvarAgendamento(event)">
-              <div class="form-grid">
-                <div class="form-group">
-                  <label>Paciente</label>
-                  <select id="agendPacienteSelect" onchange="verificarSePacienteNovo(this.value)" required>
-                    <option value="">Selecione...</option>
-                    <option value="__NOVO__" style="font-weight:700; color:var(--primary);">➕ Novo Paciente (Cadastrar e Gerar Prontuário)</option>
-                  </select>
-                </div>
-
-                <!-- FORMULÁRIO DINÂMICO EMBUTIDO PARA NOVO PACIENTE COM PRONTUÁRIO -->
-                <div id="boxCamposNovoPacienteAgend" class="hidden" style="grid-column: 1 / -1; background:#F0FDF4; border:1.5px solid #86EFAC; padding:1.2rem; border-radius:0.6rem; margin-bottom:0.75rem;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-                    <strong style="color:#166534; font-size:0.95rem;">📋 Dados Iniciais & Geração de Prontuário</strong>
-                    <span style="font-size:0.75rem; background:#DCFCE7; color:#15803D; padding:0.2rem 0.5rem; border-radius:0.3rem; font-weight:700;">Prontuário Automático</span>
-                  </div>
-                  <div class="form-grid">
-                    <div class="form-group">
-                      <label>Nome Completo</label>
-                      <input type="text" id="agendNovoNome" placeholder="Ex: Lucas Mendes">
-                    </div>
-                    <div class="form-group">
-                      <label>Sexo Biológico</label>
-                      <select id="agendNovoSexo">
-                        <option value="F">Feminino</option>
-                        <option value="M" selected>Masculino</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label>Data de Nascimento</label>
-                      <input type="date" id="agendNovoNasc">
-                    </div>
-                    <div class="form-group">
-                      <label>Telefone / WhatsApp</label>
-                      <input type="tel" id="agendNovoTelefone" placeholder="(67) 99999-9999">
-                    </div>
-                    <div class="form-group">
-                      <label>Email</label>
-                      <input type="email" id="agendNovoEmail" placeholder="paciente@email.com">
-                    </div>
-                    <div class="form-group">
-                      <label>Objetivo Principal</label>
-                      <input type="text" id="agendNovoObjetivo" placeholder="Ex: Emagrecimento, Acompanhamento">
-                    </div>
-                  </div>
-                </div>
-                                <div class="form-group">
-                  <label>Tipo de Atendimento</label>
-                  <select id="agendTipoSelect" onchange="alternarCampoOutros(this.value)" required>
-                    <option value="Primeira Consulta" selected>Primeira Consulta</option>
-                    <option value="Retorno">Retorno</option>
-                    <option value="Medicação">Medicação</option>
-                    <option value="Procedimento">Procedimento</option>
-                    <option value="Outros">Outros</option>
-                  </select>
-                </div>
-                <div class="form-group hidden" id="boxOutrosDescricao">
-                  <label style="color:#B45309;">Especificar Tipo de Atendimento (Outros)</label>
-                  <input type="text" id="agendOutrosDesc" placeholder="Ex: Retirada de Pontos, Avaliação Pré-operatória, Encaixe">
-                </div>
-                <div class="form-group" style="grid-column: 1 / -1;">
-                  <label>Observações do Agendamento (Opcional)</label>
-                  <input type="text" id="agendObs" placeholder="Ex: Paciente cadeirante, jejum de 8h, trazer exames anteriores">
-                </div>
-                <div class="form-group"><label>Data da Consulta</label><input type="date" id="agendDate" required></div>
-                <div class="form-group"><label>Horário</label><input type="time" id="agendTime" value="08:30" required></div>
-                <div class="form-group"><label>Duração</label><select id="agendDuracao"><option value="30">30 min</option><option value="45">45 min</option><option value="60" selected>60 min</option></select></div>
-                <div class="form-group"><label>Profissional</label><select id="agendProfSelect" required></select></div>
-              </div>
-              <button type="submit" class="btn" style="margin-top:0.5rem;">Confirmar Agendamento</button>
-            </form>
-          </div>
-
-          <!-- FOLHINHA DO CALENDÁRIO -->
-          <div class="calendar-card">
-            <div class="calendar-topbar">
-              <button class="cal-nav-btn" onclick="navegarMes(-1)">‹</button>
-              <h3 id="calMesAnoTexto">Outubro de 2026</h3>
-              <button class="cal-nav-btn" onclick="navegarMes(1)">›</button>
-            </div>
-            <div class="cal-weekdays">
-              <div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div>
-            </div>
-            <div class="cal-days-grid" id="calGradeDias"></div>
-          </div>
+          <span style="font-size: 0.76rem; color: var(--accent); font-weight: 600;" id="statusMemoriaIA">
+            🧠 Memória IALEVEH Ativa
+          </span>
         </div>
-      </div>
 
-      <!-- MODAL HORÁRIOS DO DIA -->
-      <div id="modalHorariosDia" class="schedule-modal hidden">
-        <div class="schedule-modal-content">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:1rem; margin-bottom:1.25rem;">
-            <h3 style="color:var(--primary);" id="modalTituloDia">Atendimentos do Dia</h3>
-            <button class="btn btn-outline btn-sm" onclick="fecharModalHorarios()">✕ Fechar</button>
-          </div>
-          <div id="modalListaSlotsHorarios"></div>
-          <div style="margin-top:1.5rem; text-align:right;">
-            <button class="btn" onclick="abrirAgendamentoParaDataAtualModal()">+ Agendar Novo Horário</button>
-          </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalEvolucao()">Fechar</button>
+          <button type="submit" class="btn btn-primary" id="btnSalvarEvolucao">Salvar no Histórico</button>
         </div>
-      </div>
-
-      <!-- TELA 4: TABELA TACO -->
-      <div id="pageAlimentos" class="hidden">
-        <div class="card">
-          <h3 style="color:var(--text); margin-bottom:1rem;">Tabela de Alimentos (Base TACO)</h3>
-          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Consulte e use os alimentos cadastrados.</p>
-          <div style="overflow-x:auto;">
-            <table>
-              <thead><tr><th>Alimento</th><th>Porção Padrão</th><th>Medida Usual</th><th>Calorias (100g)</th></tr></thead>
-              <tbody id="corpoTabelaAlimentosInterna"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- TELA 5: GESTÃO DE EQUIPE & MATRIZ DINÂMICA DE PERMISSÕES PELO ADMIN GLOBAL -->
-      <div id="pageProfissionais" class="hidden">
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <div>
-              <h3>Gestão de Equipe & Permissões</h3>
-              <p style="font-size:0.8rem; color:var(--text-muted);">Cadastre profissionais e libere módulos individualmente.</p>
-            </div>
-            <button class="btn" onclick="toggleForm('formNovoMembro')">+ Novo Colaborador</button>
-          </div>
-
-          <div id="formNovoMembro" class="hidden" style="background:#F8FAF6; border:1px solid var(--border); padding:1.5rem; border-radius:0.5rem; margin-bottom:1.5rem;">
-            <form onsubmit="salvarNovoColaborador(event)">
-              <div class="form-grid">
-                <div class="form-group"><label>Nome Completo</label><input type="text" id="membroNome" required placeholder="Dra. Mariana Silva"></div>
-                <div class="form-group"><label>Função / Cargo</label>
-                  <select id="membroCargo" required>
-                    <option value="medico">Médico</option>
-                    <option value="nutricionista">Nutricionista</option>
-                    <option value="enfermeiro">Enfermeiro</option>
-                    <option value="biomedico">Biomédico</option>
-                    <option value="recepcao">Recepcionista</option>
-                  </select>
-                </div>
-                <div class="form-group"><label>Conselho / Registro</label><input type="text" id="membroRegistro" placeholder="Ex: CRM-MS 1234 / CRN-3 5678"></div>
-                <div class="form-group"><label>Email de Login</label><input type="email" id="membroEmail" required placeholder="colaborador@leveh.com.br"></div>
-                <div class="form-group"><label>Senha Inicial</label><input type="password" id="membroSenha" required placeholder="••••••••"></div>
-              </div>
-
-              <!-- MATRIZ GRANULAR DE LIBERAÇÃO PELO ADMIN GLOBAL -->
-              <h4 style="color:var(--primary); margin:1rem 0 0.5rem 0; font-size:0.9rem;">Módulos & Permissões Liberados pelo Administrador Global:</h4>
-              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:0.6rem; background:white; padding:1rem; border:1px solid var(--border); border-radius:0.5rem;">
-                <label style="font-size:0.85rem;"><input type="checkbox" id="permProntuario" checked> Ver Prontuário</label>
-                <label style="font-size:0.85rem;"><input type="checkbox" id="permProcedimentos" checked> Fazer Procedimentos & Baixa</label>
-                <label style="font-size:0.85rem;"><input type="checkbox" id="permGerenciarEstoque" checked> Gerenciamento de Insumos</label>
-                <label style="font-size:0.85rem;"><input type="checkbox" id="permAtualizarPops" checked> Atualização de POPs</label>
-                <label style="font-size:0.85rem;"><input type="checkbox" id="permGerenciarAgenda" checked> Agendamentos</label>
-                <label style="font-size:0.85rem;"><input type="checkbox" id="permDietas" checked> Prescrever Dietas</label>
-                <label style="font-size:0.85rem;"><input type="checkbox" id="permSubstituicoes" checked> Listas de Substituição</label>
-                <label style="font-size:0.85rem;"><input type="checkbox" id="permExames" checked> Lançar Exames</label>
-                <label style="font-size:0.85rem;"><input type="checkbox" id="permDobras" checked> Medir Dobras Cutâneas</label>
-              </div>
-
-              <div style="display:flex; gap:0.5rem; margin-top:1rem;">
-                <button type="submit" class="btn">Gravar Cadastro com Permissões</button>
-                <button type="button" class="btn btn-secondary" onclick="toggleForm('formNovoMembro')">Cancelar</button>
-              </div>
-            </form>
-          </div>
-
-          <table>
-            <thead>
-              <tr><th>Nome</th><th>Cargo</th><th>Registro</th><th>Email</th><th>Permissões Concedidas</th><th>Ações</th></tr>
-            </thead>
-            <tbody id="tabelaColaboradoresBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- TELA 6: AUDITORIA GLOBAL -->
-      <div id="pageAuditoriaGlobal" class="hidden">
-        <div class="card">
-          <h3 style="margin-bottom:1rem;">Trilha de Auditoria Global</h3>
-          <table>
-            <thead><tr><th>Data / Hora</th><th>Usuário</th><th>Cargo</th><th>Operação</th></tr></thead>
-            <tbody id="tabelaAuditoriaGlobalBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-    
-      <!-- MODAL: ADMIN EDITA PERMISSÕES E RESETA SENHA DE QUALQUER MEMBRO -->
-      <div id="modalAdminEditarUsuario" class="schedule-modal hidden">
-        <div class="schedule-modal-content" style="max-width: 520px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:1rem; margin-bottom:1.25rem;">
-            <h3 style="color:var(--primary); font-size:1.2rem;">✏️ Editar Colaborador & Permissões</h3>
-            <button class="btn btn-outline btn-sm" onclick="fecharModalAdminEditar()">✕ Fechar</button>
-          </div>
-
-          <form onsubmit="salvarEdicaoColaboradorAdmin(event)">
-            <input type="hidden" id="editUserId">
-            
-            <div class="form-group">
-              <label>Nome do Colaborador</label>
-              <input type="text" id="editUserNome" required>
-            </div>
-            
-            <div class="form-group">
-              <label>Email de Acesso</label>
-              <input type="email" id="editUserEmail" required>
-            </div>
-
-            <div class="form-group">
-              <label>Redefinir Nova Senha (Opcional - deixe em branco para manter)</label>
-              <input type="password" id="editUserSenha" placeholder="Digite apenas se for redefinir">
-            </div>
-
-            <div id="boxStatusBloqueioAdmin" style="margin-bottom:1rem; padding:0.6rem; border-radius:0.4rem; display:none;"></div>
-
-            <h4 style="color:var(--primary); margin:1rem 0 0.5rem 0; font-size:0.85rem; text-transform:uppercase;">Permissões Granulares:</h4>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; background:#F8FAF6; padding:0.85rem; border:1px solid var(--border); border-radius:0.5rem;">
-              <label style="font-size:0.8rem;"><input type="checkbox" id="editPermProntuario"> Ver Prontuário</label>
-              <label style="font-size:0.8rem;"><input type="checkbox" id="editPermProcedimentos"> Fazer Procedimentos/Baixa</label>
-              <label style="font-size:0.8rem;"><input type="checkbox" id="editPermEstoque"> Gerenciar Estoque</label>
-              <label style="font-size:0.8rem;"><input type="checkbox" id="editPermPops"> Atualizar POPs</label>
-              <label style="font-size:0.8rem;"><input type="checkbox" id="editPermAgenda"> Agendamentos</label>
-              <label style="font-size:0.8rem;"><input type="checkbox" id="editPermDietas"> Prescrever Dietas</label>
-              <label style="font-size:0.8rem;"><input type="checkbox" id="editPermSubstituicoes"> Listas de Substituição</label>
-              <label style="font-size:0.8rem;"><input type="checkbox" id="editPermExames"> Lançar Exames</label>
-              <label style="font-size:0.8rem;"><input type="checkbox" id="editPermDobras"> Medir Dobras Cutâneas</label>
-            </div>
-
-            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.25rem;">
-              <button type="button" class="btn btn-secondary" onclick="fecharModalAdminEditar()">Cancelar</button>
-              <button type="submit" class="btn">Salvar Alterações</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- MODAL: QUALQUER USUÁRIO LOGADO PODE ALTERAR A PRÓPRIA SENHA -->
-      <div id="modalMinhaSenha" class="schedule-modal hidden">
-        <div class="schedule-modal-content" style="max-width: 440px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:1rem; margin-bottom:1.25rem;">
-            <h3 style="color:var(--primary); font-size:1.2rem;">🔑 Alterar Minha Senha</h3>
-            <button class="btn btn-outline btn-sm" onclick="fecharModalMinhaSenha()">✕</button>
-          </div>
-
-          <form onsubmit="salvarMinhaPropriaSenha(event)">
-            <div class="form-group">
-              <label>Senha Atual</label>
-              <input type="password" id="minhaSenhaAtual" required placeholder="Digite sua senha atual">
-            </div>
-            <div class="form-group">
-              <label>Nova Senha</label>
-              <input type="password" id="minhaSenhaNova" required placeholder="Digite a nova senha">
-            </div>
-            <div class="form-group">
-              <label>Confirmar Nova Senha</label>
-              <input type="password" id="minhaSenhaConfirma" required placeholder="Repita a nova senha">
-            </div>
-            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.25rem;">
-              <button type="button" class="btn btn-secondary" onclick="fecharModalMinhaSenha()">Cancelar</button>
-              <button type="submit" class="btn">Atualizar Senha</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-    
-      <!-- MODAL DEDICADO DE DETALHES E OBSERVAÇÃO DO AGENDAMENTO -->
-      <div id="modalDetalhesAgendamento" class="schedule-modal hidden">
-        <div class="schedule-modal-content" style="max-width: 480px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:0.75rem; margin-bottom:1rem;">
-            <h3 style="color:var(--primary); font-size:1.2rem;">📋 Detalhes do Atendimento</h3>
-            <button class="btn btn-outline btn-sm" onclick="fecharModalDetalhesAgendamento()">✕ Fechar</button>
-          </div>
-          <div id="conteudoDetalhesAgendamentoCorpo" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
-          <div style="margin-top:1.25rem; text-align:right;">
-            <button class="btn btn-secondary btn-sm" onclick="fecharModalDetalhesAgendamento()">Fechar</button>
-          </div>
-        </div>
-      </div>
-
-    
-      <!-- MODAL DEDICADO PARA ATUALIZAR APENAS DADOS CADASTRAIS (ACESSO RECEPÇÃO E CLÍNICA) -->
-      <div id="modalEditarDadosCadastrais" class="schedule-modal hidden">
-        <div class="schedule-modal-content" style="max-width: 540px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:0.75rem; margin-bottom:1rem;">
-            <div>
-              <h3 style="color:var(--primary); font-size:1.2rem;">✏️ Atualizar Dados Cadastrais</h3>
-              <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem;">Alteração restrita a dados demográficos e de contato</p>
-            </div>
-            <button class="btn btn-outline btn-sm" onclick="fecharModalEditarCadastro()">✕ Fechar</button>
-          </div>
-
-          <form onsubmit="salvarEdicaoCadastralPaciente(event)">
-            <input type="hidden" id="editPacId">
-
-            <div class="form-group" style="margin-bottom:0.75rem;">
-              <label>Código do Prontuário</label>
-              <input type="text" id="editPacIdExibicao" readonly style="background:#EBF0E9; font-weight:700; color:var(--primary);">
-            </div>
-
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Nome Completo</label>
-                <input type="text" id="editPacNome" required>
-              </div>
-              <div class="form-group">
-                <label>Sexo Biológico</label>
-                <select id="editPacSexo" required>
-                  <option value="F">Feminino</option>
-                  <option value="M">Masculino</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Data de Nascimento</label>
-                <input type="date" id="editPacNasc" required>
-              </div>
-              <div class="form-group">
-                <label>Telefone / WhatsApp</label>
-                <input type="tel" id="editPacTelefone" required>
-              </div>
-              <div class="form-group" style="grid-column: 1 / -1;">
-                <label>Email</label>
-                <input type="email" id="editPacEmail" required>
-              </div>
-              <div class="form-group" style="grid-column: 1 / -1;">
-                <label>Objetivo Principal</label>
-                <input type="text" id="editPacObjetivo">
-              </div>
-            </div>
-
-            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.25rem;">
-              <button type="button" class="btn btn-secondary" onclick="fecharModalEditarCadastro()">Cancelar</button>
-              <button type="submit" class="btn">Salvar Alterações Cadastrais</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-    
-      <!-- MODAL DE CONDUTA NUTRICIONAL APÓS CONSULTA MÉDICA -->
-      <div id="modalCondutaNutricional" class="schedule-modal hidden">
-        <div class="schedule-modal-content" style="max-width: 540px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:0.75rem; margin-bottom:1rem;">
-            <div>
-              <h3 style="color:var(--primary); font-size:1.25rem;">🩺 Encaminhamento Nutricional</h3>
-              <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;">Consulta médica agendada. Defina a conduta nutricional do paciente:</p>
-            </div>
-            <button class="btn btn-outline btn-sm" onclick="fecharModalCondutaNutri()">✕</button>
-          </div>
-
-          <div style="background:#F8FAF6; border:1px solid var(--border); border-radius:0.5rem; padding:1rem; margin-bottom:1rem;">
-            <strong id="condutaNomePaciente" style="color:var(--text); font-size:1rem;">Paciente</strong>
-            <div id="condutaDetalhesConsultaMedica" style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;"></div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:0.75rem;">
-            <!-- Opção 1: Consulta Completa no Mesmo Dia -->
-            <button type="button" class="btn" style="text-align:left; padding:0.9rem 1.1rem; display:flex; justify-content:space-between; align-items:center;" onclick="escolherCondutaNutri('mesmo_dia')">
-              <div>
-                <strong>🥗 Consulta Nutricional Completa no MESMO DIA</strong>
-                <div style="font-size:0.75rem; opacity:0.9; margin-top:0.2rem;">Agendar em sequência ao término da consulta médica</div>
-              </div>
-              <span style="font-size:1.2rem;">→</span>
-            </button>
-
-            <!-- Opção 2: Apenas Bioimpedância naquele dia -->
-            <button type="button" class="btn" style="background:#43523D; text-align:left; padding:0.9rem 1.1rem; display:flex; justify-content:space-between; align-items:center;" onclick="escolherCondutaNutri('apenas_bio')">
-              <div>
-                <strong>⚖️ Realizar SOMENTE a Bioimpedância naquele dia</strong>
-                <div style="font-size:0.75rem; opacity:0.9; margin-top:0.2rem;">Avaliação corporal rápida no mesmo dia e consulta nutricional para outro dia</div>
-              </div>
-              <span style="font-size:1.2rem;">→</span>
-            </button>
-
-            <!-- Opção 3: Marcar para Outro Dia -->
-            <button type="button" class="btn btn-outline" style="text-align:left; padding:0.9rem 1.1rem; display:flex; justify-content:space-between; align-items:center;" onclick="escolherCondutaNutri('outro_dia')">
-              <div>
-                <strong>📅 Agendar Consulta Nutricional para OUTRO DIA</strong>
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem;">Escolher uma data futura conveniente na folhinha</div>
-              </div>
-              <span style="font-size:1.2rem;">→</span>
-            </button>
-
-            <!-- Opção 4: Concluir sem Nutrição -->
-            <button type="button" class="btn btn-secondary btn-sm" style="margin-top:0.5rem;" onclick="fecharModalCondutaNutri()">
-              Apenas Consulta Médica (Não agendar nutrição agora)
-            </button>
-          </div>
-        </div>
-      </div>
-
-    </main>
+      </form>
+    </div>
   </div>
 
-  <script>
-    // 1. ÚNICO USUÁRIO FIXO MESTRE: ADMIN GLOBAL
-    const ADMIN_GLOBAL_MASTER = {
-      id: "USR-001",
-      nome: "Diretoria Clínica (Admin Global)",
-      email: "admin@leveh.com.br",
-      senha: "admin123",
-      cargo: "admin_global",
-      registro: "Gestor Master",
-      permissoes: { prontuario: true, procedimentos: true, gerenciarEstoque: true, atualizarPops: true, gerenciarAgenda: true, dietas: true, exames: true, dobras: true, substituicoes: true }
-    };
-
-    // Inicialização da lista de usuários: contém sempre o ADMIN GLOBAL como fixo, os demais são criados pelo ADM
-    let usuarios = JSON.parse(localStorage.getItem('leveh_usuarios') || 'null');
-    if (!usuarios || !Array.isArray(usuarios) || usuarios.length === 0) {
-      usuarios = [ADMIN_GLOBAL_MASTER];
-      localStorage.setItem('leveh_usuarios', JSON.stringify(usuarios));
-    } else {
-      // Garante que o Admin Global esteja sempre presente e atualizado
-      const temAdmin = usuarios.find(u => u.cargo === 'admin_global');
-      if (!temAdmin) {
-        usuarios.unshift(ADMIN_GLOBAL_MASTER);
-        localStorage.setItem('leveh_usuarios', JSON.stringify(usuarios));
-      }
-    }
-
-    let pacientes = JSON.parse(localStorage.getItem('leveh_pacientes') || '[]');
-    let agendamentos = JSON.parse(localStorage.getItem('leveh_agendamentos') || '[]');
-    let auditoriaGlobal = JSON.parse(localStorage.getItem('leveh_audit_global') || '[]');
-
-    let usuarioLogado = null;
-    let pacienteAtual = null;
-
-    let anoCalendarioAtual = 2026;
-    let mesCalendarioAtual = 9;
-    let dataSelecionadaModal = "2026-10-09";
-    let contadorLinhasInsumo = 0;
-
-    // 2. VERIFICAÇÃO DE SESSÃO LIMPA NO CARREGAMENTO
-    function verificarSessaoInicial() {
-      const sessaoSalva = localStorage.getItem('leveh_sessao_ativa');
-      const overlay = document.getElementById('authOverlay');
-
-      if (sessaoSalva) {
-        try {
-          usuarioLogado = JSON.parse(sessaoSalva);
-          if (overlay) overlay.classList.add('hidden');
-          configurarPermissoesVisuais();
-          switchNav(usuarioLogado.cargo === 'recepcao' ? 'agenda' : 'pacientes');
-        } catch(e) {
-          localStorage.removeItem('leveh_sessao_ativa');
-          if (overlay) overlay.classList.remove('hidden');
-        }
-      } else {
-        if (overlay) overlay.classList.remove('hidden');
-      }
-    }
-
-    function salvarTudo() {
-      localStorage.setItem('leveh_usuarios', JSON.stringify(usuarios));
-      localStorage.setItem('leveh_pacientes', JSON.stringify(pacientes));
-      localStorage.setItem('leveh_agendamentos', JSON.stringify(agendamentos));
-      localStorage.setItem('leveh_audit_global', JSON.stringify(auditoriaGlobal));
-    }
-
-    function registrarAudit(op) {
-      auditoriaGlobal.unshift({
-        id: Date.now(),
-        dataHora: new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR'),
-        usuario: usuarioLogado ? usuarioLogado.nome : 'Sistema',
-        cargo: usuarioLogado ? usuarioLogado.cargo : '-',
-        operacao: op
-      });
-      salvarTudo();
-    }
-
-    // 3. FLUXO DE LOGIN
-    // FLUXO DE LOGIN COM CONTROLE DE 5 TENTATIVAS INCORRETAS E BLOQUEIO
-    function handleLoginSubmit(e) {
-      e.preventDefault();
-      const email = document.getElementById('inputEmail').value.trim().toLowerCase();
-      const senha = document.getElementById('inputSenha').value;
-
-      const user = usuarios.find(u => u.email.toLowerCase() === email);
-      if (!user) {
-        alert('Usuário não encontrado. Verifique o email informado.');
-        return;
-      }
-
-      // Inicializa contador se não existir
-      if (typeof user.tentativasFalhas === 'undefined') user.tentativasFalhas = 0;
-
-      // Verifica se a conta já está bloqueada
-      if (user.bloqueado === true) {
-        alert(`🚨 CONTA BLOQUEADA!
-
-Este usuário errou a senha 5 vezes consecutivas e o acesso foi suspenso por segurança.
-
-Por favor, solicite o desbloqueio ao Administrador Global.`);
-        return;
-      }
-
-      // Senha incorreta
-      if (user.senha !== senha) {
-        // O administrador mestre não se autobloqueia
-        if (user.cargo === 'admin_global') {
-          alert('Senha incorreta para o Administrador Global.');
-          return;
-        }
-
-        user.tentativasFalhas += 1;
-        const restantes = 5 - user.tentativasFalhas;
-
-        if (user.tentativasFalhas >= 5) {
-          user.bloqueado = true;
-          salvarTudo();
-          registrarAudit(`Conta de ${user.nome} (${user.email}) BLOQUEADA automaticamente após 5 tentativas de senha incorreta.`);
-          alert(`🚨 CONTA BLOQUEADA!
-
-Você atingiu 5 tentativas inválidas de senha. O acesso foi bloqueado.
-Somente o Administrador Global pode desbloquear o seu usuário.`);
-        } else {
-          salvarTudo();
-          alert(`Senha incorreta! Você tem mais ${restantes} tentativa(s) antes do bloqueio definitivo da conta.`);
-        }
-        return;
-      }
-
-      // Senha correta: zera as tentativas falhas
-      user.tentativasFalhas = 0;
-      user.bloqueado = false;
-      salvarTudo();
-
-      usuarioLogado = user;
-      localStorage.setItem('leveh_sessao_ativa', JSON.stringify(user));
-      document.getElementById('authOverlay').classList.add('hidden');
-
-      configurarPermissoesVisuais();
-      registrarAudit('Login efetuado no sistema.');
-      switchNav(usuarioLogado.cargo === 'recepcao' ? 'agenda' : 'pacientes');
-    }
-
-    // 4. FLUXO DE LOGOUT
-    function handleLogout() {
-      if (confirm('Deseja realmente sair da sua conta?')) {
-        localStorage.removeItem('leveh_sessao_ativa');
-        usuarioLogado = null;
-        document.getElementById('authOverlay').classList.remove('hidden');
-        document.getElementById('inputEmail').value = '';
-        document.getElementById('inputSenha').value = '';
-      }
-    }
-
-    function configurarPermissoesVisuais() {
-      if (!usuarioLogado) return;
-      const badge = document.getElementById('sessaoBadge');
-      const menuAdmin = document.getElementById('menuAdminGlobal');
-      badge.innerHTML = `<span class="role-badge role-admin">${usuarioLogado.nome} (${usuarioLogado.registro || usuarioLogado.cargo})</span>`;
-
-      const isMaster = usuarioLogado.cargo === 'admin_global';
-      const perms = usuarioLogado.permissoes || {};
-
-      if (isMaster) {
-        menuAdmin.classList.remove('hidden');
-      } else {
-        menuAdmin.classList.add('hidden');
-      }
-
-      // Visibilidade dinâmica dos botões do menu lateral baseada nas permissões
-      document.getElementById('btnNavAgenda').classList.toggle('hidden', !isMaster && !perms.gerenciarAgenda);
-      document.getElementById('btnNavAlimentos').classList.toggle('hidden', !isMaster && !perms.dietas);
-      document.getElementById('btnNavEstoque').classList.toggle('hidden', !isMaster && !perms.gerenciarEstoque);
-      document.getElementById('btnNavPops').classList.toggle('hidden', !isMaster && !perms.atualizarPops);
-      if (document.getElementById('btnNavSubstituicoes')) {
-        document.getElementById('btnNavSubstituicoes').classList.toggle('hidden', !isMaster && !perms.substituicoes);
-      }
-      document.getElementById('btnNavPacientes').classList.toggle('hidden', !isMaster && !perms.prontuario);
-
-      atualizarAlertasPerfil();
-    }
-
-    function toggleForm(id) { document.getElementById(id).classList.toggle('hidden'); }
-
-    function switchNav(tela) {
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('pagePacientes').classList.add('hidden');
-      document.getElementById('pageProntuarioExclusivo').classList.add('hidden');
-      document.getElementById('pageAgenda').classList.add('hidden');
-      document.getElementById('pageAlimentos').classList.add('hidden');
-      document.getElementById('pageProfissionais').classList.add('hidden');
-      document.getElementById('pageAuditoriaGlobal').classList.add('hidden');
-
-      if (tela === 'pacientes') {
-        document.getElementById('btnNavPacientes').classList.add('active');
-        document.getElementById('pagePacientes').classList.remove('hidden');
-        renderPacientes();
-      } else if (tela === 'agenda') {
-        document.getElementById('btnNavAgenda').classList.add('active');
-        document.getElementById('pageAgenda').classList.remove('hidden');
-        atualizarSelectsAgenda();
-      renderCalendarioVisual();
-      } else if (tela === 'alimentos') {
-        document.getElementById('btnNavAlimentos').classList.add('active');
-        document.getElementById('pageAlimentos').classList.remove('hidden');
-      } else if (tela === 'profissionais') {
-        document.getElementById('pageProfissionais').classList.remove('hidden');
-        renderColaboradores();
-      } else if (tela === 'auditoriaGlobal') {
-        document.getElementById('pageAuditoriaGlobal').classList.remove('hidden');
-        renderAuditoriaGlobal();
-      }
-    }
-
-    // 5. MULTI-INSUMOS POR PROCEDIMENTO
-    function adicionarLinhaInsumoProcedimento() {
-      const container = document.getElementById("containerLinhasInsumos");
-      if (!container) return;
-      contadorLinhasInsumo++;
-      const idLinha = `linhaInsumo_${contadorLinhasInsumo}`;
-
-      const estoque = JSON.parse(localStorage.getItem('leveh_estoque_visa') || '[]');
-      const disponiveis = estoque.filter(i => i.qtdAtual > 0);
-
-      const div = document.createElement("div");
-      div.id = idLinha;
-      div.style.cssText = "display:grid; grid-template-columns: 2fr 1fr 2fr auto; gap:0.5rem; align-items:center; background:#FAFCF9; padding:0.5rem; border:1px solid var(--border); border-radius:0.4rem;";
-
-      div.innerHTML = `
-        <select class="sel-insumo-multi" onchange="atualizarLoteLinha('${idLinha}', this.value)" required style="padding:0.5rem; border:1px solid var(--border); border-radius:0.35rem; font-size:0.85rem;">
-          <option value="">Selecione o insumo...</option>
-          ${disponiveis.map(i => `<option value="${i.id}">${i.nome} (Saldo: ${i.qtdAtual}${i.unidade})</option>`).join('')}
-        </select>
-        <input type="number" class="qtd-insumo-multi" min="1" value="1" placeholder="Qtd" required style="padding:0.5rem; border:1px solid var(--border); border-radius:0.35rem; font-size:0.85rem;">
-        <input type="text" class="lote-insumo-multi" readonly placeholder="Lote & Validade" style="background:#EBF0E9; font-weight:700; padding:0.5rem; border:1px solid var(--border); border-radius:0.35rem; font-size:0.8rem;">
-        <button type="button" class="btn btn-danger btn-sm" onclick="removerLinhaInsumo('${idLinha}')">✕</button>
-      `;
-
-      container.appendChild(div);
-    }
-
-    function removerLinhaInsumo(idLinha) {
-      const el = document.getElementById(idLinha);
-      if (el) el.remove();
-    }
-
-    function atualizarLoteLinha(idLinha, valId) {
-      const linha = document.getElementById(idLinha);
-      if (!linha) return;
-      const loteInput = linha.querySelector(".lote-insumo-multi");
-      if (!valId) { loteInput.value = ""; return; }
-      const estoque = JSON.parse(localStorage.getItem('leveh_estoque_visa') || '[]');
-      const item = estoque.find(i => i.id === valId);
-      if (item) {
-        loteInput.value = `Lote: ${item.lote} (Val: ${item.validade})`;
-      }
-    }
-
-    function popularSelectInsumosProcedimento() {
-      const tbodySaldo = document.getElementById("corpoTabelaInsumosPresentes");
-      const estoque = JSON.parse(localStorage.getItem('leveh_estoque_visa') || '[]');
-      const disponiveis = estoque.filter(i => i.qtdAtual > 0);
-
-      if (tbodySaldo) {
-        if (disponiveis.length === 0) {
-          tbodySaldo.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#DC2626; padding:0.75rem;">Nenhum insumo disponível. Clique em "+ Gerenciar Estoque" para dar entrada.</td></tr>';
-        } else {
-          tbodySaldo.innerHTML = disponiveis.map(i => `
-            <tr>
-              <td><strong>${i.nome}</strong></td>
-              <td><span class="audit-tag">${i.lote}</span></td>
-              <td>${i.validade}</td>
-              <td><strong style="color:var(--primary); font-size:1rem;">${i.qtdAtual} ${i.unidade}</strong></td>
-            </tr>
-          `).join('');
-        }
-      }
-
-      const container = document.getElementById("containerLinhasInsumos");
-      if (container) {
-        container.innerHTML = "";
-        contadorLinhasInsumo = 0;
-        adicionarLinhaInsumoProcedimento();
-      }
-    }
-
-    function executarProcedimentoMultiInsumos(e) {
-      e.preventDefault();
-      const linhas = document.querySelectorAll("#containerLinhasInsumos > div");
-      if (linhas.length === 0) {
-        alert("Adicione pelo menos um insumo ao procedimento.");
-        return;
-      }
-
-      const estoque = JSON.parse(localStorage.getItem('leveh_estoque_visa') || '[]');
-      const insumosUtilizados = [];
-
-      for (let linha of linhas) {
-        const idInsumo = linha.querySelector(".sel-insumo-multi").value;
-        const qtd = parseInt(linha.querySelector(".qtd-insumo-multi").value);
-
-        if (!idInsumo) {
-          alert("Selecione todos os insumos informados.");
-          return;
-        }
-
-        const itemEstoque = estoque.find(i => i.id === idInsumo);
-        if (!itemEstoque) {
-          alert("Insumo não encontrado no estoque.");
-          return;
-        }
-
-        if (itemEstoque.qtdAtual < qtd) {
-          alert(`Saldo insuficiente para "${itemEstoque.nome}"! Há apenas ${itemEstoque.qtdAtual} ${itemEstoque.unidade}.`);
-          return;
-        }
-
-        insumosUtilizados.push({ item: itemEstoque, qtdUsada: qtd });
-      }
-
-      insumosUtilizados.forEach(({ item, qtdUsada }) => {
-        item.qtdAtual -= qtdUsada;
-      });
-      localStorage.setItem('leveh_estoque_visa', JSON.stringify(estoque));
-
-      if (!pacienteAtual.procedimentos) pacienteAtual.procedimentos = [];
-      const procRegistro = {
-        id: Date.now(),
-        dataHora: new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR"),
-        procedimento: document.getElementById("procNome").value.trim(),
-        itens: insumosUtilizados.map(({ item, qtdUsada }) => `${qtdUsada}x ${item.nome} [Lote: ${item.lote}]`),
-        profissional: `${usuarioLogado.nome} (${usuarioLogado.registro || usuarioLogado.cargo})`
-      };
-      pacienteAtual.procedimentos.unshift(procRegistro);
-
-      registrarAudit(`Procedimento [${procRegistro.procedimento}] em ${pacienteAtual.nome}. Insumos baixados: ${procRegistro.itens.join(', ')}.`);
-
-      salvarTudo();
-      renderProcedimentos();
-      popularSelectInsumosProcedimento();
-      document.getElementById("procNome").value = "";
-      alert(`Procedimento registrado e baixa realizada para ${insumosUtilizados.length} insumo(s)!`);
-    }
-
-    function renderProcedimentos() {
-      const tbody = document.getElementById("corpoHistoricoProcedimentos");
-      const procs = (pacienteAtual && pacienteAtual.procedimentos) ? pacienteAtual.procedimentos : [];
-      if (procs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:#8E998B;">Nenhum procedimento registrado com insumo.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = procs.map(p => {
-        const listaItens = p.itens ? p.itens.map(i => `<div>• ${i}</div>`).join('') : `${p.qtdUsada || ''} ${p.insumo || ''} [Lote: ${p.lote || ''}]`;
-        return `
-          <tr>
-            <td><span class="audit-tag">${p.dataHora}</span></td>
-            <td><strong>${p.procedimento}</strong></td>
-            <td>${listaItens}</td>
-            <td>${p.profissional}</td>
-          </tr>
-        `;
-      }).join("");
-    }
-
-    // 6. GESTÃO DE EQUIPE
-    function salvarNovoColaborador(e) {
-      e.preventDefault();
-      const novo = {
-        id: "USR-" + Date.now().toString().slice(-4),
-        nome: document.getElementById('membroNome').value.trim(),
-        cargo: document.getElementById('membroCargo').value,
-        registro: document.getElementById('membroRegistro').value.trim(),
-        email: document.getElementById('membroEmail').value.trim().toLowerCase(),
-        senha: document.getElementById('membroSenha').value,
-        permissoes: {
-          prontuario: document.getElementById('permProntuario').checked,
-          procedimentos: document.getElementById('permProcedimentos').checked,
-          gerenciarEstoque: document.getElementById('permGerenciarEstoque').checked,
-          atualizarPops: document.getElementById('permAtualizarPops').checked,
-          gerenciarAgenda: document.getElementById('permGerenciarAgenda').checked,
-          dietas: document.getElementById('permDietas').checked,
-          substituicoes: document.getElementById('permSubstituicoes').checked,
-          exames: document.getElementById('permExames').checked,
-          dobras: document.getElementById('permDobras').checked
-        }
-      };
-
-      if (usuarios.some(u => u.email === novo.email)) {
-        alert('Este e-mail já está cadastrado.');
-        return;
-      }
-
-      usuarios.push(novo);
-      salvarTudo();
-      registrarAudit(`Novo colaborador cadastrado: ${novo.nome} (${novo.cargo}).`);
-      renderColaboradores();
-      toggleForm('formNovoMembro');
-      e.target.reset();
-      alert(`Colaborador ${novo.nome} cadastrado com sucesso!`);
-    }
-
-    function renderColaboradores() {
-      const tbody = document.getElementById('tabelaColaboradoresBody');
-      tbody.innerHTML = usuarios.map((u, idx) => {
-        const perms = [];
-        if (u.cargo === 'admin_global') {
-          perms.push('Acesso Master Irrestrito');
-        } else if (u.permissoes) {
-          if (u.permissoes.prontuario) perms.push('Prontuário');
-          if (u.permissoes.procedimentos) perms.push('Procedimentos/Baixa');
-          if (u.permissoes.gerenciarEstoque) perms.push('Estoque');
-          if (u.permissoes.atualizarPops) perms.push('POPs');
-          if (u.permissoes.gerenciarAgenda) perms.push('Agenda');
-          if (u.permissoes.dietas) perms.push('Dietas');
-          if (u.permissoes.substituicoes) perms.push('Substituições');
-          if (u.permissoes.exames) perms.push('Exames');
-          if (u.permissoes.dobras) perms.push('Dobras');
-        }
-
-        let statusBadge = '<span style="color:#059669; font-weight:700;">Ativo</span>';
-        if (u.bloqueado) {
-          statusBadge = '<span style="color:#DC2626; background:#FEF2F2; padding:0.2rem 0.5rem; border-radius:0.3rem; border:1px solid #FECACA; font-weight:700;">🚫 BLOQUEADO</span>';
-        }
-
-        return `
-          <tr>
-            <td><strong>${u.nome}</strong></td>
-            <td>${u.cargo}</td>
-            <td>${u.registro || '-'}</td>
-            <td>${u.email}</td>
-            <td><small style="color:var(--primary); font-weight:700;">${perms.join(', ') || 'Nenhuma'}</small><br>${statusBadge}</td>
-            <td>
-              <div style="display:flex; gap:0.35rem;">
-                <button class="btn btn-outline btn-sm" onclick="abrirModalAdminEditar('${u.id}')" title="Editar Permissões e Senha">✏️ Editar</button>
-                ${u.cargo !== 'admin_global' ? `<button class="btn btn-danger btn-sm" onclick="removerColaborador(${idx})" title="Remover Colaborador">Excluir</button>` : ''}
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    // MODAL DE EDIÇÃO PELO ADMIN GLOBAL
-    function abrirModalAdminEditar(userId) {
-      const u = usuarios.find(x => x.id === userId);
-      if (!u) return;
-
-      document.getElementById('editUserId').value = u.id;
-      document.getElementById('editUserNome').value = u.nome;
-      document.getElementById('editUserEmail').value = u.email;
-      document.getElementById('editUserSenha').value = '';
-
-      // Indicador de Bloqueio com botão de Desbloqueio
-      const boxBloq = document.getElementById('boxStatusBloqueioAdmin');
-      if (u.bloqueado) {
-        boxBloq.style.display = 'block';
-        boxBloq.style.background = '#FEF2F2';
-        boxBloq.style.border = '1px solid #FECACA';
-        boxBloq.style.color = '#991B1B';
-        boxBloq.innerHTML = `⚠️ <strong>Conta Bloqueada por 5 Erros de Senha!</strong><br><button type="button" class="btn btn-sm" style="margin-top:0.4rem; background:#059669;" onclick="desbloquearUsuarioAdmin('${u.id}')">🔓 Desbloquear Acesso Agora</button>`;
-      } else {
-        boxBloq.style.display = 'none';
-      }
-
-      // Carregar permissões nas caixas de seleção
-      const perms = u.permissoes || {};
-      document.getElementById('editPermProntuario').checked = perms.prontuario || false;
-      document.getElementById('editPermProcedimentos').checked = perms.procedimentos || false;
-      document.getElementById('editPermEstoque').checked = perms.gerenciarEstoque || false;
-      document.getElementById('editPermPops').checked = perms.atualizarPops || false;
-      document.getElementById('editPermAgenda').checked = perms.gerenciarAgenda || false;
-      document.getElementById('editPermDietas').checked = perms.dietas || false;
-      document.getElementById('editPermSubstituicoes').checked = perms.substituicoes || false;
-      document.getElementById('editPermExames').checked = perms.exames || false;
-      document.getElementById('editPermDobras').checked = perms.dobras || false;
-
-      document.getElementById('modalAdminEditarUsuario').classList.remove('hidden');
-    }
-
-    function fecharModalAdminEditar() {
-      document.getElementById('modalAdminEditarUsuario').classList.add('hidden');
-    }
-
-    function desbloquearUsuarioAdmin(userId) {
-      const u = usuarios.find(x => x.id === userId);
-      if (u) {
-        u.bloqueado = false;
-        u.tentativasFalhas = 0;
-        salvarTudo();
-        registrarAudit(`Usuário ${u.nome} foi DESBLOQUEADO manualmente pelo Administrador Global.`);
-        alert(`Conta de ${u.nome} desbloqueada com sucesso!`);
-        fecharModalAdminEditar();
-        renderColaboradores();
-      }
-    }
-
-    function salvarEdicaoColaboradorAdmin(e) {
-      e.preventDefault();
-      const userId = document.getElementById('editUserId').value;
-      const u = usuarios.find(x => x.id === userId);
-      if (!u) return;
-
-      u.nome = document.getElementById('editUserNome').value.trim();
-      u.email = document.getElementById('editUserEmail').value.trim().toLowerCase();
-
-      const novaSenha = document.getElementById('editUserSenha').value.trim();
-      if (novaSenha !== "") {
-        u.senha = novaSenha;
-        u.tentativasFalhas = 0;
-        u.bloqueado = false;
-      }
-
-      if (u.cargo !== 'admin_global') {
-        u.permissoes = {
-          prontuario: document.getElementById('editPermProntuario').checked,
-          procedimentos: document.getElementById('editPermProcedimentos').checked,
-          gerenciarEstoque: document.getElementById('editPermEstoque').checked,
-          atualizarPops: document.getElementById('editPermPops').checked,
-          gerenciarAgenda: document.getElementById('editPermAgenda').checked,
-          dietas: document.getElementById('editPermDietas').checked,
-          substituicoes: document.getElementById('editPermSubstituicoes').checked,
-          exames: document.getElementById('editPermExames').checked,
-          dobras: document.getElementById('editPermDobras').checked
-        };
-      }
-
-      salvarTudo();
-      registrarAudit(`Dados, senha ou permissões de ${u.nome} atualizados pelo Admin Global.`);
-      fecharModalAdminEditar();
-      renderColaboradores();
-      alert(`Colaborador ${u.nome} atualizado com sucesso!`);
-    }
-
-    // AUTOATENDIMENTO: QUALQUER USUÁRIO PODE MUDAR A PRÓPRIA SENHA
-    function abrirModalMinhaSenha() {
-      document.getElementById('minhaSenhaAtual').value = '';
-      document.getElementById('minhaSenhaNova').value = '';
-      document.getElementById('minhaSenhaConfirma').value = '';
-      document.getElementById('modalMinhaSenha').classList.remove('hidden');
-    }
-
-    function fecharModalMinhaSenha() {
-      document.getElementById('modalMinhaSenha').classList.add('hidden');
-    }
-
-    function salvarMinhaPropriaSenha(e) {
-      e.preventDefault();
-      const atual = document.getElementById('minhaSenhaAtual').value;
-      const nova = document.getElementById('minhaSenhaNova').value;
-      const confirma = document.getElementById('minhaSenhaConfirma').value;
-
-      if (usuarioLogado.senha !== atual) {
-        alert('Senha atual incorreta!');
-        return;
-      }
-
-      if (nova !== confirma) {
-        alert('A confirmação da nova senha não confere!');
-        return;
-      }
-
-      if (nova.length < 4) {
-        alert('A nova senha deve possuir pelo menos 4 caracteres.');
-        return;
-      }
-
-      // Atualiza na base de dados e na sessão
-      const u = usuarios.find(x => x.id === usuarioLogado.id);
-      if (u) {
-        u.senha = nova;
-        u.tentativasFalhas = 0;
-      }
-      usuarioLogado.senha = nova;
-      salvarTudo();
-      localStorage.setItem('leveh_sessao_ativa', JSON.stringify(usuarioLogado));
-      registrarAudit(`O usuário ${usuarioLogado.nome} alterou com sucesso sua própria senha.`);
-
-      fecharModalMinhaSenha();
-      alert('Sua senha foi alterada com sucesso!');
-    }
-
-    function removerColaborador(idx) {
-      if (confirm('Deseja excluir este colaborador?')) {
-        usuarios.splice(idx, 1);
-        salvarTudo();
-        renderColaboradores();
-      }
-    }
-
-    // 7. PACIENTES & PRONTUÁRIO
-    function salvarPaciente(e) {
-      e.preventDefault();
-      const novo = {
-        id: 'PRON-' + Date.now().toString().slice(-4),
-        nome: document.getElementById('pacNome').value.trim(),
-        sexo: document.getElementById('pacSexo').value,
-        nascimento: document.getElementById('pacNasc').value,
-        telefone: document.getElementById('pacTelefone').value,
-        email: document.getElementById('pacEmail').value.trim(),
-        objetivo: document.getElementById('pacObjetivo').value,
-        evolucoes: [], antropometria: [], bioimpedancia: [], examesMatriz: {}, planos: [], procedimentos: []
-      };
-      pacientes.push(novo);
-      salvarTudo();
-      renderPacientes();
-      toggleForm('formNovoPaciente');
-      alert(`Paciente registrado!\nLogin: ${novo.nome}\nSenha: ${novo.id}`);
-      e.target.reset();
-    }
-
-    function renderPacientes() {
-      const tbody = document.getElementById('tabelaPacientesBody');
-      if (pacientes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:#8E998B;">Nenhum paciente cadastrado.</td></tr>';
-        return;
-      }
-
-      const podeVerProntuario = usuarioLogado && (usuarioLogado.cargo === 'admin_global' || (usuarioLogado.permissoes && usuarioLogado.permissoes.prontuario));
-
-      tbody.innerHTML = pacientes.map(p => `
-        <tr>
-          <td><strong style="color:var(--primary);">${p.id}</strong></td>
-          <td><strong>${p.nome}</strong></td>
-          <td>${new Date().getFullYear() - new Date(p.nascimento).getFullYear()} anos</td>
-          <td>${p.sexo}</td>
-          <td>${p.telefone}</td>
-          <td>
-            <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
-              <button class="btn btn-outline btn-sm" onclick="abrirModalEditarCadastro('${p.id}')" title="Atualizar telefone, email e dados demográficos">✏️ Editar Cadastro</button>
-              ${podeVerProntuario ? `<button class="btn btn-sm" onclick="abrirProntuario('${p.id}')" title="Acessar histórico e evoluções clínicas">Acessar Prontuário</button>` : ''}
-            </div>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    // MODAL DE EDIÇÃO DE DADOS CADASTRAIS (SEPARADO DO PRONTUÁRIO CLÍNICO)
-    function abrirModalEditarCadastro(pacId) {
-      const p = pacientes.find(x => x.id === pacId);
-      if (!p) return;
-
-      document.getElementById('editPacId').value = p.id;
-      document.getElementById('editPacIdExibicao').value = p.id;
-      document.getElementById('editPacNome').value = p.nome;
-      document.getElementById('editPacSexo').value = p.sexo;
-      document.getElementById('editPacNasc').value = p.nascimento;
-      document.getElementById('editPacTelefone').value = p.telefone;
-      document.getElementById('editPacEmail').value = p.email || '';
-      document.getElementById('editPacObjetivo').value = p.objetivo || '';
-
-      document.getElementById('modalEditarDadosCadastrais').classList.remove('hidden');
-    }
-
-    function fecharModalEditarCadastro() {
-      document.getElementById('modalEditarDadosCadastrais').classList.add('hidden');
-    }
-
-    function salvarEdicaoCadastralPaciente(e) {
-      e.preventDefault();
-      const pacId = document.getElementById('editPacId').value;
-      const p = pacientes.find(x => x.id === pacId);
-      if (!p) return;
-
-      const nomeAntigo = p.nome;
-      p.nome = document.getElementById('editPacNome').value.trim();
-      p.sexo = document.getElementById('editPacSexo').value;
-      p.nascimento = document.getElementById('editPacNasc').value;
-      p.telefone = document.getElementById('editPacTelefone').value.trim();
-      p.email = document.getElementById('editPacEmail').value.trim();
-      p.objetivo = document.getElementById('editPacObjetivo').value.trim();
-
-      // Sincronizar nome nas consultas agendadas futuras
-      if (nomeAntigo !== p.nome) {
-        agendamentos.forEach(ag => {
-          if (ag.paciente === nomeAntigo) ag.paciente = p.nome;
-        });
-      }
-
-      salvarTudo();
-      registrarAudit(`Dados cadastrais de ${p.nome} (${p.id}) atualizados por ${usuarioLogado.nome} (${usuarioLogado.cargo}).`);
-      fecharModalEditarCadastro();
-      renderPacientes();
-      if (typeof atualizarSelectsAgenda === 'function') atualizarSelectsAgenda();
-      alert(`Dados cadastrais de ${p.nome} atualizados com sucesso!`);
-    }
-
-    function abrirProntuario(id) {
-      if (usuarioLogado.cargo !== 'admin_global' && (!usuarioLogado.permissoes || !usuarioLogado.permissoes.prontuario)) {
-        return alert('Seu usuário não possui permissão para visualizar prontuários.');
-      }
-
-      pacienteAtual = pacientes.find(p => p.id === id);
-      if (!pacienteAtual) return;
-
-      document.getElementById('pagePacientes').classList.add('hidden');
-      document.getElementById('pageProntuarioExclusivo').classList.remove('hidden');
-
-      document.getElementById('pronNomeHeader').textContent = pacienteAtual.nome;
-      document.getElementById('pronDetalhesHeader').textContent = `Prontuário: ${pacienteAtual.id} | Tel: ${pacienteAtual.telefone}`;
-      document.getElementById('pronIdBadge').textContent = pacienteAtual.id;
-
-      const perms = usuarioLogado.permissoes || {};
-      const isMaster = usuarioLogado.cargo === 'admin_global';
-
-      document.getElementById('tabBtnProcedimentos').classList.toggle('hidden', !isMaster && !perms.procedimentos);
-      document.getElementById('tabBtnDieta').classList.toggle('hidden', !isMaster && !perms.dietas);
-      document.getElementById('tabBtnExames').classList.toggle('hidden', !isMaster && !perms.exames);
-      document.getElementById('tabBtnAntropometria').classList.toggle('hidden', !isMaster && !perms.dobras);
-
-      switchSubTab('subEvolucao');
-      renderEvolucoes();
-      popularSelectInsumosProcedimento();
-      renderProcedimentos();
-    }
-
-    function switchSubTab(subId) {
-      document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
-      event.target.classList.add('active');
-      document.querySelectorAll('.subtab-content').forEach(c => c.classList.add('hidden'));
-      document.getElementById(subId).classList.remove('hidden');
-      if (subId === 'subProcedimentos') popularSelectInsumosProcedimento();
-    }
-
-    function adicionarEvolucao(e) {
-      e.preventDefault();
-      pacienteAtual.evolucoes.unshift({
-        id: Date.now(),
-        data: new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR'),
-        autor: `${usuarioLogado.nome} (${usuarioLogado.registro || usuarioLogado.cargo})`,
-        texto: document.getElementById('evoTexto').value
-      });
-      salvarTudo();
-      renderEvolucoes();
-      e.target.reset();
-    }
-
-    function renderEvolucoes() {
-      const container = document.getElementById('listaEvolucoes');
-      const evs = pacienteAtual.evolucoes || [];
-      if (evs.length === 0) {
-        container.innerHTML = '<p style="color:#8E998B; font-size:0.85rem;">Nenhuma anotação registrada.</p>';
-        return;
-      }
-      container.innerHTML = evs.map(ev => `
-        <div style="background:#F8FAF6; border-left:4px solid var(--primary); padding:1rem; border-radius:0.35rem; margin-top:0.75rem;">
-          <div style="display:flex; justify-content:space-between;">
-            <small style="color:var(--text-muted); font-weight:700;">${ev.data}</small>
-            <span class="role-badge role-admin">${ev.autor}</span>
-          </div>
-          <p style="margin-top:0.5rem; font-size:0.9rem;">${ev.texto}</p>
-        </div>
-      `).join('');
-    }
-
-    function salvarAntropometria(e) { e.preventDefault(); alert('Antropometria gravada!'); }
-    function salvarBioimpedancia(e) { e.preventDefault(); alert('Bioimpedância gravada!'); }
-    function adicionarExame(e) { e.preventDefault(); alert('Exame anexado!'); }
-    function adicionarNovaRefeicao() { alert('Refeição adicionada!'); }
-    function salvarPlanoCompleto() { alert('Plano alimentar salvo!'); }
-
-    // 8. CALENDÁRIO
-    // FERIADOS NACIONAIS E MUNICIPAIS DE CAMPO GRANDE - MS
-    const FERIADOS_CG_MS = {
-      "01-01": "Feriado Nacional (Confraternização Universal)",
-      "04-21": "Feriado Nacional (Tiradentes)",
-      "05-01": "Feriado Nacional (Dia do Trabalhador)",
-      "06-13": "Feriado Municipal - Campo Grande (Dia de Santo Antônio / Padroeiro)",
-      "08-26": "Feriado Municipal - Campo Grande (Aniversário da Cidade)",
-      "09-07": "Feriado Nacional (Independência do Brasil)",
-      "10-11": "Feriado Estadual - MS (Criação do Estado de Mato Grosso do Sul)",
-      "10-12": "Feriado Nacional (Nossa Senhora Aparecida)",
-      "11-02": "Feriado Nacional (Finados)",
-      "11-15": "Feriado Nacional (Proclamação da República)",
-      "11-20": "Feriado Nacional (Dia da Consciência Negra)",
-      "12-25": "Feriado Nacional (Natal)"
-    };
-
-    // PALETA DE CORES EXCLUSIVA PARA DIFERENCIAÇÃO DE CADA PROFISSIONAL
-    const PALETA_CORES_PROFISSIONAIS = [
-      { bg: "#E0F2FE", text: "#0369A1", border: "#38BDF8" }, // Azul Oceano
-      { bg: "#ECFDF5", text: "#047857", border: "#34D399" }, // Esmeralda / Nutri
-      { bg: "#F3E8FF", text: "#6B21A8", border: "#C084FC" }, // Roxo / Enfermagem
-      { bg: "#FEF3C7", text: "#92400E", border: "#FBBF24" }, // Âmbar / Biomedicina
-      { bg: "#FFE4E6", text: "#BE123C", border: "#FB7185" }, // Rosa Clínico
-      { bg: "#E0E7FF", text: "#3730A3", border: "#818CF8" }, // Índigo
-      { bg: "#CCFBF1", text: "#0F766E", border: "#2DD4BF" }, // Verde Menta
-      { bg: "#FFEDD5", text: "#9A3412", border: "#FB923C" }  // Laranja Quente
-    ];
-
-    
-    // CORES E BADGES POR TIPO DE ATENDIMENTO
-    
-    // CAMPO CONDICIONAL PARA 'OUTROS'
-    
-    // LOGICA DINAMICA DE CADASTRO DE NOVO PACIENTE DIRETO NO AGENDAMENTO
-    function verificarSePacienteNovo(valor) {
-      const box = document.getElementById("boxCamposNovoPacienteAgend");
-      if (!box) return;
-
-      if (valor === "__NOVO__") {
-        box.classList.remove("hidden");
-        document.getElementById("agendNovoNome").setAttribute("required", "true");
-        document.getElementById("agendNovoNasc").setAttribute("required", "true");
-        document.getElementById("agendNovoTelefone").setAttribute("required", "true");
-        // Quando for novo paciente, sugere Primeira Consulta
-        if (document.getElementById("agendTipoSelect")) {
-          document.getElementById("agendTipoSelect").value = "Primeira Consulta";
-          if (typeof alternarCampoOutros === "function") alternarCampoOutros("Primeira Consulta");
-        }
-        document.getElementById("agendNovoNome").focus();
-      } else {
-        box.classList.add("hidden");
-        document.getElementById("agendNovoNome").removeAttribute("required");
-        document.getElementById("agendNovoNasc").removeAttribute("required");
-        document.getElementById("agendNovoTelefone").removeAttribute("required");
-      }
-    }
-
-    function alternarCampoOutros(valor) {
-      const box = document.getElementById('boxOutrosDescricao');
-      const input = document.getElementById('agendOutrosDesc');
-      if (!box) return;
-      if (valor === 'Outros') {
-        box.classList.remove('hidden');
-        if (input) {
-          input.setAttribute('required', 'true');
-          input.focus();
-        }
-      } else {
-        box.classList.add('hidden');
-        if (input) {
-          input.removeAttribute('required');
-          input.value = '';
-        }
-      }
-    }
-
-    
-    function abrirDetalhesAgendamentoModal(idAgendamento) {
-      const ag = agendamentos.find(a => a.id === idAgendamento);
-      if (!ag) return;
-
-      const cor = obterCorProfissional(ag.profissional);
-      const estiloTipo = (typeof obterEstiloTipoConsulta === "function") ? obterEstiloTipoConsulta(ag.tipo || "Outros") : { bg: "#EEF3EC", text: "#2A3327", icon: "📋" };
-      const dataBr = ag.data ? ag.data.split('-').reverse().join('/') : '-';
-
-      const corpo = document.getElementById('conteudoDetalhesAgendamentoCorpo');
-      corpo.innerHTML = `
-        <div style="background:#F8FAF6; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
-          <div style="font-size:1.15rem; font-weight:700; color:var(--text); margin-bottom:0.25rem;">${ag.paciente}</div>
-          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.35rem;">
-            <span style="background:${estiloTipo.bg}; color:${estiloTipo.text}; padding:0.2rem 0.5rem; border-radius:0.3rem; font-size:0.75rem; font-weight:700;">
-              ${estiloTipo.icon} ${ag.tipo || 'Consulta'}
-            </span>
-            <span style="background:${cor.bg}; color:${cor.text}; padding:0.2rem 0.5rem; border-radius:0.3rem; font-size:0.75rem; font-weight:700; border:1px solid ${cor.border};">
-              🩺 ${ag.profissional}
-            </span>
-          </div>
-          <div style="font-size:0.85rem; color:var(--text-muted); margin-top:0.6rem;">
-            📅 <strong>Data:</strong> ${dataBr} &nbsp;|&nbsp; ⏰ <strong>Horário:</strong> ${ag.hora} (${ag.duracao || '30 min'})
-          </div>
-        </div>
-
-        <div style="background:#FFFBEB; border:1.5px solid #FDE68A; border-radius:0.5rem; padding:1rem;">
-          <div style="font-size:0.75rem; font-weight:700; color:#B45309; text-transform:uppercase; margin-bottom:0.35rem;">
-            📝 Observações Registradas:
-          </div>
-          <div style="font-size:0.9rem; color:#92400E; white-space:pre-wrap; line-height:1.4;">
-            ${ag.observacao ? ag.observacao : '<em>Nenhuma observação ou especificação registrada para esta consulta.</em>'}
-          </div>
-        </div>
-      `;
-
-      document.getElementById('modalDetalhesAgendamento').classList.remove('hidden');
-    }
-
-    function fecharModalDetalhesAgendamento() {
-      document.getElementById('modalDetalhesAgendamento').classList.add('hidden');
-    }
-
-    function exibirObservacaoAgendamento(paciente, tipo, obs) {
-      alert(`📋 OBSERVAÇÃO DO AGENDAMENTO\n\nPaciente: ${paciente}\nTipo: ${tipo}\nObservação: ${obs || 'Sem observações adicionais.'}`);
-    }
-
-    function obterEstiloTipoConsulta(tipo) {
-      switch(tipo) {
-        case "Primeira Consulta":
-          return { bg: "#DBEAFE", text: "#1E40AF", border: "#93C5FD", icon: "⭐" };
-        case "Retorno":
-          return { bg: "#DCFCE7", text: "#166534", border: "#86EFAC", icon: "🔄" };
-        case "Medicação":
-          return { bg: "#F3E8FF", text: "#6B21A8", border: "#D8B4FE", icon: "💊" };
-        case "Procedimento":
-          return { bg: "#FEF3C7", text: "#92400E", border: "#FDE68A", icon: "💉" };
-        default:
-          return { bg: "#F3F4F6", text: "#374151", border: "#D1D5DB", icon: "📋" };
-      }
-    }
-
-    function obterCorProfissional(nome) {
-      if (!nome) return PALETA_CORES_PROFISSIONAIS[0];
-      let hash = 0;
-      for (let i = 0; i < nome.length; i++) {
-        hash = nome.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const index = Math.abs(hash) % PALETA_CORES_PROFISSIONAIS.length;
-      return PALETA_CORES_PROFISSIONAIS[index];
-    }
-
-    function checarFeriado(mesZeroIndexed, dia) {
-      const mm = String(mesZeroIndexed + 1).padStart(2, '0');
-      const dd = String(dia).padStart(2, '0');
-      return FERIADOS_CG_MS[`${mm}-${dd}`] || null;
-    }
-
-    // RENDERIZAR GRADE MENSAL COM FERIADOS E CORES POR PROFISSIONAL
-    function renderCalendarioVisual() {
-      const grade = document.getElementById('calGradeDias');
-      if (!grade) return;
-      grade.innerHTML = '';
-
-      const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-      document.getElementById('calMesAnoTexto').textContent = `${meses[mesCalendarioAtual]} de ${anoCalendarioAtual}`;
-
-      const primeiroDiaSemana = new Date(anoCalendarioAtual, mesCalendarioAtual, 1).getDay();
-      const totalDias = new Date(anoCalendarioAtual, mesCalendarioAtual + 1, 0).getDate();
-
-      const estoqueBloq = JSON.parse(localStorage.getItem('leveh_bloqueios') || '[]');
-
-      // Dias vazios no início
-      for (let i = 0; i < primeiroDiaSemana; i++) {
-        grade.innerHTML += '<div class="cal-day-box empty"></div>';
-      }
-
-      for (let dia = 1; dia <= totalDias; dia++) {
-        const mm = String(mesCalendarioAtual + 1).padStart(2, '0');
-        const dd = String(dia).padStart(2, '0');
-        const dataStr = `${anoCalendarioAtual}-${mm}-${dd}`;
-
-        const feriado = checarFeriado(mesCalendarioAtual, dia);
-        const agendsDoDia = agendamentos.filter(a => a.data === dataStr);
-        const bloqueiosDoDia = estoqueBloq.filter(b => b.data === dataStr);
-
-        let pillsHtml = '';
-
-        if (feriado) {
-          pillsHtml += `<div style="font-size:0.65rem; background:#FEF3C7; color:#92400E; border-left:3px solid #F59E0B; padding:0.15rem 0.35rem; border-radius:0.2rem; margin-top:0.2rem; font-weight:700;">🏛️ ${feriado.split('(')[0]}</div>`;
-        }
-
-        if (bloqueiosDoDia.length > 0) {
-          pillsHtml += `<div style="font-size:0.65rem; background:#FEE2E2; color:#991B1B; border-left:3px solid #EF4444; padding:0.15rem 0.35rem; border-radius:0.2rem; margin-top:0.2rem; font-weight:700;">🚫 Ausência/Bloqueio (${bloqueiosDoDia.length})</div>`;
-        }
-
-        agendsDoDia.forEach(ag => {
-          const cor = obterCorProfissional(ag.profissional);
-          const estiloTipo = obterEstiloTipoConsulta(ag.tipo || "Outros");
-          const temObs = Boolean(ag.observacao);
-          pillsHtml += `
-            <div onclick="event.stopPropagation(); abrirDetalhesAgendamentoModal(${ag.id})" style="display:flex; justify-content:space-between; align-items:center; font-size:0.65rem; background:${cor.bg}; color:${cor.text}; border-left:3px solid ${cor.border}; padding:0.2rem 0.35rem; border-radius:0.25rem; margin-top:0.2rem; font-weight:600; cursor:pointer;" title="Clique para ver os detalhes e observações">
-              <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                ${ag.hora} ${ag.paciente.split(' ')[0]} <small>[${estiloTipo.icon}]</small>
-              </span>
-              ${temObs ? '<span style="margin-left:0.25rem; font-size:0.75rem;">📝</span>' : ''}
-            </div>
-          `;
-        });
-
-        grade.innerHTML += `
-          <div class="cal-day-box" onclick="abrirModalDiaCompleto('${dataStr}', ${dia})">
-            <div class="cal-day-num">
-              <span>${dia}</span>
-              ${feriado ? '<small style="font-size:0.65rem; color:#D97706; font-weight:700;">Feriado</small>' : ''}
-            </div>
-            <div style="overflow-y:auto; flex:1;">
-              ${pillsHtml}
-            </div>
-          </div>
-        `;
-      }
-    }
-
-    function navegarMes(direcao) {
-      mesCalendarioAtual += direcao;
-      if (mesCalendarioAtual < 0) {
-        mesCalendarioAtual = 11;
-        anoCalendarioAtual--;
-      } else if (mesCalendarioAtual > 11) {
-        mesCalendarioAtual = 0;
-        anoCalendarioAtual++;
-      }
-      atualizarSelectsAgenda();
-      renderCalendarioVisual();
-    }
-
-    // ABRIR DIA COMPLETO COM TODOS OS HORÁRIOS DAS 07:00 ÀS 19:30 E BLOQUEIOS
-    function abrirModalDiaCompleto(dataStr, dia) {
-      dataSelecionadaModal = dataStr;
-      const modal = document.getElementById('modalHorariosDia');
-      const partes = dataStr.split('-');
-      const dataBr = `${partes[2]}/${partes[1]}/${partes[0]}`;
-
-      const feriado = checarFeriado(mesCalendarioAtual, dia);
-      const estoqueBloq = JSON.parse(localStorage.getItem('leveh_bloqueios') || '[]');
-      const bloqueiosDoDia = estoqueBloq.filter(b => b.data === dataStr);
-
-      let cabecalhoHtml = `<h3 style="color:var(--primary); font-size:1.3rem;">Agenda de ${dataBr}</h3>`;
-      if (feriado) {
-        cabecalhoHtml += `<div style="background:#FFFBEB; border:1px solid #FDE68A; color:#B45309; padding:0.5rem 0.8rem; border-radius:0.4rem; font-size:0.85rem; font-weight:700; margin-top:0.35rem;">🏛️ ${feriado}</div>`;
-      }
-
-      if (bloqueiosDoDia.length > 0) {
-        cabecalhoHtml += `
-          <div style="background:#FEF2F2; border:1px solid #FECACA; color:#991B1B; padding:0.6rem 0.8rem; border-radius:0.4rem; font-size:0.85rem; margin-top:0.4rem;">
-            <strong>⚠️ Observações de Ausência / Bloqueio:</strong>
-            <ul style="margin:0.3rem 0 0 1.2rem; font-size:0.8rem;">
-              ${bloqueiosDoDia.map(b => `<li><strong>${b.profissional}:</strong>${b.motivo}</li>`).join('')}
-            </ul>
-          </div>
-        `;
-      }
-
-      document.getElementById('modalTituloDia').innerHTML = cabecalhoHtml;
-
-      // Grade completa de 30 em 30 minutos das 07:00 às 19:30
-      const listaHorarios = [];
-      for (let h = 7; h <= 19; h++) {
-        const hh = String(h).padStart(2, '0');
-        listaHorarios.push(`${hh}:00`);
-        listaHorarios.push(`${hh}:30`);
-      }
-
-      const agendsDoDia = agendamentos.filter(a => a.data === dataStr);
-      const containerSlots = document.getElementById('modalListaSlotsHorarios');
-
-      // RENDERIZAR TODOS OS INTERVALOS DE 30 MINUTOS DAS 07:00 ÀS 19:30
-      containerSlots.innerHTML = listaHorarios.map(hora => {
-        const minSlot = horaParaMinutos(hora);
-
-        // Identifica todos os agendamentos que cobrem este slot específico
-        const ocupacoesNoSlot = agendsDoDia.filter(a => {
-          const ini = horaParaMinutos(a.hora);
-          const dur = parseInt(a.duracao) || 30;
-          return minSlot >= ini && minSlot < (ini + dur);
-        });
-
-        if (ocupacoesNoSlot.length > 0) {
-          return ocupacoesNoSlot.map(agendado => {
-            const cor = obterCorProfissional(agendado.profissional);
-            const estiloTipo = (typeof obterEstiloTipoConsulta === "function") ? obterEstiloTipoConsulta(agendado.tipo || "Outros") : { bg: "#EEF3EC", text: "#2A3327", icon: "📋", border: "#CBD8C5" };
-            const ehInicio = agendado.hora === hora;
-            const iniMin = horaParaMinutos(agendado.hora);
-            const fimHora = minutosParaHora(iniMin + (parseInt(agendado.duracao) || 30));
-
-            return `
-              <div class="schedule-hour-row" style="background:#FAFCF9; border-left:5px solid ${cor.border}; margin-bottom:0.35rem; border-radius:0.35rem; padding:0.6rem 0.8rem;">
-                <span class="schedule-hour-time" style="font-weight:800; color:var(--text);">${hora}</span>
-                <div style="flex:1; margin-left:0.6rem;">
-                  <strong style="cursor:pointer; text-decoration:underline; font-size:0.95rem;" onclick="abrirDetalhesAgendamentoModal(${agendado.id})">${agendado.paciente}</strong>
-                  <span style="display:inline-block; margin-left:0.35rem; background:${estiloTipo.bg}; color:${estiloTipo.text}; border:1px solid ${estiloTipo.border}; padding:0.15rem 0.45rem; border-radius:0.3rem; font-size:0.75rem; font-weight:700;">
-                    ${estiloTipo.icon} ${agendado.tipo || 'Consulta'}
-                  </span>
-                  <span style="display:inline-block; margin-left:0.35rem; background:${cor.bg}; color:${cor.text}; padding:0.15rem 0.45rem; border-radius:0.3rem; font-size:0.75rem; font-weight:700; border:1px solid ${cor.border};">
-                    🩺 ${agendado.profissional}
-                  </span>
-                  <small style="color:var(--text-muted); display:block; font-size:0.75rem; margin-top:0.2rem;">
-                    ⏰ <strong>${agendado.hora} às ${fimHora}</strong> (${agendado.duracao}) ${!ehInicio ? '<span style="color:#B45309; font-weight:700;">• Continuação do atendimento ocupando este horário</span>' : ''}
-                  </small>
-                </div>
-                ${ehInicio ? `<button class="btn btn-danger btn-sm" onclick="cancelarAgendamentoModal(${agendado.id})">Desmarcar</button>` : `<span style="font-size:0.75rem; color:#B45309; background:#FEF3C7; padding:0.2rem 0.5rem; border-radius:0.3rem; font-weight:700;">Ocupado</span>`}
-              </div>
-            `;
-          }).join('');
-        } else {
-          return `
-            <div class="schedule-hour-row" style="opacity:0.85; padding:0.5rem 0.8rem;">
-              <span class="schedule-hour-time">${hora}</span>
-              <div style="flex:1; color:var(--text-muted); font-size:0.85rem; margin-left:0.6rem;">Horário Livre</div>
-              <button class="btn btn-outline btn-sm" onclick="reservarHorarioModal('${dataStr}', '${hora}')">+ Agendar</button>
-            </div>
-          `;
-        }
-      }).join('');
-
-      modal.classList.remove('hidden');
-    }
-
-    function fecharModalHorarios() {
-      document.getElementById('modalHorariosDia').classList.add('hidden');
-    }
-
-    function reservarHorarioModal(dataStr, hora) {
-      fecharModalHorarios();
-      document.getElementById('agendDate').value = dataStr;
-      document.getElementById('agendTime').value = hora;
-      toggleForm('formAgendamento');
-      window.scrollTo({ top: document.getElementById('formAgendamento').offsetTop - 40, behavior: 'smooth' });
-    }
-
-    function cancelarAgendamentoModal(idAgendamento) {
-      if (confirm('Deseja realmente desmarcar este atendimento?')) {
-        agendamentos = agendamentos.filter(a => a.id !== idAgendamento);
-        salvarTudo();
-        atualizarSelectsAgenda();
-      renderCalendarioVisual();
-        const diaNum = parseInt(dataSelecionadaModal.split('-')[2]);
-        abrirModalDiaCompleto(dataSelecionadaModal, diaNum);
-      }
-    }
-
-    function abrirAgendamentoParaDataAtualModal() {
-      if (!dataSelecionadaModal) {
-        alert("Por favor, selecione primeiro uma data no calendário.");
-        return;
-      }
-      fecharModalHorarios();
-      document.getElementById('agendDate').value = dataSelecionadaModal;
-      document.getElementById('agendTime').value = "08:00";
-      toggleForm('formAgendamento');
-    }
-
-    // REGISTRAR AUSÊNCIA / BLOQUEIO DE FUNCIONÁRIO
-    function salvarBloqueioAusencia(e) {
-      e.preventDefault();
-      const novoBloqueio = {
-        id: Date.now(),
-        data: document.getElementById('bloqData').value,
-        profissional: document.getElementById('bloqProfSelect').value,
-        motivo: document.getElementById('bloqMotivo').value.trim()
-      };
-
-      const lista = JSON.parse(localStorage.getItem('leveh_bloqueios') || '[]');
-      lista.unshift(novoBloqueio);
-      localStorage.setItem('leveh_bloqueios', JSON.stringify(lista));
-
-      registrarAudit(`Ausência/Bloqueio registrado para ${novoBloqueio.profissional} em ${novoBloqueio.data}: ${novoBloqueio.motivo}`);
-      atualizarSelectsAgenda();
-      renderCalendarioVisual();
-      toggleForm('formBloqueioAusencia');
-      e.target.reset();
-      alert('Bloqueio/Ausência registrado com sucesso na agenda!');
-    }
-
-    
-    // NORMALIZAÇÃO DE NOME PARA EVITAR DIVERGÊNCIA COM CONSELHO/CARGO
-    function extrairNomePuro(str) {
-      if (!str) return "";
-      return str.split('(')[0].replace(/^(Dr\.|Dra\.|Enf\.|Nutri\.)\s*/i, '').trim().toLowerCase();
-    }
-
-    function horaParaMinutos(horaStr) {
-      if (!horaStr) return 0;
-      const partes = horaStr.split(':').map(Number);
-      return (partes[0] * 60) + (partes[1] || 0);
-    }
-
-    function minutosParaHora(minTotal) {
-      const h = String(Math.floor(minTotal / 60)).padStart(2, '0');
-      const m = String(minTotal % 60).padStart(2, '0');
-      return `${h}:${m}`;
-    }
-
-    // AUDITORIA MATEMÁTICA DE CHOQUE DE HORÁRIOS PARA QUALQUER PROFISSIONAL
-    function verificarConflitoHorario(profTentado, dataTentada, horaInicioTentada, duracaoMinTentada, agendIdIgnorar = null) {
-      const nomePuroTentado = extrairNomePuro(profTentado);
-      const iniNovo = horaParaMinutos(horaInicioTentada);
-      const fimNovo = iniNovo + parseInt(duracaoMinTentada);
-
-      for (let ag of agendamentos) {
-        if (agendIdIgnorar && ag.id === agendIdIgnorar) continue;
-        if (ag.data !== dataTentada) continue;
-
-        const nomePuroExistente = extrairNomePuro(ag.profissional);
-        if (nomePuroTentado === nomePuroExistente) {
-          const iniExistente = horaParaMinutos(ag.hora);
-          const durExistente = parseInt(ag.duracao) || 30;
-          const fimExistente = iniExistente + durExistente;
-
-          // Choque: iniNovo < fimExistente E fimNovo > iniExistente
-          if (iniNovo < fimExistente && fimNovo > iniExistente) {
-            return {
-              conflito: true,
-              conflitante: ag,
-              periodoOcupado: `${ag.hora} às ${minutosParaHora(fimExistente)}`
-            };
-          }
-        }
-      }
-      return { conflito: false };
-    }
-
-    function salvarAgendamento(e) {
-      e.preventDefault();
-
-      let pacienteSelecionado = document.getElementById('agendPacienteSelect').value;
-
-      // SE FOR NOVO PACIENTE: CRIA OS PRIMEIROS DADOS E GERA O PRONTUÁRIO
-      if (pacienteSelecionado === "__NOVO__") {
-        const nomeNovo = document.getElementById('agendNovoNome').value.trim();
-        const nascNovo = document.getElementById('agendNovoNasc').value;
-        const telNovo = document.getElementById('agendNovoTelefone').value.trim();
-        const sexoNovo = document.getElementById('agendNovoSexo').value;
-        const emailNovo = document.getElementById('agendNovoEmail').value.trim();
-        const objNovo = document.getElementById('agendNovoObjetivo').value.trim();
-
-        if (!nomeNovo || !nascNovo || !telNovo) {
-          alert('Por favor, preencha os dados obrigatórios do novo paciente (Nome, Nascimento e Telefone).');
-          return;
-        }
-
-        const novoProntuarioId = 'PRON-' + Date.now().toString().slice(-4);
-        const novoPacienteObj = {
-          id: novoProntuarioId,
-          nome: nomeNovo,
-          sexo: sexoNovo,
-          nascimento: nascNovo,
-          telefone: telNovo,
-          email: emailNovo || 'naoinformado@leveh.com',
-          objetivo: objNovo || 'Primeira Consulta',
-          evolucoes: [],
-          antropometria: [],
-          bioimpedancia: [],
-          examesMatriz: {},
-          planos: [],
-          procedimentos: []
-        };
-
-        pacientes.push(novoPacienteObj);
-        salvarTudo();
-        renderPacientes();
-        pacienteSelecionado = nomeNovo;
-        registrarAudit(`Novo paciente ${nomeNovo} cadastrado via agendamento com Prontuário [${novoProntuarioId}].`);
-      }
-
-      const tipoBase = document.getElementById('agendTipoSelect').value;
-      const outrosDesc = document.getElementById('agendOutrosDesc') ? document.getElementById('agendOutrosDesc').value.trim() : '';
-      const observacao = document.getElementById('agendObs') ? document.getElementById('agendObs').value.trim() : '';
-      const tipoFinal = (tipoBase === 'Outros' && outrosDesc) ? `Outros (${outrosDesc})` : tipoBase;
-
-      const novoAgendamento = {
-        id: Date.now(),
-        paciente: pacienteSelecionado,
-        tipo: tipoFinal,
-        tipoBase: tipoBase,
-        observacao: observacao || outrosDesc,
-        data: document.getElementById('agendDate').value,
-        hora: document.getElementById('agendTime').value,
-        duracao: document.getElementById('agendDuracao').value + ' min',
-        profissional: document.getElementById('agendProfSelect').value
-      };
-
-      agendamentos.push(novoAgendamento);
-      salvarTudo();
-      registrarAudit(`Consulta marcada: ${novoAgendamento.paciente} [${novoAgendamento.tipo}] com ${novoAgendamento.profissional} em ${novoAgendamento.data} às ${novoAgendamento.hora}.`);
+  <!-- Modal Cadastro/Edição de Paciente -->
+  <div class="modal-overlay" id="modalPaciente" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modalPacienteTitulo">Cadastrar Paciente</h2>
+        <button class="btn-close" onclick="fecharModalPaciente()">✕</button>
+      </div>
       
-      renderCalendarioVisual();
-      toggleForm('formAgendamento');
-      e.target.reset();
-      verificarSePacienteNovo("");
-      atualizarSelectsAgenda();
-      alert(`Consulta agendada com sucesso para ${novoAgendamento.paciente}!`);
-    }
+      <form id="formPaciente" onsubmit="salvarPaciente(event)">
+        <input type="hidden" id="pacienteId">
+        <div class="form-grid">
+          <div class="form-group col-2">
+            <label>Nome Completo *</label>
+            <input type="text" id="pacNome" class="form-control" required placeholder="Ex: Maria Eduarda Silva">
+          </div>
+          <div class="form-group">
+            <label>CPF *</label>
+            <input type="text" id="pacCpf" class="form-control" placeholder="000.000.000-00" required>
+          </div>
+          <div class="form-group">
+            <label>Data de Nascimento *</label>
+            <input type="date" id="pacNascimento" class="form-control" onchange="atualizarIdadePreview()" required>
+          </div>
+          <div class="form-group">
+            <label>Idade Calculada</label>
+            <input type="text" id="pacIdade" class="form-control" readonly style="background:#f4f6f5;">
+          </div>
+          <div class="form-group">
+            <label>Sexo Biológico</label>
+            <select id="pacSexo" class="form-control">
+              <option value="F">Feminino</option>
+              <option value="M">Masculino</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Telefone / WhatsApp *</label>
+            <input type="tel" id="pacTelefone" class="form-control" placeholder="(67) 99999-9999" required>
+          </div>
+          <div class="form-group">
+            <label>E-mail</label>
+            <input type="email" id="pacEmail" class="form-control" placeholder="paciente@email.com">
+          </div>
+          <div class="form-group">
+            <label>Convênio / Plano de Saúde *</label>
+            <input type="text" id="pacConvenio" class="form-control" list="listaConvenios" placeholder="Digite o convênio ou Particular" required>
+            <datalist id="listaConvenios">
+              <option value="Particular"><option value="Unimed"><option value="Cassi"><option value="Bradesco Saúde"><option value="Amil">
+            </datalist>
+          </div>
+          <div class="form-group col-2">
+            <label>Endereço Completo</label>
+            <input type="text" id="pacEndereco" class="form-control" placeholder="Rua ..., nº ..., Bairro ...">
+          </div>
+          <div class="form-group">
+            <label>Cidade / UF</label>
+            <input type="text" id="pacCidade" class="form-control" value="Campo Grande - MS">
+          </div>
+          <div class="form-group col-3">
+            <label style="color: #a11414;">Alergias & Intolerâncias Alimentares</label>
+            <input type="text" id="pacAlergias" class="form-control" placeholder="Ex: Glúten, Lactose...">
+          </div>
+          <div class="form-group col-3">
+            <label>Comorbidades / Condições Clínicas</label>
+            <input type="text" id="pacCondicoes" class="form-control" placeholder="Ex: Diabetes Tipo 2, Hipertensão...">
+          </div>
+          <div class="form-group col-3">
+            <label>Observações Iniciais</label>
+            <textarea id="pacObs" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalPaciente()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnSalvarPaciente">Salvar Paciente</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-    function atualizarSelectsAgenda() {
-      const sPac = document.getElementById('agendPacienteSelect');
-      const sProf = document.getElementById('agendProfSelect');
-      const sBloq = document.getElementById('bloqueioProfSelect');
+  <!-- Barra Lateral -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-wrapper">
+        <div class="brand-title">LEVEH</div>
+      </div>
+      <button class="toggle-btn" onclick="toggleSidebar()" title="Expandir/Recolher">☰</button>
+    </div>
 
-      if (sPac) {
-        sPac.innerHTML = `
-          <option value="">Selecione...</option>
-          <option value="__NOVO__" style="font-weight:700; color:var(--primary);">➕ Novo Paciente (Cadastrar e Gerar Prontuário)</option>
-          ${pacientes.map(p => `<option value="${p.nome}">${p.nome} (${p.id})</option>`).join('')}
-        `;
-      }
-      const optionsProf = usuarios.map(u => `<option value="${u.nome}">${u.nome} (${u.registro || u.cargo})</option>`).join('');
-      if (sProf) sProf.innerHTML = optionsProf;
-      if (sBloq) sBloq.innerHTML = optionsProf;
-    }
+    <ul class="nav-list">
+      <li class="nav-item active" id="nav-pacientes" onclick="navegarPara('pacientes')">
+        <span class="nav-icon">👥</span>
+        <span class="nav-text">Pacientes</span>
+      </li>
+      <li class="nav-item" id="nav-agenda" onclick="navegarPara('agenda')">
+        <span class="nav-icon">📅</span>
+        <span class="nav-text">Agenda</span>
+      </li>
+      <li class="nav-item" id="nav-taco" onclick="navegarPara('taco')">
+        <span class="nav-icon">🥗</span>
+        <span class="nav-text">Tabela TACO</span>
+      </li>
+      <li class="nav-item" id="nav-substituicao" onclick="navegarPara('substituicao')">
+        <span class="nav-icon">🔄</span>
+        <span class="nav-text">Substituições</span>
+      </li>
+      <li class="nav-item" id="nav-estoque" onclick="navegarPara('estoque')">
+        <span class="nav-icon">📦</span>
+        <span class="nav-text">Estoque</span>
+      </li>
+      <li class="nav-item" id="nav-pop" onclick="navegarPara('pop')">
+        <span class="nav-icon">📋</span>
+        <span class="nav-text">POP</span>
+      </li>
+      <li class="nav-item" id="nav-equipe" onclick="navegarPara('equipe')">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-text">Equipe</span>
+      </li>
+      <li class="nav-item" style="color: #ff9b9b; margin-top: 24px;" onclick="sairDoSistema()">
+        <span class="nav-icon">🚪</span>
+        <span class="nav-text">Sair</span>
+      </li>
+    </ul>
+  </aside>
 
-    
-    let dadosConsultaMedicaRecente = null;
+  <!-- Área Central -->
+  <main class="main-content">
+    <div class="topbar">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button class="mobile-nav-btn" onclick="toggleSidebar()">☰</button>
+        <h1 class="topbar-title" id="pageTitle">Pacientes</h1>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="badge-role">Diretoria Clínica</span>
+        <button class="btn btn-outline" style="padding: 6px 12px;" onclick="sairDoSistema()">Sair</button>
+      </div>
+    </div>
 
-    function fecharModalCondutaNutri() {
-      document.getElementById('modalCondutaNutricional').classList.add('hidden');
-    }
+    <!-- Módulo: Lista de Pacientes -->
+    <section id="view-pacientes" class="view-section">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h2 style="font-size: 1.15rem; font-weight: 600;">Pacientes Cadastrados</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Usuário: Nome Completo | Senha: Nº do Prontuário</p>
+          </div>
+          <button class="btn btn-primary" onclick="abrirModalNovoPaciente()">+ Novo Paciente</button>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Prontuário (Senha)</th>
+                <th>Nome Completo (Login)</th>
+                <th>Idade</th>
+                <th>Sexo</th>
+                <th>Convênio</th>
+                <th>Telefone</th>
+                <th>Alergias</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="listaPacientesCorpo"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
-    function abrirModalCondutaNutri(paciente, data, horaInicio, duracaoMin, profNome) {
-      dadosConsultaMedicaRecente = {
-        paciente,
-        data,
-        horaInicio,
-        duracaoMin,
-        profNome
-      };
+    <!-- Módulo: Prontuário Clínico -->
+    <section id="view-prontuario" class="view-section" style="display: none;">
+      <div style="margin-bottom: 14px;">
+        <button class="btn btn-outline" onclick="voltarParaListaPacientes()">← Voltar para Pacientes</button>
+      </div>
+      
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+          <div>
+            <h2 style="font-size: 1.4rem; font-weight: 700;" id="pronNome">Nome do Paciente</h2>
+            <p style="color: var(--text-muted); font-size: 0.88rem;" id="pronSubinfo">Prontuário: --</p>
+          </div>
+          <span class="badge-role" id="pronBadge">PRON-0000</span>
+        </div>
 
-      const horaFim = minutosParaHora(horaParaMinutos(horaInicio) + duracaoMin);
-      document.getElementById('condutaNomePaciente').textContent = `Paciente: ${paciente}`;
-      document.getElementById('condutaDetalhesConsultaMedica').textContent = `Consulta Médica em ${data.split('-').reverse().join('/')} das ${horaInicio} às ${horaFim} com ${profNome}.`;
-      document.getElementById('modalCondutaNutricional').classList.remove('hidden');
-    }
+        <!-- Abas com Ícones Redondos e Botão + -->
+        <div class="nav-round-tabs">
+          <div class="round-tab-item active" data-aba="aba-evolucao" data-tooltip="Evolução Clínica" onclick="trocarAbaProntuario(this, 'aba-evolucao')">
+            <span class="tab-icon">🩺</span>
+          </div>
+          <div class="round-tab-item" data-aba="aba-insumos" data-tooltip="Procedimentos & Insumos" onclick="trocarAbaProntuario(this, 'aba-insumos')">
+            <span class="tab-icon">💉</span>
+          </div>
+          <div class="round-tab-item" data-aba="aba-antropometria" data-tooltip="Antropometria & 7 Dobras" onclick="trocarAbaProntuario(this, 'aba-antropometria')">
+            <span class="tab-icon">📏</span>
+          </div>
+          <div class="round-tab-item" data-aba="aba-bioimpedancia" data-tooltip="Bioimpedância" onclick="trocarAbaProntuario(this, 'aba-bioimpedancia')">
+            <span class="tab-icon">⚡</span>
+          </div>
+          <div class="round-tab-item" data-aba="aba-prescricao" data-tooltip="Prescrição TACO" onclick="trocarAbaProntuario(this, 'aba-prescricao')">
+            <span class="tab-icon">🥗</span>
+          </div>
+          <div class="round-tab-item round-tab-add" data-tooltip="Nova Evolução" onclick="abrirModalEvolucao()">
+            +
+          </div>
+        </div>
 
-    function escolherCondutaNutri(opcao) {
-      if (!dadosConsultaMedicaRecente) return;
-      const d = dadosConsultaMedicaRecente;
-      fecharModalCondutaNutri();
+        <!-- Seções das Abas -->
+        <div id="aba-evolucao" class="tab-content-item">
+          <div id="historicoEvolucoes"></div>
+        </div>
 
-      // Localiza nutricionista cadastrada
-      const nutri = usuarios.find(u => u.cargo === 'nutricionista' || u.nome.toLowerCase().includes('nutri'));
-      const nomeNutri = nutri ? `${nutri.nome} (${nutri.registro || nutri.cargo})` : (usuarios[0] ? usuarios[0].nome : '');
+        <div id="aba-insumos" class="tab-content-item" style="display:none; padding: 18px; color: var(--text-muted);">
+          Insumos e descartáveis gastos na consulta.
+        </div>
+        <div id="aba-antropometria" class="tab-content-item" style="display:none; padding: 18px; color: var(--text-muted);">
+          Dobras cutâneas e perímetros corporais.
+        </div>
+        <div id="aba-bioimpedancia" class="tab-content-item" style="display:none; padding: 18px; color: var(--text-muted);">
+          Exames de bioimpedância e ângulo de fase.
+        </div>
+        <div id="aba-prescricao" class="tab-content-item" style="display:none; padding: 18px; color: var(--text-muted);">
+          Prescrição dietoterápica (TACO).
+        </div>
+      </div>
+    </section>
 
-      if (opcao === 'mesmo_dia') {
-        const horaFimMin = horaParaMinutos(d.horaInicio) + d.duracaoMin;
-        const horaSugerida = minutosParaHora(horaFimMin);
+    <!-- Outros módulos mantidos -->
+    <section id="view-estoque" class="view-section" style="display: none;">
+      <div class="card">
+        <h2>Estoque Clínico & Materiais</h2>
+        <div class="table-responsive" style="margin-top: 14px;">
+          <table>
+            <thead><tr><th>Código</th><th>Item</th><th>Categoria</th><th>Qtd</th><th>Mínimo</th><th>Status</th></tr></thead>
+            <tbody id="listaEstoqueCorpo"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
-        document.getElementById('agendPacienteSelect').value = d.paciente;
-        document.getElementById('agendDate').value = d.data;
-        document.getElementById('agendTime').value = horaSugerida;
-        document.getElementById('agendDuracao').value = "60";
-        document.getElementById('agendTipoSelect').value = "Primeira Consulta";
-        if (typeof alternarCampoOutros === 'function') alternarCampoOutros("Primeira Consulta");
-        if (nomeNutri) document.getElementById('agendProfSelect').value = nomeNutri;
+    <section id="view-substituicao" class="view-section" style="display: none;">
+      <div class="card">
+        <h2>Equivalências Nutricionais</h2>
+        <div class="table-responsive" style="margin-top: 14px;">
+          <table>
+            <thead><tr><th>Grupo</th><th>Alimento Base</th><th>Porção</th><th>Substituto</th><th>Equivalente</th></tr></thead>
+            <tbody id="listaSubstituicaoCorpo"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
-        toggleForm('formAgendamento');
-        alert(`Abrindo agendamento para Consulta Nutricional Completa em ${d.data.split('-').reverse().join('/')} às ${horaSugerida}. Confirme o horário.`);
-      } 
-      else if (opcao === 'apenas_bio') {
-        const horaFimMin = horaParaMinutos(d.horaInicio) + d.duracaoMin;
-        const horaSugerida = minutosParaHora(horaFimMin);
+    <section id="view-pop" class="view-section" style="display: none;">
+      <div class="card">
+        <h2>Procedimentos Operacionais Padrão</h2>
+        <div class="table-responsive" style="margin-top: 14px;">
+          <table>
+            <thead><tr><th>Código</th><th>Procedimento</th><th>Área</th><th>Versão</th><th>Revisão</th><th>Ação</th></tr></thead>
+            <tbody id="listaPOPCorpo"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
-        document.getElementById('agendPacienteSelect').value = d.paciente;
-        document.getElementById('agendDate').value = d.data;
-        document.getElementById('agendTime').value = horaSugerida;
-        document.getElementById('agendDuracao').value = "30";
-        document.getElementById('agendTipoSelect').value = "Procedimento";
-        if (typeof alternarCampoOutros === 'function') alternarCampoOutros("Procedimento");
-        if (document.getElementById('agendObs')) document.getElementById('agendObs').value = "Realização exclusiva de Bioimpedância";
-        if (nomeNutri) document.getElementById('agendProfSelect').value = nomeNutri;
+    <section id="view-agenda" class="view-section" style="display: none;"><div class="card"><h2>Agenda de Consultas</h2></div></section>
+    <section id="view-taco" class="view-section" style="display: none;"><div class="card"><h2>Tabela TACO</h2></div></section>
+    <section id="view-equipe" class="view-section" style="display: none;"><div class="card"><h2>Gestão de Equipe & Permissões</h2></div></section>
+  </main>
 
-        toggleForm('formAgendamento');
-        alert(`Abrindo agendamento de Bioimpedância (30 min) em ${d.data.split('-').reverse().join('/')} às ${horaSugerida}.\n\nA consulta nutricional completa poderá ser remarcada para outro dia.`);
-      }
-      else if (opcao === 'outro_dia') {
-        document.getElementById('agendPacienteSelect').value = d.paciente;
-        document.getElementById('agendDuracao').value = "60";
-        document.getElementById('agendTipoSelect').value = "Primeira Consulta";
-        if (typeof alternarCampoOutros === 'function') alternarCampoOutros("Primeira Consulta");
-        if (nomeNutri) document.getElementById('agendProfSelect').value = nomeNutri;
-
-        toggleForm('formAgendamento');
-        alert(`Selecione a nova data e horário para a Consulta Nutricional de ${d.paciente}.`);
-      }
-    }
-
-    function renderAuditoriaGlobal() {
-      const tbody = document.getElementById('tabelaAuditoriaGlobalBody');
-      tbody.innerHTML = auditoriaGlobal.map(l => `
-        <tr><td>${l.dataHora}</td><td>${l.usuario}</td><td>${l.cargo}</td><td>${l.operacao}</td></tr>
-      `).join('');
-    }
-
-    // 9. ALERTAS DO SINO
-    function toggleDropdownNotificacoes() {
-      const drop = document.getElementById('dropdownNotificacoes');
-      if (drop) drop.classList.toggle('hidden');
-    }
-
-    function atualizarAlertasPerfil() {
-      if (!usuarioLogado) return;
-      const container = document.getElementById('listaAlertasDropdown');
-      const badge = document.getElementById('badgeNotifCount');
-      if (!container || !badge) return;
-
-      const alertas = [];
-      const estoque = JSON.parse(localStorage.getItem('leveh_estoque_visa') || '[]');
-
-      if (usuarioLogado.cargo === 'admin_global' || (usuarioLogado.permissoes && usuarioLogado.permissoes.gerenciarEstoque)) {
-        const criticos = estoque.filter(i => i.qtdAtual <= i.qtdMin);
-        if (criticos.length > 0) {
-          alertas.push({ tipo: 'danger', msg: `⚠️ <strong>Estoque Baixo:</strong> ${criticos.length} produto(s) abaixo do mínimo.` });
-        }
-      }
-
-      if (alertas.length > 0) {
-        badge.textContent = alertas.length;
-        badge.classList.remove('hidden');
-        container.innerHTML = alertas.map(a => `<div class="notif-item ${a.tipo}">${a.msg}</div>`).join('');
-      } else {
-        badge.classList.add('hidden');
-        container.innerHTML = '<p style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:1rem 0;">Tudo em dia! Nenhum alerta no momento.</p>';
-      }
-    }
-
-    document.addEventListener('click', (e) => {
-      const drop = document.getElementById('dropdownNotificacoes');
-      const btn = document.getElementById('btnNotificacoes');
-      if (drop && !drop.classList.contains('hidden') && !drop.contains(e.target) && !btn.contains(e.target)) {
-        drop.classList.add('hidden');
-      }
-    });
-
-    // DISPARO NO CARREGAMENTO
-    verificarSessaoInicial();
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>

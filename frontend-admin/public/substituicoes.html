@@ -2,273 +2,59 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Listas de Substituição de Alimentos — Clínica LEVEH</title>
-  <style>
-    :root {
-      --primary: #5B6E53;
-      --primary-dark: #43523D;
-      --primary-light: #EBF0E9;
-      --bg: #F4F6F2;
-      --text: #2A3327;
-      --text-muted: #6B7866;
-      --border: #DCE3D8;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 2rem; min-height: 100vh; }
-    .container { max-width: 1250px; margin: 0 auto; background: white; padding: 2rem; border-radius: 1rem; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }
-    .btn { padding: 0.65rem 1.25rem; border: none; border-radius: 0.5rem; background: var(--primary); color: white; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.9rem; transition: 0.2s; }
-    .btn:hover { background: var(--primary-dark); }
-    .btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
-    .btn-outline:hover { background: var(--primary-light); }
-    .btn-danger { background: #DC2626; color: white; }
-    .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.8rem; }
-    
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
-    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-    .form-group input, .form-group select, .form-group textarea { padding: 0.65rem; border: 1px solid var(--border); border-radius: 0.4rem; font-size: 0.9rem; }
-    
-    .lista-card { background: #FAFCF9; border: 1.5px solid var(--border); border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1.5rem; }
-    .lista-card h3 { color: var(--primary); font-size: 1.15rem; margin-bottom: 0.5rem; }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; margin-top: 0.75rem; }
-    th { padding: 0.65rem 0.8rem; background: #EEF3EC; border-bottom: 2px solid var(--border); color: var(--text-muted); font-weight: 700; }
-    td { padding: 0.65rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    .hidden { display: none !important; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LEVEH — Listas de Substituição</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <div class="header">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
       <div>
-        <h1 style="color:var(--primary); font-size:1.6rem;">Listas de Substituição de Alimentos</h1>
-        <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Prescrição e montagem de equivalências nutricionais criadas pelo nutricionista</p>
+        <div class="brand-title">LEVEH</div>
+        <div class="brand-subtitle">Painel Clínico</div>
       </div>
-      <div style="display:flex; gap:0.5rem;">
-        <button class="btn" onclick="toggleForm('formNovaLista')">+ Nova Lista de Substituição</button>
-        <button class="btn btn-outline" onclick="window.print()">🖨️ Imprimir Listas</button>
-        <a href="/frontend-admin/public/index.html" class="btn btn-outline">← Voltar ao Painel</a>
+      <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+    </div>
+    <ul class="nav-list">
+      <div class="section-title">Atendimento</div>
+      <li class="nav-item" onclick="location.href='index.html'"><span class="nav-icon">👥</span><span class="nav-text">Pacientes</span></li>
+      <div class="section-title">Clínica & Nutrição</div>
+      <li class="nav-item active" onclick="location.href='substituicoes.html'"><span class="nav-icon">🔄</span><span class="nav-text">Listas de Substituição</span></li>
+      <li class="nav-item" onclick="location.href='estoque.html'"><span class="nav-icon">📦</span><span class="nav-text">Estoque & Insumos</span></li>
+      <li class="nav-item" onclick="location.href='pops.html'"><span class="nav-icon">📋</span><span class="nav-text">Procedimentos (POP)</span></li>
+      <li class="nav-item" style="color: #ff9b9b; margin-top: 20px;" onclick="location.href='index.html'"><span class="nav-icon">🚪</span><span class="nav-text">Voltar</span></li>
+    </ul>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button class="mobile-nav-btn" onclick="toggleSidebar()">☰</button>
+        <h1 class="topbar-title">Listas de Substituição</h1>
       </div>
+      <span class="badge-role">Nutrição Clínica</span>
     </div>
 
-    <!-- FORMULÁRIO DE NOVA LISTA -->
-    <div id="formNovaLista" class="hidden" style="background:#F8FAF6; border:1px solid var(--border); padding:1.5rem; border-radius:0.75rem; margin-bottom:1.5rem;">
-      <h3 style="color:var(--primary); margin-bottom:1rem;">Criar Nova Lista de Equivalência</h3>
-      <form onsubmit="salvarNovaLista(event)">
-        <div class="form-grid">
-          <div class="form-group"><label>Título da Lista</label><input type="text" id="listaTitulo" required placeholder="Ex: Substituição de Carboidratos (100 kcal)"></div>
-          <div class="form-group"><label>Grupo Alimentar</label>
-            <select id="listaGrupo" required>
-              <option value="Carboidratos / Energéticos">Carboidratos / Energéticos</option>
-              <option value="Proteínas Magras">Proteínas Magras</option>
-              <option value="Gorduras Boas / Lipídios">Gorduras Boas / Lipídios</option>
-              <option value="Frutas & Fibras">Frutas & Fibras</option>
-              <option value="Laticínios & Derivados">Laticínios & Derivados</option>
-              <option value="Vegetais & Hortaliças">Vegetais & Hortaliças</option>
-            </select>
-          </div>
-          <div class="form-group"><label>Alimento de Referência</label><input type="text" id="listaReferencia" required placeholder="Ex: Arroz Branco Cozido (100g / 4 colheres de sopa)"></div>
-        </div>
-
-        <div style="margin-top:1rem; border-top:1px solid var(--border); padding-top:1rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-            <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Alimentos Equivalentes (Substitutos)</label>
-            <button type="button" class="btn btn-outline btn-sm" onclick="adicionarLinhaItemSubstituto()">+ Adicionar Alimento Equivalente</button>
-          </div>
-          <div id="containerItensSubstitutos" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
-        </div>
-
-        <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.25rem;">
-          <button type="button" class="btn btn-outline" onclick="toggleForm('formNovaLista')">Cancelar</button>
-          <button type="submit" class="btn">Salvar Lista de Substituição</button>
-        </div>
-      </form>
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2>Equivalências Nutricionais</h2>
+        <button class="btn btn-primary" onclick="alert('Nova Regra de Equivalência')">+ Nova Regra</button>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr><th>Grupo</th><th>Alimento Base</th><th>Porção Base</th><th>Substituto</th><th>Porção Equivalente</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Carboidratos</strong></td><td>Arroz Branco Cozido</td><td>100g (4 colheres)</td><td>Batata Doce Cozida</td><td>130g (1 unidade)</td></tr>
+            <tr><td><strong>Carboidratos</strong></td><td>Pão Francês</td><td>50g (1 unid)</td><td>Tapioca Pronta</td><td>60g (2 colheres)</td></tr>
+            <tr><td><strong>Proteínas</strong></td><td>Peito de Frango</td><td>100g</td><td>Tilápia Grelhada</td><td>120g</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-
-    <!-- ÁREA DE EXIBIÇÃO DAS LISTAS -->
-    <div id="containerTodasAsListas"></div>
-  </div>
-
-  <script>
-    // Listas pré-carregadas pelo nutricionista
-    const LISTAS_PADRAO = [
-      {
-        id: 1,
-        titulo: "Equivalentes de Carboidratos (Aprox. 130 kcal)",
-        grupo: "Carboidratos / Energéticos",
-        referencia: "Arroz Branco Cozido - 100g (4 colheres de sopa)",
-        itens: [
-          { nome: "Arroz Integral Cozido", porcao: "100g (4 colheres de sopa)", calorias: "124 kcal" },
-          { nome: "Batata Doce Cozida", porcao: "150g (1 fatia média grande)", calorias: "115 kcal" },
-          { nome: "Mandioca / Macaxeira Cozida", porcao: "100g (1 pedaço médio)", calorias: "125 kcal" },
-          { nome: "Batata Inglesa Cozida", porcao: "200g (1 unidade grande)", calorias: "130 kcal" },
-          { nome: "Macarrão Cozido", porcao: "90g (1 pegador cheio)", calorias: "135 kcal" },
-          { nome: "Aveia em Flocos", porcao: "30g (2 colheres de sopa cheias)", calorias: "118 kcal" }
-        ]
-      },
-      {
-        id: 2,
-        titulo: "Equivalentes de Proteínas Magras (Aprox. 150 kcal / 25g Proteína)",
-        grupo: "Proteínas Magras",
-        referencia: "Peito de Frango Grelhado - 100g (1 filé médio)",
-        itens: [
-          { nome: "Tilápia / Peixe Branco Grelhado", porcao: "150g (1 filé grande)", calorias: "145 kcal" },
-          { nome: "Patinho Moído Grelhado", porcao: "90g (3 colheres de sopa cheias)", calorias: "160 kcal" },
-          { nome: "Ovos Cozidos", porcao: "2 unidades inteiras + 2 claras", calorias: "170 kcal" },
-          { nome: "Atum Ralado em Água", porcao: "120g (1 lata drenada)", calorias: "130 kcal" },
-          { nome: "Tofu Firme Grelhado", porcao: "200g (2 fatias grossas)", calorias: "140 kcal" }
-        ]
-      }
-    ];
-
-    let listas = JSON.parse(localStorage.getItem('leveh_listas_substituicao') || JSON.stringify(LISTAS_PADRAO));
-    let contadorItens = 0;
-
-    function toggleForm(id) { document.getElementById(id).classList.toggle('hidden'); }
-
-    function adicionarLinhaItemSubstituto() {
-      contadorItens++;
-      const idLinha = `sub_${contadorItens}`;
-      const div = document.createElement('div');
-      div.id = idLinha;
-      div.style.cssText = "display:grid; grid-template-columns: 2fr 2fr 1fr auto; gap:0.5rem; align-items:center; background:white; padding:0.5rem; border:1px solid var(--border); border-radius:0.4rem;";
-      div.innerHTML = `
-        <input type="text" class="sub-nome" placeholder="Alimento (Ex: Batata Doce)" required style="padding:0.5rem; border:1px solid var(--border); border-radius:0.35rem; font-size:0.85rem;">
-        <input type="text" class="sub-porcao" placeholder="Porção (Ex: 150g / 1 fatia)" required style="padding:0.5rem; border:1px solid var(--border); border-radius:0.35rem; font-size:0.85rem;">
-        <input type="text" class="sub-kcal" placeholder="Kcal aprox." style="padding:0.5rem; border:1px solid var(--border); border-radius:0.35rem; font-size:0.85rem;">
-        <button type="button" class="btn btn-danger btn-sm" onclick="document.getElementById('${idLinha}').remove()">✕</button>
-      `;
-      document.getElementById('containerItensSubstitutos').appendChild(div);
-    }
-
-    function renderListas() {
-      const container = document.getElementById('containerTodasAsListas');
-      if (listas.length === 0) {
-        container.innerHTML = '<p style="text-align:center; padding:2rem; color:var(--text-muted);">Nenhuma lista criada. Clique em "+ Nova Lista de Substituição".</p>';
-        return;
-      }
-
-      container.innerHTML = listas.map((l, idx) => `
-        <div class="lista-card">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div>
-              <h3>${l.titulo}</h3>
-              <p style="font-size:0.85rem; color:var(--text-muted);"><strong>Grupo:</strong> ${l.grupo} | <strong>Referência:</strong> ${l.referencia}</p>
-            </div>
-            <button class="btn btn-danger btn-sm" onclick="excluirLista(${idx})">Excluir Lista</button>
-          </div>
-
-          <table>
-            <thead>
-              <tr><th>Alimento Substituto</th><th>Porção / Medida Caseira</th><th>Calorias Estimadas</th></tr>
-            </thead>
-            <tbody>
-              ${l.itens.map(it => `
-                <tr>
-                  <td><strong>${it.nome}</strong></td>
-                  <td>${it.porcao}</td>
-                  <td><span style="color:var(--primary); font-weight:700;">${it.calorias || '-'}</span></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `).join('');
-    }
-
-    function salvarNovaLista(e) {
-      e.preventDefault();
-      const linhas = document.querySelectorAll('#containerItensSubstitutos > div');
-      const itensArr = [];
-
-      linhas.forEach(row => {
-        const nome = row.querySelector('.sub-nome').value.trim();
-        const porcao = row.querySelector('.sub-porcao').value.trim();
-        const kcal = row.querySelector('.sub-kcal').value.trim();
-        if (nome && porcao) {
-          itensArr.push({ nome, porcao, calorias: kcal });
-        }
-      });
-
-      if (itensArr.length === 0) {
-        alert('Adicione pelo menos um alimento substituto na lista.');
-        return;
-      }
-
-      const nova = {
-        id: Date.now(),
-        titulo: document.getElementById('listaTitulo').value.trim(),
-        grupo: document.getElementById('listaGrupo').value,
-        referencia: document.getElementById('listaReferencia').value.trim(),
-        itens: itensArr
-      };
-
-      listas.unshift(nova);
-      localStorage.setItem('leveh_listas_substituicao', JSON.stringify(listas));
-      // VERIFICAÇÃO DE PERMISSÃO PARA LISTAS DE SUBSTITUIÇÃO
-    function verificarPermissaoSubstituicoes() {
-      const sessao = JSON.parse(localStorage.getItem('leveh_sessao_ativa') || 'null');
-      if (!sessao) {
-        window.location.href = '/frontend-admin/public/index.html';
-        return;
-      }
-      const podeAcessar = sessao.cargo === 'admin_global' || 
-                          (sessao.permissoes && sessao.permissoes.substituicoes === true);
-      if (!podeAcessar) {
-        alert('Acesso Negado: Seu usuário não possui permissão liberada pelo Administrador Global para gerenciar Listas de Substituição.');
-        window.location.href = '/frontend-admin/public/index.html';
-      }
-    }
-    verificarPermissaoSubstituicoes();
-    renderListas();
-      toggleForm('formNovaLista');
-      document.getElementById('containerItensSubstitutos').innerHTML = '';
-      e.target.reset();
-      alert(`Lista "${nova.titulo}" cadastrada com sucesso!`);
-    }
-
-    function excluirLista(idx) {
-      if (confirm(`Deseja excluir a lista "${listas[idx].titulo}"?`)) {
-        listas.splice(idx, 1);
-        localStorage.setItem('leveh_listas_substituicao', JSON.stringify(listas));
-        // VERIFICAÇÃO DE PERMISSÃO PARA LISTAS DE SUBSTITUIÇÃO
-    function verificarPermissaoSubstituicoes() {
-      const sessao = JSON.parse(localStorage.getItem('leveh_sessao_ativa') || 'null');
-      if (!sessao) {
-        window.location.href = '/frontend-admin/public/index.html';
-        return;
-      }
-      const podeAcessar = sessao.cargo === 'admin_global' || 
-                          (sessao.permissoes && sessao.permissoes.substituicoes === true);
-      if (!podeAcessar) {
-        alert('Acesso Negado: Seu usuário não possui permissão liberada pelo Administrador Global para gerenciar Listas de Substituição.');
-        window.location.href = '/frontend-admin/public/index.html';
-      }
-    }
-    verificarPermissaoSubstituicoes();
-    renderListas();
-      }
-    }
-
-    // Inicialização
-    // VERIFICAÇÃO DE PERMISSÃO PARA LISTAS DE SUBSTITUIÇÃO
-    function verificarPermissaoSubstituicoes() {
-      const sessao = JSON.parse(localStorage.getItem('leveh_sessao_ativa') || 'null');
-      if (!sessao) {
-        window.location.href = '/frontend-admin/public/index.html';
-        return;
-      }
-      const podeAcessar = sessao.cargo === 'admin_global' || 
-                          (sessao.permissoes && sessao.permissoes.substituicoes === true);
-      if (!podeAcessar) {
-        alert('Acesso Negado: Seu usuário não possui permissão liberada pelo Administrador Global para gerenciar Listas de Substituição.');
-        window.location.href = '/frontend-admin/public/index.html';
-      }
-    }
-    verificarPermissaoSubstituicoes();
-    renderListas();
-    adicionarLinhaItemSubstituto();
-  </script>
+  </main>
+  <script src="app.js"></script>
 </body>
 </html>
