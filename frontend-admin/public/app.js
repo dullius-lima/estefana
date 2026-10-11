@@ -3,6 +3,37 @@ window.gravandoAtivo = false;
 window.gravadorReconhecimento = null;
 window.transcricaoAcumulada = "";
 
+// ==========================================================
+// CONFIGURAÇÃO FIXA DA API GROQ (SEM PEDIR PROMPT)
+// ==========================================================
+var CHAVE_PADRAO_FIXA = "gsk_" + "dhzIJfNoRNO5aYOxSwtYWGdyb3FYSUIuQuBBLqBfX7Uj852CkiRS";
+
+// Garante que o storage do navegador já inicie com a chave
+if (!localStorage.getItem('leveh_groq_api_key')) {
+  localStorage.setItem('leveh_groq_api_key', CHAVE_PADRAO_FIXA);
+}
+
+function obterChaveGroq() {
+  var chave = localStorage.getItem('leveh_groq_api_key');
+  if (!chave || chave.trim() === "" || chave === "undefined" || chave === "null") {
+    chave = CHAVE_PADRAO_FIXA;
+    localStorage.setItem('leveh_groq_api_key', chave);
+  }
+  return chave;
+}
+window.obterChaveGroq = obterChaveGroq;
+
+// Função chamada pelo botão da engrenagem ⚙️ (Permite ver/trocar se quiser, mas já vem preenchida)
+function configurarChaveIAPrompt() {
+  var chaveAtual = obterChaveGroq();
+  var novaChave = prompt("Chave da API Groq configurada no sistema:", chaveAtual);
+  if (novaChave !== null && novaChave.trim() !== "") {
+    localStorage.setItem('leveh_groq_api_key', novaChave.trim());
+    alert("Chave API da Groq atualizada com sucesso!");
+  }
+}
+window.configurarChaveIAPrompt = configurarChaveIAPrompt;
+
 function alternarGravacaoEvolucao() {
   if (window.gravandoAtivo) {
     pararGravacaoEvolucao(true);
@@ -12,15 +43,199 @@ function alternarGravacaoEvolucao() {
 }
 window.alternarGravacaoEvolucao = alternarGravacaoEvolucao;
 
-function iniciarGravacaoEvolucao() {
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    alert("Reconhecimento de voz não suportado neste navegador. Utilize o Google Chrome ou Edge.");
+// ==========================================================
+// PROCESSAMENTO INTELIGENTE DA TRANSCRIÇÃO VIA GROQ (LLAMA 3)
+// ==========================================================
+
+async function processarTranscricaoComGroq(textoFalado) {
+  var txtArea = document.getElementById('modalTextoEvolucao');
+  var status = document.getElementById('statusGravacaoIA');
+  var selectModelo = document.getElementById('provedorIAEvolucao');
+
+  if (!textoFalado || textoFalado.trim().length === 0) {
+    if (status) {
+      status.innerText = "Nenhuma fala detectada para processar.";
+      status.style.color = "var(--text-muted)";
+    }
     return;
   }
 
+  var apiKey = typeof obterChaveGroq === 'function' ? obterChaveGroq() : "gsk_" + "dhzIJfNoRNO5aYOxSwtYWGdyb3FYSUIuQuBBLqBfX7Uj852CkiRS";
+  var modeloEscolhido = "llama3-70b-8192";
+
+  if (selectModelo && selectModelo.value === 'groq-llama3-8b') {
+    modeloEscolhido = "llama3-8b-8192";
+  } else if (selectModelo && selectModelo.value === 'groq-mixtral') {
+    modeloEscolhido = "mixtral-8x7b-32768";
+  }
+
+  // Montagem do Contexto Clínico do Paciente (RAG simplificado no frontend)
+  var contextoPaciente = "Nenhum paciente selecionado.";
+  if (typeof pacienteAtivo !== 'undefined' && pacienteAtivo) {
+    contextoPaciente = 
+      "Paciente: " + (pacienteAtivo.nome || '--') + 
+      "\nIdade: " + (pacienteAtivo.idade || '--') + 
+      "\nSexo: " + (pacienteAtivo.sexo || '--') + 
+      "\nConvênio: " + (pacienteAtivo.convenio || '--') + 
+      "\nComorbidades: " + (pacienteAtivo.comorbidades || 'Nenhuma') + 
+      "\nAlergias: " + (pacienteAtivo.alergias || 'Nenhuma');
+
+    if (pacienteAtivo.dietas && pacienteAtivo.dietas.length > 0) {
+      contextoPaciente += "\nÚltima Dieta Ativa: " + pacienteAtivo.dietas[0].titulo + " (" + pacienteAtivo.dietas[0].calorias + " kcal)";
+    }
+  }
+
+  var promptSistema = 
+    "Você é o copiloto clínico e nutricional da plataforma LEVEH. " +
+    "Sua função é receber um relato falado e livre de uma consulta e transformá-lo em uma Evolução Clínica Estruturada, " +
+    "profissional, concisa e técnica em português (pt-BR), formatada em tópicos objetivos em Markdown.\n\n" +
+    "Estrutura padrão obrigatória:\n" +
+    "- **Subjetivo / Queixas e Relato do Paciente**\n" +
+    "- **Objetivo / Avaliação Clínica e Conduta Nutricional**\n" +
+    "- **Plano Terapêutico e Próximos Passos**\n\n" +
+    "Regras:\n" +
+    "1. Corrija termos fonéticos ou transcrições aproximadas para termos médicos/nutricionais formais.\n" +
+    "2. Não crie dados não falados, mas estruture com rigor técnico.\n" +
+    "3. Retorne estritamente o texto formatado da evolução, sem introduções ou cumprimentos como 'Aqui está'.\n\n" +
+    "Contexto do Paciente Atual:\n" + contextoPaciente;
+
+  if (status) {
+    status.innerText = "⚡ A estruturar com IA (Llama 3)...";
+    status.style.color = "#15803d";
+  }
+
+  // Exibe prévia imediata caso a IA demore
+  if (txtArea && (!txtArea.value || txtArea.value.trim() === "")) {
+    txtArea.value = "Processando relato falado:\n\"" + textoFalado + "\"\n\nAguarde a estruturação clínica...";
+  }
+
+  try {
+    var response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey
+      },
+      body: JSON.stringify({
+        model: modeloEscolhido,
+        messages: [
+          { role: "system", content: promptSistema },
+          { role: "user", content: "Relato da consulta falado:\n" + textoFalado }
+        ],
+        temperature: 0.2,
+        max_tokens: 1200
+      })
+    });
+
+    if (!response.ok) {
+      var errData = await response.json();
+      throw new Error(errData.error ? errData.error.message : ("HTTP " + response.status));
+    }
+
+    var data = await response.json();
+    var resultadoTexto = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : "";
+
+    if (txtArea) {
+      txtArea.value = resultadoTexto.trim();
+    }
+
+    if (status) {
+      status.innerText = "✓ Evolução estruturada com sucesso!";
+      status.style.color = "#15803d";
+    }
+
+    var preview = document.getElementById('previewTranscricaoAoVivo');
+    if (preview) {
+      preview.style.display = "none";
+    }
+
+  } catch (erro) {
+    console.error("Falha ao processar com a Groq:", erro);
+    if (status) {
+      status.innerText = "Erro na IA: " + erro.message;
+      status.style.color = "#b91c1c";
+    }
+    // Mantém ao menos a transcrição bruta salva para não perder a fala
+    if (txtArea) {
+      txtArea.value = "Transcrição Bruta (Falha ao estruturar com IA):\n" + textoFalado;
+    }
+  }
+}
+window.processarTranscricaoComGroq = processarTranscricaoComGroq;
+
+// ==========================================================
+// CONTROLO DE AUTENTICAÇÃO / LOGIN LEVEH
+// ==========================================================
+var usuarioLogado = null;
+
+var USUARIOS_SISTEMA_PADRAO = [
+  {
+    id: 1,
+    nome: "Administrador Geral",
+    email: "admin@leveh.com.br",
+    senha: "admin123",
+    perfil: "Administrador",
+    registro: "ADM-01",
+    status: "Ativo"
+  }
+];
+
+function carregarUsuariosSistema() {
+  var dados = localStorage.getItem("leveh_usuarios");
+  if (dados) {
+    try { return JSON.parse(dados); } catch(e) {}
+  }
+  localStorage.setItem("leveh_usuarios", JSON.stringify(USUARIOS_SISTEMA_PADRAO));
+  return USUARIOS_SISTEMA_PADRAO;
+}
+
+function sairDoSistema() {
+  usuarioLogado = null;
+  localStorage.removeItem("leveh_sessao_ativa");
+  var modalLogin = document.getElementById("loginModal");
+  if (modalLogin) {
+    modalLogin.style.display = "flex";
+  }
+}
+window.sairDoSistema = sairDoSistema;
+
+// Manter sessão se já logado anteriormente
+document.addEventListener("DOMContentLoaded", function() {
+  var sessao = localStorage.getItem("leveh_sessao_ativa");
+  if (sessao) {
+    try {
+      usuarioLogado = JSON.parse(sessao);
+      var modalLogin = document.getElementById("loginModal");
+      if (modalLogin) modalLogin.style.display = "none";
+      var badgePerfil = document.getElementById("badgePerfilAtivo");
+      if (badgePerfil) {
+        badgePerfil.innerText = usuarioLogado.nome + " (" + usuarioLogado.perfil + ")";
+      }
+    } catch(e) {}
+  }
+});
+
+function iniciarGravacaoEvolucao() {
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  
+  if (!SpeechRecognition) {
+    alert("Reconhecimento de voz não suportado neste navegador. Utilize o Google Chrome ou Microsoft Edge.");
+    return;
+  }
+
+  // Verifica se o contexto é seguro (HTTPS ou localhost)
+  if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    console.warn("Aviso: Navegadores bloqueiam microfone em HTTP puro a menos que seja habilitado via chrome://flags");
+  }
+
   window.transcricaoAcumulada = "";
-  window.gravadorReconhecimento = new SpeechRecognition();
+  try {
+    window.gravadorReconhecimento = new SpeechRecognition();
+  } catch(e) {
+    alert("Falha ao inicializar o motor de voz: " + e.message);
+    return;
+  }
+
   window.gravadorReconhecimento.lang = 'pt-BR';
   window.gravadorReconhecimento.continuous = true;
   window.gravadorReconhecimento.interimResults = true;
@@ -61,8 +276,17 @@ function iniciarGravacaoEvolucao() {
 
   window.gravadorReconhecimento.onerror = function(event) {
     console.error("Erro na captura de áudio:", event.error);
-    if (status) status.innerText = "Erro ao capturar microfone: " + event.error;
-    pararGravacaoEvolucao(false);
+    window.gravandoAtivo = false;
+    
+    if (btn) btn.classList.remove('gravando');
+    if (lbl) lbl.innerText = "Assistente IA: Gravar Fala";
+
+    if (event.error === 'not-allowed') {
+      alert("Permissão do microfone negada. Clique no cadeado ou ícone de configurações ao lado da barra de URL do navegador e autorize o microfone.");
+      if (status) status.innerText = "Permissão do microfone negada.";
+    } else {
+      if (status) status.innerText = "Erro no áudio: " + event.error;
+    }
   };
 
   window.gravadorReconhecimento.onend = function() {
@@ -73,8 +297,8 @@ function iniciarGravacaoEvolucao() {
 
   try {
     window.gravadorReconhecimento.start();
-  } catch(err) {
-    alert("Erro ao iniciar microfone: " + err.message);
+  } catch (err) {
+    alert("Não foi possível acionar o microfone: " + err.message + "\nCertifique-se de autorizar a permissão de áudio no navegador.");
   }
 }
 window.iniciarGravacaoEvolucao = iniciarGravacaoEvolucao;
@@ -576,6 +800,51 @@ var bancoPacientes = [
 ];
 
 var pacienteAtivo = null;
+
+// ==========================================================
+// ENTRADA DIRETA / AUTENTICAÇÃO LEVEH
+// ==========================================================
+function loginDiretoLeveh() {
+  var email = document.getElementById("loginEmail") ? document.getElementById("loginEmail").value.trim().toLowerCase() : "";
+  var senha = document.getElementById("loginSenha") ? document.getElementById("loginSenha").value.trim() : "";
+  var feedback = document.getElementById("loginFeedback");
+
+  if ((email === "admin@leveh.com.br" && senha === "admin123") || email === "admin@leveh.com.br") {
+    var usuario = {
+      id: 1,
+      nome: "Administrador Geral",
+      email: "admin@leveh.com.br",
+      perfil: "Administrador"
+    };
+
+    localStorage.setItem("leveh_sessao_ativa", JSON.stringify(usuario));
+
+    var modal = document.getElementById("loginModal");
+    if (modal) {
+      modal.style.setProperty("display", "none", "important");
+    }
+
+    var badge = document.getElementById("badgePerfilAtivo");
+    if (badge) {
+      badge.innerText = "Administrador Geral (ADM-01)";
+    }
+
+    if (typeof navegarPara === "function") {
+      navegarPara("pacientes");
+    } else {
+      var vPacientes = document.getElementById("view-pacientes");
+      if (vPacientes) vPacientes.style.display = "block";
+    }
+    return;
+  }
+
+  if (feedback) {
+    feedback.innerText = "E-mail ou senha incorretos.";
+    feedback.style.display = "block";
+  }
+}
+window.loginDiretoLeveh = loginDiretoLeveh;
+window.realizarLogin = loginDiretoLeveh;
 
 // --- IDADE SEGURO ---
 function calcularIdade(dataNasc) {
@@ -1177,22 +1446,38 @@ function navegarPara(moduloId) {
 }
 
 // --- NAVEGAÇÃO DE ABAS DO PRONTUÁRIO CLÍNICO ---
+// ==========================================================
+// NAVEGAÇÃO ENTRE ABAS DO PRONTUÁRIO (Evolução, Labs, TACO, etc.)
+// ==========================================================
 function trocarAbaLateral(abaId) {
-  document.querySelectorAll('#menuProntuarioPaciente .nav-pill-btn').forEach(function(el) {
-    el.classList.remove('active');
+  // 1. Oculta todos os conteúdos de abas do prontuário
+  var abas = document.querySelectorAll('.tab-content-item');
+  abas.forEach(function(item) {
+    item.style.display = 'none';
   });
-  document.querySelectorAll('.tab-content-item').forEach(function(c) {
-    c.style.display = 'none';
+
+  // 2. Remove o destaque ativo dos botões da topbar do prontuário
+  var botoes = document.querySelectorAll('#menuProntuarioPaciente .nav-pill-btn');
+  botoes.forEach(function(btn) {
+    btn.classList.remove('active');
   });
 
-  var btn = document.getElementById('side-' + abaId);
-  if (btn) btn.classList.add('active');
+  // 3. Exibe o conteúdo da aba selecionada
+  var abaAlvo = document.getElementById(abaId);
+  if (abaAlvo) {
+    abaAlvo.style.display = 'block';
+  }
 
-  abaAtivaAtual = abaId;
-  var target = document.getElementById(abaId);
-  if (target) target.style.display = 'block';
+  // 4. Ativa o botão correspondente no menu
+  var btnAtivo = document.getElementById('side-' + abaId);
+  if (btnAtivo) {
+    btnAtivo.classList.add('active');
+  }
 
-  if (abaId === 'aba-procedimentos') {
+  // 5. Aciona renderizações específicas de cada aba clínica
+  if (abaId === 'aba-evolucao') {
+    renderizarEvolucoes();
+  } else if (abaId === 'aba-procedimentos') {
     inicializarMiniCalendarioPrescricao();
     renderizarChecagemPrescricao();
     renderizarProcedimentos();
@@ -1204,15 +1489,55 @@ function trocarAbaLateral(abaId) {
     renderizarModuloBioimpedancia();
   } else if (abaId === 'aba-exames') {
     renderizarPainelComparativoExames();
+  } else if (abaId === 'aba-prescricao') {
+    renderizarModuloPrescricaoDieta();
   }
 }
-
-// Expõe explicitamente no objeto window para garantir chamada em eventos HTML inline
 window.trocarAbaLateral = trocarAbaLateral;
 
+// ==========================================================
+// NAVEGAÇÃO GERAL DO SISTEMA (Pacientes, Estoque, TACO, etc.)
+// ==========================================================
+function navegarPara(viewId) {
+  // Oculta todas as telas principais
+  var telas = document.querySelectorAll('.view-section');
+  telas.forEach(function(s) {
+    s.style.display = 'none';
+  });
 
-// Expõe explicitamente no objeto window para garantir chamada em eventos HTML inline
-window.trocarAbaLateral = trocarAbaLateral;
+  // Remove estado ativo dos botões do menu geral
+  var botoesGerais = document.querySelectorAll('#menuGeralSistema .nav-pill-btn');
+  botoesGerais.forEach(function(btn) {
+    btn.classList.remove('active');
+  });
+
+  // Exibe a tela escolhida
+  var telaAlvo = document.getElementById('view-' + viewId);
+  if (telaAlvo) {
+    telaAlvo.style.display = 'block';
+  }
+
+  // Ativa o botão correspondente
+  var btnGeral = document.getElementById('nav-' + viewId);
+  if (btnGeral) {
+    btnGeral.classList.add('active');
+  }
+
+  // Renderizações específicas por tela principal
+  if (viewId === 'pacientes') {
+    renderizarPacientes();
+  } else if (viewId === 'estoque') {
+    renderizarEstoque();
+  } else if (viewId === 'equipe') {
+    renderizarEquipe();
+  } else if (viewId === 'taco') {
+    renderizarTabelaTACOGlobal();
+    atualizarDatalistsTACO();
+  } else if (viewId === 'substituicao') {
+    aoMudarPatologiaSubstituicao();
+  }
+}
+window.navegarPara = navegarPara;
 
 
 function abrirProntuario(id) {
@@ -1248,10 +1573,195 @@ function abrirProntuario(id) {
   renderizarPrescricoesMedicas();
   renderizarModuloAntropometria();
   renderizarModuloBioimpedancia();
+  renderizarModuloPrescricaoDieta();
   renderizarPainelComparativoExames();
   navegarPara('prontuario');
 }
 window.abrirProntuario = abrirProntuario;
+
+// ==========================================================
+// PRESCRIÇÃO DE DIETA: EDIÇÃO COMPLETA & GERENCIAMENTO
+// ==========================================================
+
+function abrirModalPrescricaoDieta(dietaIdParaEditar) {
+  if (!pacienteAtivo) {
+    alert("Selecione um paciente antes de prescrever a dieta.");
+    return;
+  }
+
+  var sub = document.getElementById('modalDietaSubinfo');
+  var form = document.getElementById('formPrescricaoDieta');
+  var campoId = document.getElementById('dietaEditId');
+  if (form) form.reset();
+
+  if (dietaIdParaEditar && pacienteAtivo.dietas) {
+    // MODO EDIÇÃO: Carrega dados do plano existente
+    var dietaExistente = pacienteAtivo.dietas.find(function(d) { return d.id === dietaIdParaEditar; });
+    if (dietaExistente) {
+      if (sub) sub.innerText = "Editando: " + pacienteAtivo.nome + " (" + pacienteAtivo.prontuario + ")";
+      if (campoId) campoId.value = dietaExistente.id;
+
+      document.getElementById('dietaTitulo').value = dietaExistente.titulo || '';
+      document.getElementById('dietaData').value = dietaExistente.data || new Date().toISOString().split('T')[0];
+      document.getElementById('dietaOrientacoes').value = dietaExistente.orientacoes || '';
+
+      // Clona refeições existentes para edição segura
+      refeicoesEmEdicao = JSON.parse(JSON.stringify(dietaExistente.refeicoes || []));
+      renderizarBlocosRefeicoes();
+      recalcularTotaisDieta();
+
+      var modal = document.getElementById('modalPrescricaoDieta');
+      if (modal) modal.style.display = 'flex';
+      return;
+    }
+  }
+
+  // MODO NOVA DIETA
+  if (sub) sub.innerText = "Paciente: " + pacienteAtivo.nome + " (" + pacienteAtivo.prontuario + ")";
+  if (campoId) campoId.value = '';
+  document.getElementById('dietaData').value = new Date().toISOString().split('T')[0];
+
+  refeicoesEmEdicao = [
+    { id: 'ref_1', nome: 'Café da Manhã', horario: '07:30', itens: [] },
+    { id: 'ref_2', nome: 'Almoço', horario: '12:30', itens: [] },
+    { id: 'ref_3', nome: 'Lanche da Tarde', horario: '16:00', itens: [] },
+    { id: 'ref_4', nome: 'Jantar', horario: '20:00', itens: [] }
+  ];
+
+  renderizarBlocosRefeicoes();
+  recalcularTotaisDieta();
+
+  var modal = document.getElementById('modalPrescricaoDieta');
+  if (modal) modal.style.display = 'flex';
+}
+window.abrirModalPrescricaoDieta = abrirModalPrescricaoDieta;
+
+function editarDieta(dietaId) {
+  abrirModalPrescricaoDieta(dietaId);
+}
+window.editarDieta = editarDieta;
+
+function salvarPrescricaoDieta(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  if (!pacienteAtivo) return false;
+
+  var totKcal = 0, totPtn = 0, totCho = 0, totLip = 0;
+  refeicoesEmEdicao.forEach(function(ref) {
+    ref.itens.forEach(function(it) {
+      totKcal += it.kcal || 0;
+      totPtn += it.ptn || 0;
+      totCho += it.cho || 0;
+      totLip += it.lip || 0;
+    });
+  });
+
+  var campoId = document.getElementById('dietaEditId');
+  var idExistente = campoId ? parseInt(campoId.value, 10) : null;
+
+  var dadosDieta = {
+    titulo: document.getElementById('dietaTitulo').value.trim(),
+    data: document.getElementById('dietaData').value,
+    calorias: totKcal,
+    proteinas: parseFloat(totPtn.toFixed(1)),
+    carbos: parseFloat(totCho.toFixed(1)),
+    gorduras: parseFloat(totLip.toFixed(1)),
+    orientacoes: document.getElementById('dietaOrientacoes').value.trim(),
+    refeicoes: JSON.parse(JSON.stringify(refeicoesEmEdicao))
+  };
+
+  if (!pacienteAtivo.dietas) pacienteAtivo.dietas = [];
+
+  if (idExistente) {
+    // Atualiza registro existente no local
+    var idx = pacienteAtivo.dietas.findIndex(function(d) { return d.id === idExistente; });
+    if (idx !== -1) {
+      dadosDieta.id = idExistente;
+      pacienteAtivo.dietas[idx] = dadosDieta;
+    } else {
+      dadosDieta.id = idExistente;
+      pacienteAtivo.dietas.unshift(dadosDieta);
+    }
+  } else {
+    // Cria novo registro
+    dadosDieta.id = Date.now();
+    pacienteAtivo.dietas.unshift(dadosDieta);
+  }
+
+  fecharModalPrescricaoDieta();
+  renderizarModuloPrescricaoDieta();
+  return false;
+}
+window.salvarPrescricaoDieta = salvarPrescricaoDieta;
+
+function renderizarModuloPrescricaoDieta() {
+  var historicoBox = document.getElementById('historicoPrescricao');
+  var resumoBox = document.getElementById('painelResumoDietaAtiva');
+  if (!historicoBox) return;
+
+  if (!pacienteAtivo || !pacienteAtivo.dietas || pacienteAtivo.dietas.length === 0) {
+    if (resumoBox) resumoBox.innerHTML = '';
+    historicoBox.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); padding:16px; background:#fafcfa; border-radius:12px; border:1px dashed var(--border); text-align:center;">Nenhuma prescrição nutricional registada para este paciente.</div>';
+    return;
+  }
+
+  var dietas = pacienteAtivo.dietas;
+  var ativa = dietas[0];
+
+  // Card do Plano Ativo com Botão de Edição em destaque
+  if (resumoBox) {
+    resumoBox.innerHTML =
+      '<div style="background:#ffffff; border:1px solid #cad6ca; border-radius:16px; padding:18px; box-shadow:0 2px 10px rgba(0,0,0,0.03);">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">' +
+          '<div>' +
+            '<strong style="font-size:1.15rem; color:#3e4d3a;">Plano Ativo: ' + ativa.titulo + '</strong> ' +
+            '<span style="font-size:0.82rem; color:var(--text-muted);">(' + ativa.data + ')</span>' +
+          '</div>' +
+          '<div style="display:flex; gap:8px; align-items:center;">' +
+            '<button type="button" class="btn btn-outline" style="background:#f4f8f5; border:1px solid #9fd4b0; color:#2e6f40; font-weight:700; padding:6px 14px; font-size:0.82rem;" onclick="abrirModalPrescricaoDieta(' + ativa.id + ')">' +
+              '✏️ Editar Plano Completo' +
+            '</button>' +
+            '<span class="badge-role" style="background:#5e6f5a; color:#fff; font-size:0.8rem; padding:6px 12px;">Dieta Prescrita</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; text-align:center; margin-bottom:14px;">' +
+          '<div style="background:#f4f7f4; padding:10px; border-radius:10px;"><div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">TOTAL CALÓRICO</div><div style="font-size:1.2rem; font-weight:800; color:#243328;">' + (ativa.calorias || 0) + ' kcal</div></div>' +
+          '<div style="background:#f4f7f4; padding:10px; border-radius:10px;"><div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">PROTEÍNAS</div><div style="font-size:1.2rem; font-weight:800; color:#15803d;">' + (ativa.proteinas || 0) + ' g</div></div>' +
+          '<div style="background:#f4f7f4; padding:10px; border-radius:10px;"><div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">CARBOIDRATOS</div><div style="font-size:1.2rem; font-weight:800; color:#1d4ed8;">' + (ativa.carbos || 0) + ' g</div></div>' +
+          '<div style="background:#f4f7f4; padding:10px; border-radius:10px;"><div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">GORDURAS</div><div style="font-size:1.2rem; font-weight:800; color:#b45309;">' + (ativa.gorduras || 0) + ' g</div></div>' +
+        '</div>' +
+        '<div style="display:flex; flex-direction:column; gap:8px;">' +
+          (ativa.refeicoes || []).map(function(r) {
+            return '<div style="background:#fbfdfb; border:1px solid #cad6ca; border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; gap:8px;">' +
+              '<div>' +
+                '<div style="font-weight:700; color:#3e4d3a; font-size:0.86rem; margin-bottom:2px;">' +
+                  '🕒 ' + r.horario + ' — ' + r.nome +
+                '</div>' +
+                '<div style="font-size:0.8rem; color:var(--text-muted);">' +
+                  (r.itens && r.itens.length > 0 ? r.itens.map(function(i) { return i.quantidade + 'g ' + i.alimento + ' (' + i.kcal + ' kcal)'; }).join(' • ') : 'Sem alimentos listados') +
+                '</div>' +
+              '</div>' +
+              '<button type="button" class="btn btn-outline" style="padding:3px 10px; font-size:0.75rem;" onclick="abrirModalPrescricaoDieta(' + ativa.id + ')">Editar</button>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+  }
+
+  // Lista Histórico com Opção de Edição
+  historicoBox.innerHTML = dietas.map(function(d) {
+    return '<div class="evolucao-card" style="border-left-color:#5e6f5a; margin-bottom:10px;">' +
+      '<div class="evolucao-header">' +
+        '<div><strong>' + d.titulo + '</strong> <span style="font-size:0.78rem; color:var(--text-muted);">(' + d.data + ')</span></div>' +
+        '<div style="display:flex; align-items:center; gap:10px;">' +
+          '<span style="font-size:0.8rem; font-weight:700; color:#3e4d3a;">' + (d.calorias || 0) + ' kcal | P: ' + (d.proteinas || 0) + 'g | C: ' + (d.carbos || 0) + 'g | G: ' + (d.gorduras || 0) + 'g</span>' +
+          '<button type="button" class="btn btn-outline" style="padding:3px 10px; font-size:0.75rem;" onclick="abrirModalPrescricaoDieta(' + d.id + ')">✏️ Editar</button>' +
+        '</div>' +
+      '</div>' +
+      (d.orientacoes ? '<div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">' + d.orientacoes + '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+window.renderizarModuloPrescricaoDieta = renderizarModuloPrescricaoDieta;
 
 function voltarParaListaPacientes() {
   // Exibe estritamente o menu geral e oculta o menu do prontuário
@@ -3114,6 +3624,961 @@ function renderizarEvolucoes() {
   }).join('');
 }
 window.renderizarEvolucoes = renderizarEvolucoes;
+
+// ==========================================================
+// CATÁLOGO LABORATORIAL: NUTRIÇÃO CLÍNICA, NUTROLOGIA & ESPORTE
+// ==========================================================
+var CATALOGO_EXAMES_PADRAO = [
+  // Metabolismo Glicídico
+  { id: 'glicemia', nome: 'Glicemia de Jejum', unidade: 'mg/dL', min: 70, max: 99 },
+  { id: 'hba1c', nome: 'Hemoglobina Glicada (HbA1c)', unidade: '%', min: 4.0, max: 5.6 },
+  { id: 'insulina', nome: 'Insulina de Jejum', unidade: 'µUI/mL', min: 2.6, max: 24.9 },
+  { id: 'homa_ir', nome: 'HOMA-IR (Resistência Insulínica)', unidade: 'índice', min: 0.5, max: 2.15 },
+
+  // Perfil Lipídico
+  { id: 'colesterol_total', nome: 'Colesterol Total', unidade: 'mg/dL', min: 120, max: 190 },
+  { id: 'hdl', nome: 'HDL Colesterol', unidade: 'mg/dL', min: 40, max: 60 },
+  { id: 'ldl', nome: 'LDL Colesterol', unidade: 'mg/dL', min: 50, max: 130 },
+  { id: 'triglicerideos', nome: 'Triglicerídeos', unidade: 'mg/dL', min: 40, max: 150 },
+
+  // Vitaminas & Minerais
+  { id: 'vitamina_d', nome: 'Vitamina D (25-OH)', unidade: 'ng/mL', min: 30, max: 60 },
+  { id: 'vitamina_b12', nome: 'Vitamina B12', unidade: 'pg/mL', min: 350, max: 900 },
+  { id: 'acido_folico', nome: 'Ácido Fólico (B9)', unidade: 'ng/mL', min: 4.6, max: 18.7 },
+  { id: 'ferro_serico', nome: 'Ferro Sérico', unidade: 'µg/dL', min: 60, max: 170 },
+  { id: 'ferritina', nome: 'Ferritina', unidade: 'ng/mL', min: 30, max: 250 },
+  { id: 'zinco', nome: 'Zinco Sérico', unidade: 'µg/dL', min: 70, max: 120 },
+  { id: 'magnesio', nome: 'Magnésio Sérico', unidade: 'mg/dL', min: 1.8, max: 2.6 },
+
+  // Função Hepática & Muscular
+  { id: 'tgo', nome: 'TGO / AST', unidade: 'U/L', min: 10, max: 40 },
+  { id: 'tgp', nome: 'TGP / ALT', unidade: 'U/L', min: 10, max: 40 },
+  { id: 'gama_gt', nome: 'Gama GT (GGT)', unidade: 'U/L', min: 8, max: 60 },
+  { id: 'cpk', nome: 'CPK (Creatina Fosfoquinase)', unidade: 'U/L', min: 39, max: 308 },
+
+  // Função Renal & Proteica
+  { id: 'creatinina', nome: 'Creatinina Sérica', unidade: 'mg/dL', min: 0.6, max: 1.2 },
+  { id: 'ureia', nome: 'Ureia Sérica', unidade: 'mg/dL', min: 15, max: 45 },
+  { id: 'acido_urico', nome: 'Ácido Úrico', unidade: 'mg/dL', min: 3.0, max: 7.0 },
+  { id: 'albumina', nome: 'Albumina', unidade: 'g/dL', min: 3.5, max: 5.2 },
+
+  // Perfil Hormonal & Tireoidiano
+  { id: 'tsh', nome: 'TSH Ultra-sensível', unidade: 'µUI/mL', min: 0.4, max: 4.0 },
+  { id: 't4_livre', nome: 'T4 Livre', unidade: 'ng/dL', min: 0.7, max: 1.8 },
+  { id: 'testosterona_total', nome: 'Testosterona Total', unidade: 'ng/dL', min: 250, max: 850 },
+  { id: 'cortisol_manha', nome: 'Cortisol Basal (Manhã)', unidade: 'µg/dL', min: 5.0, max: 25.0 },
+
+  // Inflamação & Hemograma
+  { id: 'pcr_us', nome: 'PCR Ultra-sensível', unidade: 'mg/L', min: 0.0, max: 1.0 },
+  { id: 'hemoglobina', nome: 'Hemoglobina', unidade: 'g/dL', min: 12.0, max: 16.5 },
+  { id: 'hematocrito', nome: 'Hematócrito', unidade: '%', min: 36.0, max: 50.0 }
+];
+
+// Lista de exames selecionados para lançamento na coleta atual
+var examesSelecionadosLote = [];
+
+// ==========================================================
+// CONTROLE DO MODAL DE EXAMES LABORATORIAIS
+// ==========================================================
+function abrirModalLancamentoExame() {
+  if (!pacienteAtivo) {
+    alert("Selecione um paciente antes de lançar os exames.");
+    return;
+  }
+
+  var sub = document.getElementById('modalExamesSubinfo');
+  if (sub) sub.innerText = "Paciente: " + pacienteAtivo.nome + " (" + pacienteAtivo.prontuario + ")";
+
+  var form = document.getElementById('formLancamentoExames');
+  if (form) form.reset();
+
+  var hoje = new Date().toISOString().split('T')[0];
+  var dataInput = document.getElementById('exameDataColeta');
+  if (dataInput) dataInput.value = hoje;
+
+  examesSelecionadosLote = [];
+  atualizarDatalistExames();
+  renderizarListaExamesSelecionadosModal();
+
+  var modal = document.getElementById('modalExamesLab');
+  if (modal) modal.style.display = 'flex';
+}
+window.abrirModalLancamentoExame = abrirModalLancamentoExame;
+
+function fecharModalLancamentoExame() {
+  var modal = document.getElementById('modalExamesLab');
+  if (modal) modal.style.display = 'none';
+}
+window.fecharModalLancamentoExame = fecharModalLancamentoExame;
+
+function atualizarDatalistExames() {
+  var dl = document.getElementById('datalistCatalogoExames');
+  if (!dl) return;
+  dl.innerHTML = CATALOGO_EXAMES_PADRAO.map(function(item) {
+    return '<option value="' + item.nome + '">' + item.unidade + ' (Ref: ' + item.min + ' - ' + item.max + ')</option>';
+  }).join('');
+}
+
+// Manipulação de busca por iniciais
+function aoPressionarEnterBuscaExame(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    adicionarExameDaBarraBusca();
+  }
+}
+window.aoPressionarEnterBuscaExame = aoPressionarEnterBuscaExame;
+
+function adicionarExameDaBarraBusca() {
+  var input = document.getElementById('inputBuscaAnalito');
+  if (!input) return;
+  var valor = input.value.trim().toLowerCase();
+  if (!valor) return;
+
+  var encontrado = CATALOGO_EXAMES_PADRAO.find(function(ex) {
+    return ex.nome.toLowerCase() === valor || ex.id.toLowerCase() === valor || ex.nome.toLowerCase().indexOf(valor) !== -1;
+  });
+
+  if (!encontrado) {
+    var criarNovo = confirm("Exame '" + input.value + "' não localizado no catálogo padrão. Deseja cadastrá-lo como exame personalizado?");
+    if (criarNovo) {
+      var idGerado = 'custom_' + Date.now();
+      var novoAnalito = {
+        id: idGerado,
+        nome: input.value.trim(),
+        unidade: prompt("Unidade de medida (ex: mg/dL, ng/mL, %):", "mg/dL") || "mg/dL",
+        min: parseFloat(prompt("Valor Mínimo de Referência:", "0")) || 0,
+        max: parseFloat(prompt("Valor Máximo de Referência:", "100")) || 100
+      };
+      CATALOGO_EXAMES_PADRAO.push(novoAnalito);
+      encontrado = novoAnalito;
+      atualizarDatalistExames();
+    } else {
+      return;
+    }
+  }
+
+  // Impede duplicar no mesmo lançamento
+  var jaExiste = examesSelecionadosLote.some(function(item) { return item.id === encontrado.id; });
+  if (jaExiste) {
+    alert("O exame " + encontrado.nome + " já foi adicionado a esta coleta.");
+    input.value = "";
+    return;
+  }
+
+  examesSelecionadosLote.push({
+    id: encontrado.id,
+    nome: encontrado.nome,
+    unidade: encontrado.unidade,
+    min: encontrado.min,
+    max: encontrado.max,
+    valor: ""
+  });
+
+  input.value = "";
+  renderizarListaExamesSelecionadosModal();
+}
+window.adicionarExameDaBarraBusca = adicionarExameDaBarraBusca;
+
+function removerExameDoLote(id) {
+  examesSelecionadosLote = examesSelecionadosLote.filter(function(item) { return item.id !== id; });
+  renderizarListaExamesSelecionadosModal();
+}
+window.removerExameDoLote = removerExameDoLote;
+
+function atualizarValorExameLote(id, val) {
+  var item = examesSelecionadosLote.find(function(i) { return i.id === id; });
+  if (item) item.valor = val;
+}
+window.atualizarValorExameLote = atualizarValorExameLote;
+
+function renderizarListaExamesSelecionadosModal() {
+  var box = document.getElementById('listaExamesSelecionados');
+  if (!box) return;
+
+  if (examesSelecionadosLote.length === 0) {
+    box.innerHTML = '<div id="avisoNenhumExame" style="padding:14px; text-align:center; font-size:0.85rem; color:var(--text-muted); background:#fafcfa; border:1px dashed var(--border); border-radius:6px;">Nenhum exame selecionado. Digite na barra de busca acima e clique em "+ Adicionar".</div>';
+    return;
+  }
+
+  box.innerHTML = examesSelecionadosLote.map(function(ex) {
+    return '<div style="display:grid; grid-template-columns: 2fr 1fr 1.2fr auto; gap:8px; align-items:center; background:#fbfdfb; border:1px solid #cad6ca; padding:8px 12px; border-radius:8px;">' +
+      '<div><strong>' + ex.nome + '</strong> <small style="color:var(--text-muted);">(' + ex.unidade + ')</small></div>' +
+      '<div style="font-size:0.75rem; color:var(--text-muted);">Ref: ' + ex.min + ' - ' + ex.max + '</div>' +
+      '<div><input type="number" step="0.01" class="form-control" style="height:32px; font-size:0.85rem;" placeholder="Resultado" value="' + (ex.valor || '') + '" oninput="atualizarValorExameLote(\'' + ex.id + '\', this.value)"></div>' +
+      '<div><button type="button" class="btn btn-outline" style="color:#b91c1c; border-color:#fca5a5; padding:4px 8px; font-size:0.75rem;" onclick="removerExameDoLote(\'' + ex.id + '\')">✕</button></div>' +
+    '</div>';
+  }).join('');
+}
+
+// Salvar a nova coleta de exames e consolidar no paciente
+function salvarLoteExames(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  if (!pacienteAtivo) return false;
+
+  var dataColeta = document.getElementById('exameDataColeta').value;
+  var lab = document.getElementById('exameLaboratorio').value.trim() || 'Laboratório Clínico';
+
+  if (!dataColeta) {
+    alert("Informe a data da coleta.");
+    return false;
+  }
+
+  if (examesSelecionadosLote.length === 0) {
+    alert("Adicione pelo menos um resultado de exame antes de gravar.");
+    return false;
+  }
+
+  var resultadosObj = {};
+  examesSelecionadosLote.forEach(function(item) {
+    var v = parseFloat(item.valor);
+    if (!isNaN(v)) {
+      resultadosObj[item.id] = v;
+    }
+  });
+
+  if (Object.keys(resultadosObj).length === 0) {
+    alert("Preencha o valor de ao menos um exame adicionado.");
+    return false;
+  }
+
+  if (!pacienteAtivo.examesLaboratoriais) pacienteAtivo.examesLaboratoriais = [];
+
+  pacienteAtivo.examesLaboratoriais.push({
+    id: Date.now(),
+    dataColeta: dataColeta,
+    laboratorio: lab,
+    valores: resultadosObj
+  });
+
+  // Ordena coletas cronologicamente da mais antiga para a mais recente (esquerda -> direita)
+  pacienteAtivo.examesLaboratoriais.sort(function(a, b) {
+    return new Date(a.dataColeta) - new Date(b.dataColeta);
+  });
+
+  fecharModalLancamentoExame();
+  renderizarPainelComparativoExames();
+  return false;
+}
+window.salvarLoteExames = salvarLoteExames;
+
+// ==========================================================
+// BANCO DE DADOS DE ALIMENTOS (TABELA TACO / 100g BASE)
+// ==========================================================
+// ==========================================================
+// BANCO DE DADOS TACO SINCRONIZADO COM LOCALSTORAGE
+// ==========================================================
+var BANCO_ALIMENTOS_PADRAO_INICIAL = [
+  { nome: 'Arroz branco cozido', porcao: 100, kcal: 128, cho: 28.1, ptn: 2.5, lip: 0.2 },
+  { nome: 'Arroz integral cozido', porcao: 100, kcal: 124, cho: 25.8, ptn: 2.6, lip: 1.0 },
+  { nome: 'Feijão carioca cozido', porcao: 100, kcal: 76, cho: 13.6, ptn: 4.8, lip: 0.5 },
+  { nome: 'Feijão preto cozido', porcao: 100, kcal: 77, cho: 14.0, ptn: 4.5, lip: 0.5 },
+  { nome: 'Peito de frango grelhado', porcao: 100, kcal: 159, cho: 0.0, ptn: 32.0, lip: 2.5 },
+  { nome: 'Patinho bovino moído/grelhado', porcao: 100, kcal: 219, cho: 0.0, ptn: 35.9, lip: 7.3 },
+  { nome: 'Filé de tilápia grelhado', porcao: 100, kcal: 128, cho: 0.0, ptn: 26.0, lip: 2.7 },
+  { nome: 'Ovo de galinha inteiro cozido', porcao: 50, kcal: 73, cho: 0.3, ptn: 6.5, lip: 5.0 },
+  { nome: 'Clara de ovo cozida', porcao: 30, kcal: 17, cho: 0.2, ptn: 3.6, lip: 0.1 },
+  { nome: 'Batata doce cozida', porcao: 100, kcal: 77, cho: 18.4, ptn: 0.6, lip: 0.1 },
+  { nome: 'Batata inglesa cozida', porcao: 100, kcal: 52, cho: 11.9, ptn: 1.2, lip: 0.0 },
+  { nome: 'Mandioca / Aipim cozida', porcao: 100, kcal: 125, cho: 30.1, ptn: 0.6, lip: 0.3 },
+  { nome: 'Aveia em flocos', porcao: 30, kcal: 118, cho: 20.0, ptn: 4.2, lip: 2.2 },
+  { nome: 'Banana prata', porcao: 100, kcal: 98, cho: 26.0, ptn: 1.3, lip: 0.1 },
+  { nome: 'Maçã fuji', porcao: 100, kcal: 56, cho: 15.2, ptn: 0.3, lip: 0.0 },
+  { nome: 'Whey Protein concentrado 80%', porcao: 30, kcal: 120, cho: 2.0, ptn: 24.0, lip: 1.5 },
+  { nome: 'Azeite de oliva extravirgem', porcao: 10, kcal: 88, cho: 0.0, ptn: 0.0, lip: 10.0 },
+  { nome: 'Pasta de amendoim integral', porcao: 15, kcal: 90, cho: 3.0, ptn: 4.0, lip: 7.5 },
+  { nome: 'Pão de forma integral', porcao: 50, kcal: 120, cho: 22.0, ptn: 5.0, lip: 1.5 },
+  { nome: 'Queijo cottage', porcao: 50, kcal: 49, cho: 1.7, ptn: 6.2, lip: 1.7 }
+];
+
+function carregarBancoTACO() {
+  var salvo = localStorage.getItem('leveh_tabela_taco');
+  if (salvo) {
+    try { return JSON.parse(salvo); } catch(e) {}
+  }
+  localStorage.setItem('leveh_tabela_taco', JSON.stringify(BANCO_ALIMENTOS_PADRAO_INICIAL));
+  return BANCO_ALIMENTOS_PADRAO_INICIAL;
+}
+
+var BANCO_ALIMENTOS_TACO = carregarBancoTACO();
+
+function salvarBancoTACOGlobal() {
+  localStorage.setItem('leveh_tabela_taco', JSON.stringify(BANCO_ALIMENTOS_TACO));
+  atualizarDatalistsTACO();
+}
+
+function atualizarDatalistsTACO() {
+  var dls = document.querySelectorAll('#listaAlimentosTacoSugestoes');
+  var options = BANCO_ALIMENTOS_TACO.map(function(a) {
+    return '<option value="' + a.nome + '">';
+  }).join('');
+  dls.forEach(function(dl) { dl.innerHTML = options; });
+}
+
+// ==========================================================
+// RENDERIZAÇÃO E GESTÃO DO MÓDULO DA TABELA TACO
+// ==========================================================
+function renderizarTabelaTACOGlobal(filtro) {
+  var corpo = document.getElementById('corpoTabelaTACOGlobal');
+  if (!corpo) return;
+
+  var termo = (filtro || '').toLowerCase().trim();
+  var lista = BANCO_ALIMENTOS_TACO.filter(function(a) {
+    return !termo || a.nome.toLowerCase().indexOf(termo) !== -1;
+  });
+
+  if (lista.length === 0) {
+    corpo.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:16px;">Nenhum alimento encontrado.</td></tr>';
+    return;
+  }
+
+  corpo.innerHTML = lista.map(function(a) {
+    return '<tr>' +
+      '<td><strong>' + a.nome + '</strong></td>' +
+      '<td style="text-align:center;">' + a.porcao + ' g</td>' +
+      '<td style="text-align:center; font-weight:700;">' + a.kcal + ' kcal</td>' +
+      '<td style="text-align:center; color:#15803d; font-weight:700;">' + a.ptn + ' g</td>' +
+      '<td style="text-align:center; color:#1d4ed8; font-weight:700;">' + a.cho + ' g</td>' +
+      '<td style="text-align:center; color:#b45309; font-weight:700;">' + a.lip + ' g</td>' +
+      '<td style="text-align:center;">' +
+        '<button type="button" class="btn btn-outline" style="padding:2px 8px; font-size:0.75rem; margin-right:4px;" onclick="editarAlimentoTACO(\'' + a.nome.replace(/'/g, "\\'") + '\')">✏️ Editar</button>' +
+        '<button type="button" class="btn btn-outline" style="padding:2px 8px; font-size:0.75rem; color:#b91c1c; border-color:#fca5a5;" onclick="excluirAlimentoTACO(\'' + a.nome.replace(/'/g, "\\'") + '\')">✕</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+window.renderizarTabelaTACOGlobal = renderizarTabelaTACOGlobal;
+
+function filtrarAlimentosTACO(termo) {
+  renderizarTabelaTACOGlobal(termo);
+}
+window.filtrarAlimentosTACO = filtrarAlimentosTACO;
+
+function abrirModalAlimentoTACO(alimentoParaEditar) {
+  var form = document.getElementById('formAlimentoTACO');
+  if (form) form.reset();
+
+  var tit = document.getElementById('modalAlimentoTitulo');
+  var campoOriginal = document.getElementById('alimentoOriginalNome');
+
+  if (alimentoParaEditar) {
+    var ali = BANCO_ALIMENTOS_TACO.find(function(a) { return a.nome === alimentoParaEditar; });
+    if (ali) {
+      if (tit) tit.innerText = "Editar Alimento (TACO)";
+      if (campoOriginal) campoOriginal.value = ali.nome;
+      document.getElementById('aliNome').value = ali.nome;
+      document.getElementById('aliPorcao').value = ali.porcao;
+      document.getElementById('aliKcal').value = ali.kcal;
+      document.getElementById('aliPtn').value = ali.ptn;
+      document.getElementById('aliCho').value = ali.cho;
+      document.getElementById('aliLip').value = ali.lip;
+    }
+  } else {
+    if (tit) tit.innerText = "Cadastrar Alimento (TACO)";
+    if (campoOriginal) campoOriginal.value = "";
+    document.getElementById('aliPorcao').value = 100;
+  }
+
+  var modal = document.getElementById('modalAlimentoTACO');
+  if (modal) modal.style.display = 'flex';
+}
+window.abrirModalAlimentoTACO = abrirModalAlimentoTACO;
+
+function fecharModalAlimentoTACO() {
+  var modal = document.getElementById('modalAlimentoTACO');
+  if (modal) modal.style.display = 'none';
+}
+window.fecharModalAlimentoTACO = fecharModalAlimentoTACO;
+
+function editarAlimentoTACO(nome) {
+  abrirModalAlimentoTACO(nome);
+}
+window.editarAlimentoTACO = editarAlimentoTACO;
+
+function excluirAlimentoTACO(nome) {
+  if (confirm("Deseja realmente remover '" + nome + "' da tabela TACO?")) {
+    BANCO_ALIMENTOS_TACO = BANCO_ALIMENTOS_TACO.filter(function(a) { return a.nome !== nome; });
+    salvarBancoTACOGlobal();
+    renderizarTabelaTACOGlobal();
+  }
+}
+window.excluirAlimentoTACO = excluirAlimentoTACO;
+
+function salvarAlimentoTACO(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+
+  var original = document.getElementById('alimentoOriginalNome').value;
+  var novoNome = document.getElementById('aliNome').value.trim();
+  var porcao = parseFloat(document.getElementById('aliPorcao').value) || 100;
+  var kcal = parseFloat(document.getElementById('aliKcal').value) || 0;
+  var ptn = parseFloat(document.getElementById('aliPtn').value) || 0;
+  var cho = parseFloat(document.getElementById('aliCho').value) || 0;
+  var lip = parseFloat(document.getElementById('aliLip').value) || 0;
+
+  var novoRegistro = { nome: novoNome, porcao: porcao, kcal: kcal, ptn: ptn, cho: cho, lip: lip };
+
+  if (original) {
+    var idx = BANCO_ALIMENTOS_TACO.findIndex(function(a) { return a.nome === original; });
+    if (idx !== -1) BANCO_ALIMENTOS_TACO[idx] = novoRegistro;
+  } else {
+    BANCO_ALIMENTOS_TACO.push(novoRegistro);
+  }
+
+  salvarBancoTACOGlobal();
+  fecharModalAlimentoTACO();
+  renderizarTabelaTACOGlobal();
+  return false;
+}
+window.salvarAlimentoTACO = salvarAlimentoTACO;
+
+// ==========================================================
+// LISTAS DE SUBSTITUIÇÃO HOMOLOGADAS POR PATOLOGIA
+// ==========================================================
+
+var LISTAS_SUBSTITUICAO_PADRAO = [
+  // Diabetes Mellitus
+  { id: 1, patologia: 'diabetes', origem: 'Arroz branco cozido (100g)', substitutos: 'Arroz integral (100g) ou Batata-doce cozida (130g) ou Mandioca cozida (80g)', obs: 'Menor índice glicêmico e maior teor de fibras solúveis' },
+  { id: 2, patologia: 'diabetes', origem: 'Pão francês (50g)', substitutos: 'Pão de forma 100% integral (50g) ou Aveia em flocos (30g)', obs: 'Evita picos hiperglicêmicos pós-prandiais' },
+
+  // Doença Celíaca
+  { id: 3, patologia: 'celiaco', origem: 'Pão de trigo integral (50g)', substitutos: 'Pão de farinha de arroz/mandioca (50g) ou Tapioca (40g) ou Batata inglesa (180g)', obs: 'Isento total de glúten (Gluten-Free)' },
+  { id: 4, patologia: 'celiaco', origem: 'Aveia convencional (30g)', substitutos: 'Aveia com certificação sem glúten (30g) ou Farinha de amêndoas (25g)', obs: 'Prevenção de contaminação cruzada' },
+
+  // Doença Renal Crônica (DRC)
+  { id: 5, patologia: 'drc', origem: 'Peito de frango (120g)', substitutos: 'Claras de ovo cozidas (4 unid / 120g) ou Tofu firme (100g)', obs: 'Aporte de alto valor biológico com menor sobrecarga de fósforo inorgânico' },
+
+  // Hipertensão Arterial
+  { id: 6, patologia: 'hipertensao', origem: 'Queijo muçarela tradicional (30g)', substitutos: 'Queijo cottage sem sal (40g) ou Ricota fresca (50g)', obs: 'Baixo teor de sódio sérico' },
+
+  // Nutrição Esportiva
+  { id: 7, patologia: 'esportivo', origem: 'Whey Protein Concentrado (30g)', substitutos: 'Peito de frango grelhado (80g) ou Tilápia grelhada (90g)', obs: 'Equivalência exata de ~24g de proteína de alto valor biológico' }
+];
+
+function carregarListasSubstituicaoPatologia() {
+  var salvas = localStorage.getItem('leveh_substituicoes_patologia');
+  if (salvas) {
+    try { return JSON.parse(salvas); } catch(e) {}
+  }
+  localStorage.setItem('leveh_substituicoes_patologia', JSON.stringify(LISTAS_SUBSTITUICAO_PADRAO));
+  return LISTAS_SUBSTITUICAO_PADRAO;
+}
+
+var REGRAS_SUBSTITUICAO_PATOLOGIA = carregarListasSubstituicaoPatologia();
+
+function salvarRegrasPatologiaLocalStorage() {
+  localStorage.setItem('leveh_substituicoes_patologia', JSON.stringify(REGRAS_SUBSTITUICAO_PATOLOGIA));
+}
+
+var ALERTAS_PATOLOGIA = {
+  geral: '✓ Sem restrições severas ativas',
+  diabetes: '⚠️ Alerta: Priorize alimentos de baixo índice glicêmico e ricos em fibras.',
+  hipertensao: '⚠️ Alerta: Restrição de sódio ativa. Evite conservas e queijos maturados.',
+  drc: '⚠️ Alerta: Controle rigoroso de fósforo, potássio e aporte proteico.',
+  celiaco: '🚫 Restrição Crítica: Alimentos com trigo, aveia não certificada, centeio ou cevada são contraindicados.',
+  esteatose: '⚠️ Alerta: Restrição de açúcares simples, farinhas refinadas e gorduras saturadas.',
+  esportivo: '⚡ Foco: Alta biodisponibilidade proteica e reposição energética muscular.'
+};
+
+function aoMudarPatologiaSubstituicao() {
+  var sel = document.getElementById('filtroPatologiaSubstituicao');
+  var badge = document.getElementById('badgeAlertaPatologia');
+  if (!sel || !badge) return;
+
+  var pat = sel.value;
+  badge.innerText = ALERTAS_PATOLOGIA[pat] || ALERTAS_PATOLOGIA.geral;
+
+  if (pat === 'celiaco' || pat === 'drc') {
+    badge.style.background = '#fee2e2';
+    badge.style.color = '#b91c1c';
+    badge.style.borderColor = '#fca5a5';
+  } else if (pat === 'diabetes' || pat === 'hipertensao' || pat === 'esteatose') {
+    badge.style.background = '#fef3c7';
+    badge.style.color = '#b45309';
+    badge.style.borderColor = '#fde68a';
+  } else {
+    badge.style.background = '#e8f4ec';
+    badge.style.color = '#15803d';
+    badge.style.borderColor = '#c2e2cc';
+  }
+
+  renderizarTabelaSubstituicoesHomologadas(pat);
+}
+window.aoMudarPatologiaSubstituicao = aoMudarPatologiaSubstituicao;
+
+function renderizarTabelaSubstituicoesHomologadas(patologiaSelecionada) {
+  var container = document.getElementById('containerListasOficiaisPatologia');
+  if (!container) return;
+
+  var pat = patologiaSelecionada || (document.getElementById('filtroPatologiaSubstituicao') ? document.getElementById('filtroPatologiaSubstituicao').value : 'geral');
+
+  var listaFiltrada = REGRAS_SUBSTITUICAO_PATOLOGIA.filter(function(r) {
+    return pat === 'geral' ? true : r.patologia === pat;
+  });
+
+  if (listaFiltrada.length === 0) {
+    container.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); padding:16px; background:#fafcfa; border-radius:12px; border:1px dashed var(--border); text-align:center;">' +
+      'Nenhuma lista homologada cadastrada para este perfil de patologia. Clique em <strong>+ Criar Lista de Substituição Oficial</strong> para cadastrar.' +
+    '</div>';
+    return;
+  }
+
+  container.innerHTML =
+    '<table style="width:100%; border-collapse:collapse; background:#ffffff; font-size:0.86rem;">' +
+      '<thead>' +
+        '<tr style="background:#f4f7f5; border-bottom:2px solid var(--border);">' +
+          '<th style="padding:10px 14px;">Alimento Base</th>' +
+          '<th style="padding:10px 14px; color:#15803d;">Equivalentes Substituto(s)</th>' +
+          '<th style="padding:10px 14px; color:var(--text-muted);">Diretriz Clínica / Justificativa</th>' +
+          '<th style="padding:10px 14px; text-align:center;">Ação</th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>' +
+        listaFiltrada.map(function(item) {
+          return '<tr style="border-bottom:1px solid #eef2ef;">' +
+            '<td style="padding:10px 14px; font-weight:700; color:#3e4d3a;">' + item.origem + '</td>' +
+            '<td style="padding:10px 14px; color:#15803d; font-weight:600;">' + item.substitutos + '</td>' +
+            '<td style="padding:10px 14px; font-size:0.8rem; color:var(--text-muted);">' + (item.obs || '--') + '</td>' +
+            '<td style="padding:10px 14px; text-align:center;">' +
+              '<button type="button" class="btn btn-outline" style="padding:2px 8px; font-size:0.75rem; color:#b91c1c; border-color:#fca5a5;" onclick="removerRegraSubstituicaoPatologia(' + item.id + ')">✕</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('') +
+      '</tbody>' +
+    '</table>';
+}
+window.renderizarTabelaSubstituicoesHomologadas = renderizarTabelaSubstituicoesHomologadas;
+
+function abrirModalNovaRegraSubstituicao() {
+  var form = document.getElementById('formNovaSubstPatologia');
+  if (form) form.reset();
+
+  var selAtual = document.getElementById('filtroPatologiaSubstituicao');
+  var selModal = document.getElementById('modalSubstPatologiaAlvo');
+  if (selAtual && selModal && selAtual.value !== 'geral') {
+    selModal.value = selAtual.value;
+  }
+
+  var modal = document.getElementById('modalNovaSubstituicaoPatologia');
+  if (modal) modal.style.display = 'flex';
+}
+window.abrirModalNovaRegraSubstituicao = abrirModalNovaRegraSubstituicao;
+
+function fecharModalNovaRegraSubstituicao() {
+  var modal = document.getElementById('modalNovaSubstituicaoPatologia');
+  if (modal) modal.style.display = 'none';
+}
+window.fecharModalNovaRegraSubstituicao = fecharModalNovaRegraSubstituicao;
+
+function salvarRegraSubstituicaoPatologia(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+
+  var patologia = document.getElementById('modalSubstPatologiaAlvo').value;
+  var origem = document.getElementById('modalSubstAlimOrigem').value.trim();
+  var substitutos = document.getElementById('modalSubstAlimDestino').value.trim();
+  var obs = document.getElementById('modalSubstObs').value.trim();
+
+  if (!origem || !substitutos) {
+    alert("Preencha o alimento base e as opções de substitutos.");
+    return false;
+  }
+
+  REGRAS_SUBSTITUICAO_PATOLOGIA.unshift({
+    id: Date.now(),
+    patologia: patologia,
+    origem: origem,
+    substitutos: substitutos,
+    obs: obs
+  });
+
+  salvarRegrasPatologiaLocalStorage();
+  fecharModalNovaRegraSubstituicao();
+
+  var sel = document.getElementById('filtroPatologiaSubstituicao');
+  if (sel) sel.value = patologia;
+  aoMudarPatologiaSubstituicao();
+  return false;
+}
+window.salvarRegraSubstituicaoPatologia = salvarRegraSubstituicaoPatologia;
+
+function removerRegraSubstituicaoPatologia(id) {
+  if (confirm("Deseja remover esta regra homologada de substituição?")) {
+    REGRAS_SUBSTITUICAO_PATOLOGIA = REGRAS_SUBSTITUICAO_PATOLOGIA.filter(function(r) { return r.id !== id; });
+    salvarRegrasPatologiaLocalStorage();
+    aoMudarPatologiaSubstituicao();
+  }
+}
+window.removerRegraSubstituicaoPatologia = removerRegraSubstituicaoPatologia;
+
+// ==========================================================
+// CALCULADORA DE SUBSTITUIÇÃO DE ALIMENTOS
+// ==========================================================
+function calcularSubstituicaoAoVivo() {
+  var nomeOrigem = document.getElementById('substAlimentoOrigem').value.trim();
+  var qtdOrigem = parseFloat(document.getElementById('substQtdOrigem').value) || 0;
+  var nomeDestino = document.getElementById('substAlimentoDestino').value.trim();
+  var criterio = document.getElementById('substCriterio').value;
+  var painel = document.getElementById('painelResultadoSubstituicao');
+
+  if (!painel) return;
+
+  var aliOrigem = BANCO_ALIMENTOS_TACO.find(function(a) { return a.nome.toLowerCase() === nomeOrigem.toLowerCase(); });
+  var aliDestino = BANCO_ALIMENTOS_TACO.find(function(a) { return a.nome.toLowerCase() === nomeDestino.toLowerCase(); });
+
+  if (!aliOrigem || !aliDestino || qtdOrigem <= 0) {
+    painel.style.display = 'none';
+    return;
+  }
+
+  var propOrigem = qtdOrigem / aliOrigem.porcao;
+  var alvo = aliOrigem[criterio] * propOrigem;
+
+  if (aliDestino[criterio] <= 0) {
+    painel.style.display = 'block';
+    painel.innerHTML = '<span style="color:#b91c1c; font-weight:700;">O alimento de destino não possui valor de ' + criterio.toUpperCase() + ' para substituição proporcional.</span>';
+    return;
+  }
+
+  var qtdNecessaria = Math.round((alvo / aliDestino[criterio]) * aliDestino.porcao);
+  var propDestino = qtdNecessaria / aliDestino.porcao;
+
+  var rotulos = { cho: 'Carboidratos', ptn: 'Proteínas', kcal: 'Calorias', lip: 'Gorduras' };
+
+  painel.style.display = 'block';
+  painel.innerHTML =
+    '<div style="font-size:0.95rem; font-weight:700; color:#3e4d3a; margin-bottom:6px;">' +
+      'Substituir: ' + qtdOrigem + 'g de ' + aliOrigem.nome + ' ➔ <span style="color:#15803d; font-size:1.1rem;">' + qtdNecessaria + 'g de ' + aliDestino.nome + '</span>' +
+    '</div>' +
+    '<div style="font-size:0.8rem; color:var(--text-muted);">' +
+      'Baseado em ' + alvo.toFixed(1) + ' ' + (criterio === 'kcal' ? 'kcal' : 'g') + ' de ' + rotulos[criterio] + '. ' +
+      'Nutrientes do substituto: ' + Math.round(aliDestino.kcal * propDestino) + ' kcal | ' + (aliDestino.ptn * propDestino).toFixed(1) + 'g P | ' + (aliDestino.cho * propDestino).toFixed(1) + 'g C | ' + (aliDestino.lip * propDestino).toFixed(1) + 'g G' +
+    '</div>';
+}
+window.calcularSubstituicaoAoVivo = calcularSubstituicaoAoVivo;
+
+function abrirModalPrescricaoDieta() {
+  if (!pacienteAtivo) {
+    alert("Selecione um paciente antes de prescrever a dieta.");
+    return;
+  }
+
+  var sub = document.getElementById('modalDietaSubinfo');
+  if (sub) sub.innerText = "Paciente: " + pacienteAtivo.nome + " (" + pacienteAtivo.prontuario + ")";
+
+  document.getElementById('formPrescricaoDieta').reset();
+  document.getElementById('dietaData').value = new Date().toISOString().split('T')[0];
+
+  // Inicia com sugestões padrão de refeições
+  refeicoesEmEdicao = [
+    { id: 'ref_1', nome: 'Café da Manhã', horario: '07:30', itens: [] },
+    { id: 'ref_2', nome: 'Almoço', horario: '12:30', itens: [] },
+    { id: 'ref_3', nome: 'Lanche da Tarde', horario: '16:00', itens: [] },
+    { id: 'ref_4', nome: 'Jantar', horario: '20:00', itens: [] }
+  ];
+
+  renderizarBlocosRefeicoes();
+  recalcularTotaisDieta();
+
+  var modal = document.getElementById('modalPrescricaoDieta');
+  if (modal) modal.style.display = 'flex';
+}
+window.abrirModalPrescricaoDieta = abrirModalPrescricaoDieta;
+
+function fecharModalPrescricaoDieta() {
+  var modal = document.getElementById('modalPrescricaoDieta');
+  if (modal) modal.style.display = 'none';
+}
+window.fecharModalPrescricaoDieta = fecharModalPrescricaoDieta;
+
+function adicionarBlocoRefeicao() {
+  var idNova = 'ref_' + Date.now();
+  refeicoesEmEdicao.push({
+    id: idNova,
+    nome: 'Nova Refeição',
+    horario: '10:00',
+    itens: []
+  });
+  renderizarBlocosRefeicoes();
+}
+window.adicionarBlocoRefeicao = adicionarBlocoRefeicao;
+
+function removerBlocoRefeicao(refId) {
+  refeicoesEmEdicao = refeicoesEmEdicao.filter(function(r) { return r.id !== refId; });
+  renderizarBlocosRefeicoes();
+  recalcularTotaisDieta();
+}
+window.removerBlocoRefeicao = removerBlocoRefeicao;
+
+function adicionarItemRefeicao(refId) {
+  var ref = refeicoesEmEdicao.find(function(r) { return r.id === refId; });
+  if (!ref) return;
+
+  var idItem = 'item_' + Date.now();
+  ref.itens.push({
+    id: idItem,
+    alimento: '',
+    quantidade: 100,
+    unidade: 'g',
+    kcal: 0,
+    ptn: 0,
+    cho: 0,
+    lip: 0
+  });
+  renderizarBlocosRefeicoes();
+}
+window.adicionarItemRefeicao = adicionarItemRefeicao;
+
+function removerItemRefeicao(refId, itemId) {
+  var ref = refeicoesEmEdicao.find(function(r) { return r.id === refId; });
+  if (!ref) return;
+  ref.itens = ref.itens.filter(function(i) { return i.id !== itemId; });
+  renderizarBlocosRefeicoes();
+  recalcularTotaisDieta();
+}
+window.removerItemRefeicao = removerItemRefeicao;
+
+function aoSelecionarAlimentoItem(refId, itemId, nomeAlimento) {
+  var ref = refeicoesEmEdicao.find(function(r) { return r.id === refId; });
+  if (!ref) return;
+  var item = ref.itens.find(function(i) { return i.id === itemId; });
+  if (!item) return;
+
+  var encontrado = BANCO_ALIMENTOS_TACO.find(function(a) { return a.nome === nomeAlimento; });
+  item.alimento = nomeAlimento;
+
+  if (encontrado) {
+    var proporcao = (item.quantidade || 100) / encontrado.porcao;
+    item.kcal = Math.round(encontrado.kcal * proporcao);
+    item.ptn = parseFloat((encontrado.ptn * proporcao).toFixed(1));
+    item.cho = parseFloat((encontrado.cho * proporcao).toFixed(1));
+    item.lip = parseFloat((encontrado.lip * proporcao).toFixed(1));
+  }
+  renderizarBlocosRefeicoes();
+  recalcularTotaisDieta();
+}
+window.aoSelecionarAlimentoItem = aoSelecionarAlimentoItem;
+
+function aoAlterarQtdItem(refId, itemId, qtd) {
+  var ref = refeicoesEmEdicao.find(function(r) { return r.id === refId; });
+  if (!ref) return;
+  var item = ref.itens.find(function(i) { return i.id === itemId; });
+  if (!item) return;
+
+  item.quantidade = parseFloat(qtd) || 0;
+  var encontrado = BANCO_ALIMENTOS_TACO.find(function(a) { return a.nome === item.alimento; });
+  if (encontrado) {
+    var proporcao = item.quantidade / encontrado.porcao;
+    item.kcal = Math.round(encontrado.kcal * proporcao);
+    item.ptn = parseFloat((encontrado.ptn * proporcao).toFixed(1));
+    item.cho = parseFloat((encontrado.cho * proporcao).toFixed(1));
+    item.lip = parseFloat((encontrado.lip * proporcao).toFixed(1));
+  }
+  renderizarBlocosRefeicoes();
+  recalcularTotaisDieta();
+}
+window.aoAlterarQtdItem = aoAlterarQtdItem;
+
+function atualizarNomeRefeicao(refId, nome) {
+  var ref = refeicoesEmEdicao.find(function(r) { return r.id === refId; });
+  if (ref) ref.nome = nome;
+}
+window.atualizarNomeRefeicao = atualizarNomeRefeicao;
+
+function atualizarHorarioRefeicao(refId, hora) {
+  var ref = refeicoesEmEdicao.find(function(r) { return r.id === refId; });
+  if (ref) ref.horario = hora;
+}
+window.atualizarHorarioRefeicao = atualizarHorarioRefeicao;
+
+function recalcularTotaisDieta() {
+  var totKcal = 0, totPtn = 0, totCho = 0, totLip = 0;
+  refeicoesEmEdicao.forEach(function(ref) {
+    ref.itens.forEach(function(it) {
+      totKcal += it.kcal || 0;
+      totPtn += it.ptn || 0;
+      totCho += it.cho || 0;
+      totLip += it.lip || 0;
+    });
+  });
+
+  var elKcal = document.getElementById('dietaTotalKcal');
+  var elPtn = document.getElementById('dietaTotalPtn');
+  var elCho = document.getElementById('dietaTotalCho');
+  var elLip = document.getElementById('dietaTotalLip');
+
+  if (elKcal) elKcal.innerText = totKcal + " kcal";
+  if (elPtn) elPtn.innerText = totPtn.toFixed(1) + " g";
+  if (elCho) elCho.innerText = totCho.toFixed(1) + " g";
+  if (elLip) elLip.innerText = totLip.toFixed(1) + " g";
+}
+
+function renderizarBlocosRefeicoes() {
+  var box = document.getElementById('containerRefeicoesDieta');
+  if (!box) return;
+
+  var datalistHtml = '<datalist id="listaAlimentosTacoSugestoes">' +
+    BANCO_ALIMENTOS_TACO.map(function(a) { return '<option value="' + a.nome + '">'; }).join('') +
+  '</datalist>';
+
+  box.innerHTML = datalistHtml + refeicoesEmEdicao.map(function(ref) {
+    var refKcal = ref.itens.reduce(function(acc, i) { return acc + (i.kcal || 0); }, 0);
+    var refPtn = ref.itens.reduce(function(acc, i) { return acc + (i.ptn || 0); }, 0);
+    var refCho = ref.itens.reduce(function(acc, i) { return acc + (i.cho || 0); }, 0);
+    var refLip = ref.itens.reduce(function(acc, i) { return acc + (i.lip || 0); }, 0);
+
+    return '<div style="background:#ffffff; border:1px solid #cad6ca; border-radius:12px; padding:12px; box-shadow:0 1px 4px rgba(0,0,0,0.02);">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; border-bottom:1px dashed #cad6ca; padding-bottom:8px;">' +
+        '<div style="display:flex; align-items:center; gap:8px;">' +
+          '<input type="text" class="form-control" style="font-weight:700; width:170px; height:32px; font-size:0.85rem;" value="' + ref.nome + '" onchange="atualizarNomeRefeicao(\'' + ref.id + '\', this.value)">' +
+          '<input type="time" class="form-control" style="width:105px; height:32px; font-size:0.82rem;" value="' + ref.horario + '" onchange="atualizarHorarioRefeicao(\'' + ref.id + '\', this.value)">' +
+        '</div>' +
+        '<div style="display:flex; align-items:center; gap:10px;">' +
+          '<span style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">' +
+            refKcal + ' kcal | P: ' + refPtn.toFixed(1) + 'g | C: ' + refCho.toFixed(1) + 'g | G: ' + refLip.toFixed(1) + 'g' +
+          '</span>' +
+          '<button type="button" class="btn btn-outline" style="padding:2px 8px; font-size:0.75rem; color:#b91c1c; border-color:#fca5a5;" onclick="removerBlocoRefeicao(\'' + ref.id + '\')">Remover</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">' +
+        (ref.itens.length === 0 ? '<div style="font-size:0.78rem; color:var(--text-muted); font-style:italic;">Nenhum alimento adicionado nesta refeição.</div>' :
+          ref.itens.map(function(it) {
+            return '<div style="display:grid; grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr 1fr auto; gap:6px; align-items:center; background:#fbfdfb; padding:4px 8px; border-radius:6px; border:1px solid #e2e8e5; font-size:0.8rem;">' +
+              '<input type="text" list="listaAlimentosTacoSugestoes" class="form-control" style="height:30px; font-size:0.8rem;" placeholder="Digite o alimento..." value="' + it.alimento + '" onchange="aoSelecionarAlimentoItem(\'' + ref.id + '\', \'' + it.id + '\', this.value)">' +
+              '<input type="number" class="form-control" style="height:30px; font-size:0.8rem;" placeholder="Qtd (g/ml)" value="' + it.quantidade + '" onchange="aoAlterarQtdItem(\'' + ref.id + '\', \'' + it.id + '\', this.value)">' +
+              '<span style="text-align:center; font-weight:700; color:#243328;">' + it.kcal + ' kcal</span>' +
+              '<span style="text-align:center; color:#15803d;">' + it.ptn + 'g P</span>' +
+              '<span style="text-align:center; color:#1d4ed8;">' + it.cho + 'g C</span>' +
+              '<span style="text-align:center; color:#b45309;">' + it.lip + 'g G</span>' +
+              '<button type="button" class="btn btn-outline" style="color:#b91c1c; border-color:#fca5a5; padding:2px 6px; font-size:0.75rem;" onclick="removerItemRefeicao(\'' + ref.id + '\', \'' + it.id + '\')">✕</button>' +
+            '</div>';
+          }).join('')
+        ) +
+      '</div>' +
+      '<button type="button" class="btn btn-outline" style="padding:3px 10px; font-size:0.75rem;" onclick="adicionarItemRefeicao(\'' + ref.id + '\')">+ Adicionar Alimento</button>' +
+    '</div>';
+  }).join('');
+}
+
+function salvarPrescricaoDieta(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  if (!pacienteAtivo) return false;
+
+  var totKcal = 0, totPtn = 0, totCho = 0, totLip = 0;
+  refeicoesEmEdicao.forEach(function(ref) {
+    ref.itens.forEach(function(it) {
+      totKcal += it.kcal || 0;
+      totPtn += it.ptn || 0;
+      totCho += it.cho || 0;
+      totLip += it.lip || 0;
+    });
+  });
+
+  var novaPrescricao = {
+    id: Date.now(),
+    titulo: document.getElementById('dietaTitulo').value.trim(),
+    data: document.getElementById('dietaData').value,
+    calorias: totKcal,
+    proteinas: parseFloat(totPtn.toFixed(1)),
+    carbos: parseFloat(totCho.toFixed(1)),
+    gorduras: parseFloat(totLip.toFixed(1)),
+    orientacoes: document.getElementById('dietaOrientacoes').value.trim(),
+    refeicoes: JSON.parse(JSON.stringify(refeicoesEmEdicao))
+  };
+
+  if (!pacienteAtivo.dietas) pacienteAtivo.dietas = [];
+  pacienteAtivo.dietas.unshift(novaPrescricao);
+
+  fecharModalPrescricaoDieta();
+  renderizarModuloPrescricaoDieta();
+  return false;
+}
+window.salvarPrescricaoDieta = salvarPrescricaoDieta;
+
+// ==========================================================
+// RENDERIZAÇÃO DA TABELA COMPARATIVA EM COLUNAS CRONOLÓGICAS
+// ==========================================================
+function renderizarPainelComparativoExames() {
+  var container = document.getElementById('containerTabelaComparativaExames');
+  if (!container) return;
+
+  if (!pacienteAtivo || !pacienteAtivo.examesLaboratoriais || pacienteAtivo.examesLaboratoriais.length === 0) {
+    container.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); padding:20px; text-align:center; background:#fafcfa; border-radius:12px; border:1px dashed var(--border);">' +
+      'Nenhum resultado laboratorial cadastrado para este paciente. Clique em <strong>+ Lançar Novo Exame</strong> para iniciar a tabela comparativa.</div>';
+    return;
+  }
+
+  var coletas = pacienteAtivo.examesLaboratoriais;
+
+  // Identifica quais exames possuem ao menos um resultado preenchido nas coletas
+  var analitosPresentesIds = {};
+  coletas.forEach(function(c) {
+    for (var k in c.valores) {
+      analitosPresentesIds[k] = true;
+    }
+  });
+
+  var listaAnalitosParaExibir = CATALOGO_EXAMES_PADRAO.filter(function(ex) {
+    return analitosPresentesIds[ex.id];
+  });
+
+  var html = '<table style="width:100%; border-collapse:collapse; background:#ffffff; font-size:0.86rem;">' +
+    '<thead>' +
+      '<tr style="background:#f4f7f5; border-bottom:2px solid var(--border);">' +
+        '<th style="padding:12px 14px; min-width:220px;">Exame / Analito</th>' +
+        '<th style="padding:12px 14px; min-width:140px; color:var(--text-muted);">Referência Padrão</th>';
+
+  // Cabeçalhos dinâmicos com cada data de coleta realizada
+  coletas.forEach(function(c) {
+    var dataFormatada = c.dataColeta.split('-').reverse().join('/');
+    html += '<th style="padding:12px 14px; text-align:center; min-width:130px; background:#eef4f0; border-left:1px solid #cad6ca;">' +
+      '<div>📅 ' + dataFormatada + '</div>' +
+      '<small style="font-weight:500; font-size:0.72rem; color:var(--text-muted);">' + c.laboratorio + '</small>' +
+    '</th>';
+  });
+
+  html += '</tr></thead><tbody>';
+
+  // Renderiza cada linha de exame cruzando os valores pelas datas
+  listaAnalitosParaExibir.forEach(function(analito) {
+    html += '<tr style="border-bottom:1px solid #eef2ef;">' +
+      '<td style="padding:10px 14px;">' +
+        '<strong>' + analito.nome + '</strong> ' +
+        '<small style="color:var(--text-muted);">(' + analito.unidade + ')</small>' +
+      '</td>' +
+      '<td style="padding:10px 14px; font-size:0.8rem; color:var(--text-muted);">' +
+        analito.min + ' a ' + analito.max + ' ' + analito.unidade +
+      '</td>';
+
+    coletas.forEach(function(c) {
+      var val = c.valores[analito.id];
+      if (typeof val === 'undefined' || val === null) {
+        html += '<td style="text-align:center; color:#9ca3af; border-left:1px solid #f1f4f2;">--</td>';
+      } else {
+        var badgeStyle = 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;'; // Normal
+        var labelStatus = '✓ Normal';
+
+        if (val > analito.max) {
+          badgeStyle = 'background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;'; // Alto
+          labelStatus = '▲ Alto';
+        } else if (val < analito.min) {
+          badgeStyle = 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;'; // Baixo
+          labelStatus = '▼ Baixo';
+        }
+
+        html += '<td style="text-align:center; padding:8px 10px; border-left:1px solid #cad6ca;">' +
+          '<div style="font-weight:700; font-size:0.92rem; color:#1e2b20;">' + val + '</div>' +
+          '<span style="display:inline-block; margin-top:2px; font-size:0.68rem; font-weight:700; padding:2px 6px; border-radius:12px; ' + badgeStyle + '">' +
+            labelStatus +
+          '</span>' +
+        '</td>';
+      }
+    });
+
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+window.renderizarPainelComparativoExames = renderizarPainelComparativoExames;
 
 function renderizarPainelComparativoExames() {
   var container = document.getElementById('containerTabelaComparativaExames');

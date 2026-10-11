@@ -7,29 +7,33 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
   <!-- Tela de Login Limpa -->
+  <!-- Tela de Login Limpa -->
   <div class="login-overlay" id="loginModal">
     <div class="login-box">
       <div style="text-align: center; margin-bottom: 20px;">
-        <h2 style="font-size: 1.5rem; color: var(--primary); font-weight: 700;">LEVEH</h2>
+        <h2 style="font-size: 1.5rem; color: #3e4d3a; font-weight: 700;">LEVEH</h2>
         <p style="font-size: 0.8rem; color: var(--text-muted);">Acesso Clínico Integrado</p>
       </div>
-      <form id="formLogin" onsubmit="realizarLogin(event)">
+
+      <div>
         <div class="form-group">
           <label>E-mail</label>
-          <input type="email" id="loginEmail" class="form-control" value="admin@leveh.com.br" required placeholder="email@leveh.com.br">
+          <input type="email" id="loginEmail" class="form-control" value="admin@leveh.com.br" placeholder="email@leveh.com.br">
         </div>
         <div class="form-group">
           <label>Senha</label>
-          <input type="password" id="loginSenha" class="form-control" value="admin123" required placeholder="••••••••">
+          <input type="password" id="loginSenha" class="form-control" value="admin123" placeholder="••••••••">
         </div>
         <div id="loginFeedback" style="font-size:0.78rem; color:#b91c1c; margin-bottom:8px; display:none;"></div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 6px;">Acessar Sistema</button>
-      </form>
+        <button type="button" class="btn btn-primary" id="btnAcessarSistema" style="width: 100%; margin-top: 6px;" onclick="loginDiretoLeveh()">
+          Acessar Sistema
+        </button>
+      </div>
     </div>
   </div>
 
@@ -137,7 +141,7 @@
                 </tr>
               </thead>
               <tbody id="corpoMatrizPermissoes">
-                <!-- Linhas de permissão geradas dinamicamente -->
+                <!-- Linhas geradas dinamicamente -->
               </tbody>
             </table>
           </div>
@@ -300,7 +304,7 @@
     <section id="view-prontuario" class="view-section" style="display: none;">
       <div class="paciente-resumo-banner">
         <div id="pacienteHeaderDetalhes" class="paciente-resumo-info">
-          <!-- Nome, Prontuário, Idade e Convênio inseridos via JS -->
+          <!-- Dados preenchidos via JS -->
         </div>
         <button class="btn-expandir-ficha" id="btnToggleFicha" type="button" onclick="alternarFichaCompleta()">
           <span>▼ Ficha Cadastral Completa</span>
@@ -385,7 +389,6 @@
             </button>
           </div>
 
-          <!-- Cards de Último Exame & Histórico Comparativo -->
           <div id="painelResumoUltimaBio" style="margin-bottom: 16px;"></div>
 
           <h4 style="font-size:0.84rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;">
@@ -394,8 +397,38 @@
           <div id="historicoBioimpedancia"></div>
         </div>
 
+        <div id="aba-exames" class="tab-content-item" style="display:none;">
+          <div class="tab-module-header">
+            <div>
+              <span class="tab-module-title">🧪 Painel Laboratorial & Comparativo Evolutivo</span>
+              <p style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">
+                Evolução comparativa por data com indicação de parâmetros e alertas (Alto / Baixo / Normal)
+              </p>
+            </div>
+            <button class="btn btn-primary" type="button" onclick="abrirModalLancamentoExame()">+ Lançar Novo Exame</button>
+          </div>
+          <div id="containerTabelaComparativaExames" class="table-responsive" style="margin-top:10px;"></div>
+        </div>
+
+        <!-- Aba Única de Prescrição de Dieta (Sem duplicações) -->
         <div id="aba-prescricao" class="tab-content-item" style="display:none;">
-          <div class="tab-module-header"><span class="tab-module-title">🥗 Nutrição TACO</span><button class="btn btn-primary" id="btnNovaNutricao" type="button" onclick="lancarGenericoAba('aba-prescricao')">+ Nova Dieta</button></div>
+          <div class="tab-module-header">
+            <div>
+              <span class="tab-module-title">🥗 Prescrição de Dieta & Plano Alimentar</span>
+              <p style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">
+                Cálculo de macronutrientes (Proteínas, Carboidratos, Gorduras, Calorias), horários e refeições estruturadas
+              </p>
+            </div>
+            <button class="btn btn-primary" id="btnNovaNutricao" type="button" onclick="abrirModalPrescricaoDieta()">
+              + Nova Prescrição de Dieta
+            </button>
+          </div>
+
+          <div id="painelResumoDietaAtiva" style="margin-bottom: 16px;"></div>
+
+          <h4 style="font-size:0.84rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;">
+            Histórico de Prescrições Nutricionais
+          </h4>
           <div id="historicoPrescricao"></div>
         </div>
       </div>
@@ -495,37 +528,176 @@
     </section>
 
     <section id="view-agenda" class="view-section" style="display: none;"><div class="card"><h2>Agenda de Consultas</h2></div></section>
-    <section id="view-taco" class="view-section" style="display: none;"><div class="card"><h2>Tabela TACO</h2></div></section>
-    <section id="view-substituicao" class="view-section" style="display: none;"><div class="card"><h2>Substituições</h2></div></section>
 
-    <!-- ==================== MODAIS FLUTUANTES DO SISTEMA ==================== -->
+    <!-- MÓDULO TABELA TACO (TELA COMPLETA COM LISTA E BUSCA) -->
+    <section id="view-taco" class="view-section" style="display: none;">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: #3e4d3a;">Base de Dados Nutricional (Tabela TACO)</h2>
+            <p style="font-size:0.82rem; color:var(--text-muted);">
+              Consulte, edite e cadastre alimentos base. Todas as alterações refletem-se diretamente na prescrição dos pacientes.
+            </p>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="abrirModalAlimentoTACO()">
+            + Cadastrar Novo Alimento
+          </button>
+        </div>
 
-    <!-- Modal Nova Evolução Clínica (Flutuante na Frente da Tela) -->
-    <!-- Painel do Assistente Clínico IA LEVEH -->
-        <div class="ia-assistant-card">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <button type="button" id="btnGravarIA" class="btn-ia-gravacao" onclick="alternarGravacaoEvolucao()">
-                <span class="ia-avatar-icon">🤖</span>
-                <span id="labelBtnGravarIA">Assistente IA: Gravar Fala</span>
-              </button>
-              <span id="statusGravacaoIA" style="font-size:0.8rem; font-weight:600; color:var(--text-muted);">Pronto para escutar</span>
-            </div>
+        <div style="display:flex; gap:10px; margin-bottom:14px;">
+          <input type="text" id="buscaTabelaTACO" class="form-control" placeholder="🔍 Pesquisar alimento por nome..." oninput="filtrarAlimentosTACO(this.value)" style="max-width:400px;">
+        </div>
 
-            <!-- Controles de Configuração da IA (Visíveis Exclusivamente para o ADM) -->
-            <div id="painelConfigIAAdm" style="display:none; align-items:center; gap:6px;">
-              <span style="font-size:0.72rem; font-weight:700; color:#5e6f5a; text-transform:uppercase;">Admin IA:</span>
-              <select id="provedorIAEvolucao" class="form-control" style="padding:4px 8px; font-size:0.75rem; width:auto; height:32px;">
-                <option value="groq-llama3" selected>Llama 3 70B (Padrão Leveh)</option>
-                <option value="groq-llama3-8b">Llama 3 8B (Instantâneo)</option>
-                <option value="groq-mixtral">Mixtral 8x7B</option>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr style="background:#f4f7f5;">
+                <th>Nome do Alimento</th>
+                <th style="text-align:center;">Porção Padrão</th>
+                <th style="text-align:center;">Calorias (kcal)</th>
+                <th style="text-align:center; color:#15803d;">Proteínas (g)</th>
+                <th style="text-align:center; color:#1d4ed8;">Carboidratos (g)</th>
+                <th style="text-align:center; color:#b45309;">Gorduras (g)</th>
+                <th style="text-align:center;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="corpoTabelaTACOGlobal"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- MÓDULO CALCULADORA DE SUBSTITUIÇÃO -->
+    <!-- MÓDULO CALCULADORA & LISTAS DE SUBSTITUIÇÃO POR PATOLOGIA -->
+    <section id="view-substituicao" class="view-section" style="display: none;">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: #3e4d3a;">Substituições Alimentares por Perfil Clínico & Patologia</h2>
+            <p style="font-size:0.82rem; color:var(--text-muted);">
+              Calcule equivalências exatas de macronutrientes respeitando as restrições metabólicas de cada patologia.
+            </p>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="abrirModalNovaRegraSubstituicao()">
+            + Criar Lista de Substituição Oficial
+          </button>
+        </div>
+
+        <!-- Seletor do Perfil Clínico Ativo -->
+        <div style="background:#f4f7f4; border:1px solid #cad6ca; border-radius:12px; padding:14px; margin-bottom:18px;">
+          <div class="form-grid" style="grid-template-columns: 2fr 1fr; align-items:center;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label style="color:#243328;">Selecione o Perfil de Patologia / Condição Clínica:</label>
+              <select id="filtroPatologiaSubstituicao" class="form-control" onchange="aoMudarPatologiaSubstituicao()">
+                <option value="geral">Geral / Sem Restrição Específica</option>
+                <option value="diabetes">Diabetes Mellitus (Baixo Índice Glicêmico / Foco em CHO e Fibras)</option>
+                <option value="hipertensao">Hipertensão Arterial (Controle de Sódio e Minerais)</option>
+                <option value="drc">Doença Renal Crônica (Restrição Proteica / Baixo Potássio e Fósforo)</option>
+                <option value="celiaco">Doença Celíaca / Sem Glúten (Gluten-Free)</option>
+                <option value="esteatose">Esteatose Hepática (Anti-inflamatória / Baixo Açúcar Simples e Gordura)</option>
+                <option value="esportivo">Nutrição Esportiva / Hipertrofia (Alta Densidade Proteica)</option>
               </select>
-              <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; height:32px;" title="Configurar Chave API Groq" onclick="configurarChaveIAPrompt()">⚙️</button>
+            </div>
+            <div id="badgeAlertaPatologia" style="font-size:0.78rem; color:#15803d; font-weight:600; padding:6px 12px; background:#e8f4ec; border-radius:8px; border:1px solid #c2e2cc;">
+              ✓ Sem restrições severas ativas
+            </div>
+          </div>
+        </div>
+
+        <!-- Calculadora Dinâmica de Equivalência -->
+        <div style="background:#fbfdfb; border:1px solid #cad6ca; border-radius:12px; padding:18px; margin-bottom:20px;">
+          <h4 style="font-size:0.85rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px; border-bottom:1px solid #cad6ca; padding-bottom:4px;">
+            Simulador de Equivalência Rápida
+          </h4>
+          <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+            <div class="form-group">
+              <label>Alimento Prescrito (Origem)</label>
+              <input type="text" id="substAlimentoOrigem" list="listaAlimentosTacoSugestoes" class="form-control" placeholder="Ex: Arroz branco cozido" onchange="calcularSubstituicaoAoVivo()">
+            </div>
+            <div class="form-group">
+              <label>Quantidade Prescrita (g)</label>
+              <input type="number" id="substQtdOrigem" class="form-control" value="100" min="1" oninput="calcularSubstituicaoAoVivo()">
+            </div>
+            <div class="form-group">
+              <label>Alimento Substituto (Desejado)</label>
+              <input type="text" id="substAlimentoDestino" list="listaAlimentosTacoSugestoes" class="form-control" placeholder="Ex: Batata doce cozida" onchange="calcularSubstituicaoAoVivo()">
+            </div>
+            <div class="form-group">
+              <label>Critério de Equivalência</label>
+              <select id="substCriterio" class="form-control" onchange="calcularSubstituicaoAoVivo()">
+                <option value="cho">Manter Carboidratos (g)</option>
+                <option value="ptn">Manter Proteínas (g)</option>
+                <option value="kcal">Manter Calorias (kcal)</option>
+                <option value="lip">Manter Gorduras (g)</option>
+              </select>
             </div>
           </div>
 
-          <div id="previewTranscricaoAoVivo" style="display:none; margin-top:8px; font-size:0.76rem; color:#3e4d3a; background:#ffffff; padding:8px 12px; border-radius:8px; border:1px dashed #cad6ca; max-height:65px; overflow-y:auto;"></div>
+          <div id="painelResultadoSubstituicao" style="margin-top:14px; padding:14px; background:#f4f7f4; border-radius:8px; border:1px dashed #cad6ca; display:none;"></div>
         </div>
+
+        <!-- Listas Oficiais Homologadas para a Patologia Selecionada -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h4 style="font-size:0.88rem; text-transform:uppercase; color:#3e4d3a; font-weight:700;">
+            📋 Tabelas de Equivalências Homologadas para este Perfil
+          </h4>
+        </div>
+        <div id="containerListasOficiaisPatologia" class="table-responsive"></div>
+      </div>
+    </section>
+
+    <!-- ==================== MODAIS FLUTUANTES DO SISTEMA ==================== -->
+
+    <!-- Modal Nova Evolução Clínica -->
+    <div class="modal-overlay" id="modalEvolucao" style="display: none;">
+      <div class="modal-box" style="max-width: 820px;">
+        <div class="modal-header">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: #3e4d3a;">Nova Evolução Clínica</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;" id="modalEvolucaoSubinfo">Paciente: --</p>
+          </div>
+          <button class="btn-close" type="button" onclick="fecharModalEvolucao()">✕</button>
+        </div>
+
+        <form id="formNovaEvolucao" onsubmit="salvarEvolucao(event)">
+          <div class="ia-assistant-card" style="margin-bottom: 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <button type="button" id="btnGravarIA" class="btn-ia-gravacao" onclick="alternarGravacaoEvolucao()">
+                  <span class="ia-avatar-icon">🤖</span>
+                  <span id="labelBtnGravarIA">Assistente IA: Gravar Fala</span>
+                </button>
+                <span id="statusGravacaoIA" style="font-size:0.8rem; font-weight:600; color:var(--text-muted);">Pronto para escutar</span>
+              </div>
+
+              <div id="painelConfigIAAdm" style="display:none; align-items:center; gap:6px;">
+                <span style="font-size:0.72rem; font-weight:700; color:#5e6f5a; text-transform:uppercase;">Admin IA:</span>
+                <select id="provedorIAEvolucao" class="form-control" style="padding:4px 8px; font-size:0.75rem; width:auto; height:32px;">
+                  <option value="groq-llama3" selected>Llama 3 70B (Padrão Leveh)</option>
+                  <option value="groq-llama3-8b">Llama 3 8B (Instantâneo)</option>
+                  <option value="groq-mixtral">Mixtral 8x7B</option>
+                </select>
+                <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; height:32px;" title="Configurar Chave API Groq" onclick="configurarChaveIAPrompt()">⚙️</button>
+              </div>
+            </div>
+
+            <div id="previewTranscricaoAoVivo" style="display:none; margin-top:8px; font-size:0.76rem; color:#3e4d3a; background:#ffffff; padding:8px 12px; border-radius:8px; border:1px dashed #cad6ca; max-height:65px; overflow-y:auto;"></div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">
+              Registo Clínico / Avaliação Estruturada (Markdown):
+            </label>
+            <textarea id="modalTextoEvolucao" class="form-control" placeholder="A fala gravada e estruturada pela IA surgirá automaticamente aqui..." style="min-height:240px; font-size:0.88rem; line-height:1.5;" required></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button type="button" class="btn btn-outline" onclick="fecharModalEvolucao()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar no Histórico</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- Modal Leitura Completa de Evolução Clínica -->
     <div class="modal-overlay" id="modalLeituraEvolucao" style="display: none;">
@@ -545,59 +717,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Modal Nova Evolução Clínica (Abre no centro do ecrã) -->
-  <div class="modal-overlay" id="modalEvolucao" style="display: none;">
-    <div class="modal-box" style="max-width: 820px;">
-      <div class="modal-header">
-        <div>
-          <h2 style="font-size: 1.25rem; font-weight: 700; color: #3e4d3a;">Nova Evolução Clínica</h2>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;" id="modalEvolucaoSubinfo">Paciente: --</p>
-        </div>
-        <button class="btn-close" type="button" onclick="fecharModalEvolucao()">✕</button>
-      </div>
-
-      <form id="formNovaEvolucao" onsubmit="salvarEvolucao(event)">
-        <!-- Painel do Assistente IA (Exibido dentro do modal) -->
-        <div class="ia-assistant-card" style="margin-bottom: 14px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <button type="button" id="btnGravarIA" class="btn-ia-gravacao" onclick="alternarGravacaoEvolucao()">
-                <span class="ia-avatar-icon">🤖</span>
-                <span id="labelBtnGravarIA">Assistente IA: Gravar Fala</span>
-              </button>
-              <span id="statusGravacaoIA" style="font-size:0.8rem; font-weight:600; color:var(--text-muted);">Pronto para escutar</span>
-            </div>
-
-            <!-- Controlo Exclusivo do ADM -->
-            <div id="painelConfigIAAdm" style="display:none; align-items:center; gap:6px;">
-              <span style="font-size:0.72rem; font-weight:700; color:#5e6f5a; text-transform:uppercase;">Admin IA:</span>
-              <select id="provedorIAEvolucao" class="form-control" style="padding:4px 8px; font-size:0.75rem; width:auto; height:32px;">
-                <option value="groq-llama3" selected>Llama 3 70B (Padrão Leveh)</option>
-                <option value="groq-llama3-8b">Llama 3 8B (Instantâneo)</option>
-                <option value="groq-mixtral">Mixtral 8x7B</option>
-              </select>
-              <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; height:32px;" title="Configurar Chave API" onclick="configurarChaveIAPrompt()">⚙️</button>
-            </div>
-          </div>
-
-          <div id="previewTranscricaoAoVivo" style="display:none; margin-top:8px; font-size:0.76rem; color:#3e4d3a; background:#ffffff; padding:8px 12px; border-radius:8px; border:1px dashed #cad6ca; max-height:65px; overflow-y:auto;"></div>
-        </div>
-
-        <div class="form-group" style="margin-bottom:16px;">
-          <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">
-            Registo Clínico / Avaliação Estruturada (Markdown):
-          </label>
-          <textarea id="modalTextoEvolucao" class="form-control" placeholder="A fala transcrita e estruturada pela IA aparecerá automaticamente aqui..." style="min-height:240px; font-size:0.88rem; line-height:1.5;" required></textarea>
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 8px;">
-          <button type="button" class="btn btn-outline" onclick="fecharModalEvolucao()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar no Histórico</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
     <!-- Modal Prescrição Médica -->
     <div class="modal-overlay" id="modalPrescricao" style="display: none;">
@@ -805,7 +924,6 @@
             </div>
           </div>
 
-          <!-- Barra de Busca pelas Iniciais (Autocomplete / Datalist) -->
           <div style="margin-bottom: 14px;">
             <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">
               🔍 Buscar Exame pelas Iniciais (Digite para adicionar):
@@ -817,7 +935,6 @@
             </div>
           </div>
 
-          <!-- Lista limpa apenas com os exames adicionados nesta coleta -->
           <div style="margin-bottom: 12px;">
             <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">
               Exames Selecionados para esta Coleta:
@@ -849,7 +966,6 @@
         </div>
 
         <form id="formAntropometria" onsubmit="salvarAvaliacaoAntropometrica(event)">
-          <!-- Painel de Resultados Automáticos em Tempo Real -->
           <div style="background:#f0f6f2; border:1px solid #cce2d3; border-radius:8px; padding:12px; margin-bottom:14px; display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; text-align:center;">
             <div><small style="color:var(--text-muted); font-weight:600;">IMC</small><div id="previewIMC" style="font-size:1.1rem; font-weight:700; color:var(--primary);">--</div></div>
             <div><small style="color:var(--text-muted); font-weight:600;">% Gordura (BF)</small><div id="previewBF" style="font-size:1.1rem; font-weight:700; color:#1d4ed8;">--</div></div>
@@ -859,7 +975,6 @@
             <div><small style="color:var(--text-muted); font-weight:600;">TMB (Katch)</small><div id="previewTMB" style="font-size:1.1rem; font-weight:700; color:var(--primary);">--</div></div>
           </div>
 
-          <!-- 1. Medidas Básicas -->
           <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:4px;">1. Parâmetros Básicos</h4>
           <div class="form-grid">
             <div class="form-group">
@@ -876,7 +991,6 @@
             </div>
           </div>
 
-          <!-- 2. Circunferências (Perimetria) -->
           <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin:12px 0 8px; border-bottom:1px solid var(--border); padding-bottom:4px;">2. Circunferências / Perímetros (cm)</h4>
           <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
             <div class="form-group"><label>Cintura (menor curvatura)</label><input type="number" step="0.1" id="antropoCintura" class="form-control" placeholder="cm" oninput="calcularMetricasAntropoAoVivo()"></div>
@@ -889,7 +1003,6 @@
             <div class="form-group"><label>Panturrilha (D)</label><input type="number" step="0.1" id="antropoPanturrilha" class="form-control" placeholder="cm"></div>
           </div>
 
-          <!-- 3. Dobras Cutâneas (Pollock 7) -->
           <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin:12px 0 8px; border-bottom:1px solid var(--border); padding-bottom:4px;">3. Dobras Cutâneas (Protocolo Pollock 7 - mm)</h4>
           <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
             <div class="form-group"><label>Tríceps</label><input type="number" step="0.1" id="antropoTriceps" class="form-control" placeholder="mm" oninput="calcularMetricasAntropoAoVivo()"></div>
@@ -915,129 +1028,234 @@
       </div>
     </div>
   
-    <!-- Modal Completo de Bioimpedância (Nutrição & Medicina Esportiva) -->
-  <div class="modal-overlay" id="modalBioimpedancia" style="display: none;">
-    <div class="modal-box" style="max-width: 900px;">
+    <!-- Modal Completo de Bioimpedância -->
+    <div class="modal-overlay" id="modalBioimpedancia" style="display: none;">
+      <div class="modal-box" style="max-width: 900px;">
+        <div class="modal-header">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: #3e4d3a;">Lançar Laudo de Bioimpedância</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;" id="modalBioSubinfo">Paciente: --</p>
+          </div>
+          <button class="btn-close" type="button" onclick="fecharModalBioimpedancia()">✕</button>
+        </div>
+
+        <form id="formBioimpedancia" onsubmit="salvarBioimpedancia(event)">
+          <div class="form-grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 12px;">
+            <div class="form-group">
+              <label>Equipamento / Aparelho Utilizado</label>
+              <input type="text" id="bioAparelho" class="form-control" placeholder="Ex: InBody 770 / Tanita MC-780 / Seca mBCA">
+            </div>
+            <div class="form-group">
+              <label>Data do Exame *</label>
+              <input type="date" id="bioData" class="form-control" required>
+            </div>
+          </div>
+
+          <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; border-bottom:1px solid #cad6ca; padding-bottom:4px;">
+            1. Composição Corporal & Tecidual
+          </h4>
+          <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="form-group"><label>Peso Total (kg) *</label><input type="number" step="0.1" id="bioPeso" class="form-control" placeholder="kg" required></div>
+            <div class="form-group"><label>% Gordura Corporal (BF %)</label><input type="number" step="0.1" id="bioBf" class="form-control" placeholder="%"></div>
+            <div class="form-group"><label>Massa Musc. Esquelética (kg)</label><input type="number" step="0.1" id="bioMme" class="form-control" placeholder="MME kg"></div>
+            <div class="form-group"><label>Massa Livre de Gordura (kg)</label><input type="number" step="0.1" id="bioMassaMagra" class="form-control" placeholder="MLG kg"></div>
+            <div class="form-group"><label>Massa de Gordura (kg)</label><input type="number" step="0.1" id="bioMassaGorda" class="form-control" placeholder="Gordura kg"></div>
+            <div class="form-group"><label>IMC (kg/m²)</label><input type="number" step="0.1" id="bioImc" class="form-control" placeholder="IMC"></div>
+            <div class="form-group"><label>Taxa Metab. Basal (kcal)</label><input type="number" step="1" id="bioTmb" class="form-control" placeholder="TMB kcal"></div>
+            <div class="form-group"><label>Gordura Visceral (Nível)</label><input type="number" step="1" id="bioVisceral" class="form-control" placeholder="Ex: 4"></div>
+          </div>
+
+          <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin:12px 0 8px; border-bottom:1px solid #cad6ca; padding-bottom:4px;">
+            2. Hidratação, Edema & Integridade Celular
+          </h4>
+          <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="form-group"><label>Água Corporal Total (ACT L)</label><input type="number" step="0.1" id="bioAct" class="form-control" placeholder="Litros"></div>
+            <div class="form-group"><label>Água Intracelular (AIC L)</label><input type="number" step="0.1" id="bioAic" class="form-control" placeholder="Litros"></div>
+            <div class="form-group"><label>Água Extracelular (AEC L)</label><input type="number" step="0.1" id="bioAec" class="form-control" placeholder="Litros"></div>
+            <div class="form-group"><label>Relação AEC / ACT</label><input type="number" step="0.001" id="bioRelacaoAgua" class="form-control" placeholder="Ex: 0.380 (Edema)"></div>
+            <div class="form-group"><label>Ângulo de Fase (° - Phase Angle)</label><input type="number" step="0.1" id="bioAnguloFase" class="form-control" placeholder="Ex: 7.2°"></div>
+            <div class="form-group"><label>Massa Óssea Mineral (kg)</label><input type="number" step="0.1" id="bioMassaOssea" class="form-control" placeholder="kg"></div>
+            <div class="form-group"><label>Pontuação / Score Geral</label><input type="number" step="1" id="bioScore" class="form-control" placeholder="Ex: 82 / 100"></div>
+          </div>
+
+          <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin:12px 0 8px; border-bottom:1px solid #cad6ca; padding-bottom:4px;">
+            3. Massa Magra Segmentar (Músculo por Segmento - kg)
+          </h4>
+          <div class="form-grid" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="form-group"><label>Braço Direito</label><input type="number" step="0.01" id="bioSegBracoD" class="form-control" placeholder="kg"></div>
+            <div class="form-group"><label>Braço Esquerdo</label><input type="number" step="0.01" id="bioSegBracoE" class="form-control" placeholder="kg"></div>
+            <div class="form-group"><label>Tronco</label><input type="number" step="0.01" id="bioSegTronco" class="form-control" placeholder="kg"></div>
+            <div class="form-group"><label>Perna Direita</label><input type="number" step="0.01" id="bioSegPernaD" class="form-control" placeholder="kg"></div>
+            <div class="form-group"><label>Perna Esquerda</label><input type="number" step="0.01" id="bioSegPernaE" class="form-control" placeholder="kg"></div>
+          </div>
+
+          <div class="form-group" style="margin-top:10px;">
+            <label>Parecer Clínico / Interpretação</label>
+            <input type="text" id="bioObservacoes" class="form-control" placeholder="Ex: Boa hidratação intracelular, hipertrofia em membros inferiores, ângulo de fase excelente...">
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+            <button type="button" class="btn btn-outline" onclick="fecharModalBioimpedancia()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar Laudo de Bioimpedância</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Estruturado de Prescrição de Dieta (Com campo de ID e sem campos duplicados) -->
+    <div class="modal-overlay" id="modalPrescricaoDieta" style="display: none;">
+      <div class="modal-box" style="max-width: 960px;">
+        <div class="modal-header">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: #3e4d3a;">Prescrição de Dieta & Plano Alimentar</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;" id="modalDietaSubinfo">Paciente: --</p>
+          </div>
+          <button class="btn-close" type="button" onclick="fecharModalPrescricaoDieta()">✕</button>
+        </div>
+
+        <form id="formPrescricaoDieta" onsubmit="salvarPrescricaoDieta(event)">
+          <input type="hidden" id="dietaEditId" value="">
+
+          <div class="form-grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 12px;">
+            <div class="form-group">
+              <label>Título / Objetivo da Dieta *</label>
+              <input type="text" id="dietaTitulo" class="form-control" placeholder="Ex: Hipertrofia Limpa - Fase 1 / Défice Calórico Moderado" required>
+            </div>
+            <div class="form-group">
+              <label>Data da Prescrição *</label>
+              <input type="date" id="dietaData" class="form-control" required>
+            </div>
+          </div>
+
+          <!-- Painel de Totais em Tempo Real -->
+          <div style="background:#f4f7f4; border:1px solid #cad6ca; border-radius:12px; padding:12px; margin-bottom:16px; display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; text-align:center;">
+            <div><small style="color:var(--text-muted); font-weight:700;">CALORIAS TOTAIS</small><div id="dietaTotalKcal" style="font-size:1.15rem; font-weight:800; color:#243328;">0 kcal</div></div>
+            <div><small style="color:var(--text-muted); font-weight:700;">PROTEÍNAS</small><div id="dietaTotalPtn" style="font-size:1.15rem; font-weight:800; color:#15803d;">0 g</div></div>
+            <div><small style="color:var(--text-muted); font-weight:700;">CARBOIDRATOS</small><div id="dietaTotalCho" style="font-size:1.15rem; font-weight:800; color:#1d4ed8;">0 g</div></div>
+            <div><small style="color:var(--text-muted); font-weight:700;">GORDURAS (LÍP)</small><div id="dietaTotalLip" style="font-size:1.15rem; font-weight:800; color:#b45309;">0 g</div></div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span style="font-size:0.82rem; font-weight:700; color:var(--text-main); text-transform:uppercase;">
+              🍽️ Refeições Estruturadas
+            </span>
+            <button type="button" class="btn btn-outline" style="padding:4px 12px; font-size:0.8rem;" onclick="adicionarBlocoRefeicao()">
+              + Adicionar Refeição
+            </button>
+          </div>
+
+          <div id="containerRefeicoesDieta" style="display:flex; flex-direction:column; gap:14px; max-height:50vh; overflow-y:auto; padding-right:4px; margin-bottom:14px;"></div>
+
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Orientações Gerais, Hidratação & Suplementação</label>
+            <textarea id="dietaOrientacoes" class="form-control" rows="2" placeholder="Ex: Ingerir 35ml de água por kg de peso corporal, uso de creatina 5g pós-treino..."></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button type="button" class="btn btn-outline" onclick="fecharModalPrescricaoDieta()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar Prescrição de Dieta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Cadastrar / Editar Alimento TACO -->
+    <div class="modal-overlay" id="modalAlimentoTACO" style="display: none;">
+      <div class="modal-box" style="max-width: 580px;">
+        <div class="modal-header">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: #3e4d3a;" id="modalAlimentoTitulo">Cadastrar Alimento (TACO)</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Os valores cadastrados sincronizam com as prescrições de todos os pacientes.</p>
+          </div>
+          <button class="btn-close" type="button" onclick="fecharModalAlimentoTACO()">✕</button>
+        </div>
+
+        <form id="formAlimentoTACO" onsubmit="salvarAlimentoTACO(event)">
+          <input type="hidden" id="alimentoOriginalNome" value="">
+          <div class="form-group">
+            <label>Nome do Alimento *</label>
+            <input type="text" id="aliNome" class="form-control" placeholder="Ex: Arroz vermelho cozido" required>
+          </div>
+
+          <div class="form-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="form-group">
+              <label>Porção Padrão (g ou ml) *</label>
+              <input type="number" step="0.1" id="aliPorcao" class="form-control" value="100" required>
+            </div>
+            <div class="form-group">
+              <label>Calorias (kcal) *</label>
+              <input type="number" step="0.1" id="aliKcal" class="form-control" required placeholder="kcal">
+            </div>
+            <div class="form-group">
+              <label>Proteínas (g) *</label>
+              <input type="number" step="0.1" id="aliPtn" class="form-control" required placeholder="g">
+            </div>
+            <div class="form-group">
+              <label>Carboidratos (g) *</label>
+              <input type="number" step="0.1" id="aliCho" class="form-control" required placeholder="g">
+            </div>
+            <div class="form-group col-2">
+              <label>Gorduras Totais / Lípidos (g) *</label>
+              <input type="number" step="0.1" id="aliLip" class="form-control" required placeholder="g">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+            <button type="button" class="btn btn-outline" onclick="fecharModalAlimentoTACO()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar Alimento</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- Modal Cadastrar Nova Substituição Homologada por Patologia -->
+  <div class="modal-overlay" id="modalNovaSubstituicaoPatologia" style="display: none;">
+    <div class="modal-box" style="max-width: 650px;">
       <div class="modal-header">
         <div>
-          <h2 style="font-size: 1.25rem; font-weight: 700; color: #3e4d3a;">Lançar Laudo de Bioimpedância</h2>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;" id="modalBioSubinfo">Paciente: --</p>
+          <h2 style="font-size: 1.25rem; font-weight: 700; color: #3e4d3a;">Homologar Regra de Substituição</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Adicione uma troca clinicamente validada para o perfil patológico selecionado.</p>
         </div>
-        <button class="btn-close" type="button" onclick="fecharModalBioimpedancia()">✕</button>
+        <button class="btn-close" type="button" onclick="fecharModalNovaRegraSubstituicao()">✕</button>
       </div>
 
-      <form id="formBioimpedancia" onsubmit="salvarBioimpedancia(event)">
-        <div class="form-grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 12px;">
+      <form id="formNovaSubstPatologia" onsubmit="salvarRegraSubstituicaoPatologia(event)">
+        <div class="form-group">
+          <label>Perfil Clínico / Patologia Alvo *</label>
+          <select id="modalSubstPatologiaAlvo" class="form-control" required>
+            <option value="diabetes">Diabetes Mellitus</option>
+            <option value="hipertensao">Hipertensão Arterial</option>
+            <option value="drc">Doença Renal Crônica</option>
+            <option value="celiaco">Doença Celíaca (Gluten-Free)</option>
+            <option value="esteatose">Esteatose Hepática</option>
+            <option value="esportivo">Nutrição Esportiva / Hipertrofia</option>
+            <option value="geral">Geral / Manutenção</option>
+          </select>
+        </div>
+
+        <div class="form-grid" style="grid-template-columns: repeat(2, 1fr);">
           <div class="form-group">
-            <label>Equipamento / Aparelho Utilizado</label>
-            <input type="text" id="bioAparelho" class="form-control" placeholder="Ex: InBody 770 / Tanita MC-780 / Seca mBCA">
+            <label>Alimento Base / Referência *</label>
+            <input type="text" id="modalSubstAlimOrigem" list="listaAlimentosTacoSugestoes" class="form-control" placeholder="Ex: Pão de forma integral (50g)" required>
           </div>
           <div class="form-group">
-            <label>Data do Exame *</label>
-            <input type="date" id="bioData" class="form-control" required>
+            <label>Opções de Substitutos Equivalentes *</label>
+            <input type="text" id="modalSubstAlimDestino" class="form-control" placeholder="Ex: Tapioca (30g) ou Aveia em flocos (30g)" required>
           </div>
         </div>
 
-        <!-- 1. Composição Corporal Geral -->
-        <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; border-bottom:1px solid #cad6ca; padding-bottom:4px;">
-          1. Composição Corporal & Tecidual
-        </h4>
-        <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
-          <div class="form-group">
-            <label>Peso Total (kg) *</label>
-            <input type="number" step="0.1" id="bioPeso" class="form-control" placeholder="kg" required>
-          </div>
-          <div class="form-group">
-            <label>% Gordura Corporal (BF %)</label>
-            <input type="number" step="0.1" id="bioBf" class="form-control" placeholder="%">
-          </div>
-          <div class="form-group">
-            <label>Massa Musc. Esquelética (kg)</label>
-            <input type="number" step="0.1" id="bioMme" class="form-control" placeholder="MME kg">
-          </div>
-          <div class="form-group">
-            <label>Massa Livre de Gordura (kg)</label>
-            <input type="number" step="0.1" id="bioMassaMagra" class="form-control" placeholder="MLG kg">
-          </div>
-          <div class="form-group">
-            <label>Massa de Gordura (kg)</label>
-            <input type="number" step="0.1" id="bioMassaGorda" class="form-control" placeholder="Gordura kg">
-          </div>
-          <div class="form-group">
-            <label>IMC (kg/m²)</label>
-            <input type="number" step="0.1" id="bioImc" class="form-control" placeholder="IMC">
-          </div>
-          <div class="form-group">
-            <label>Taxa Metab. Basal (kcal)</label>
-            <input type="number" step="1" id="bioTmb" class="form-control" placeholder="TMB kcal">
-          </div>
-          <div class="form-group">
-            <label>Gordura Visceral (Nível)</label>
-            <input type="number" step="1" id="bioVisceral" class="form-control" placeholder="Ex: 4">
-          </div>
+        <div class="form-group">
+          <label>Parâmetro de Equivalência / Observação Nutricional</label>
+          <input type="text" id="modalSubstObs" class="form-control" placeholder="Ex: Fornece ~22g de carboidratos complexos com resposta glicêmica estável">
         </div>
 
-        <!-- 2. Hidratação Celular & Integridade (Medicina Esportiva / Inflamação) -->
-        <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin:12px 0 8px; border-bottom:1px solid #cad6ca; padding-bottom:4px;">
-          2. Hidratação, Edema & Integridade Celular
-        </h4>
-        <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
-          <div class="form-group">
-            <label>Água Corporal Total (ACT L)</label>
-            <input type="number" step="0.1" id="bioAct" class="form-control" placeholder="Litros">
-          </div>
-          <div class="form-group">
-            <label>Água Intracelular (AIC L)</label>
-            <input type="number" step="0.1" id="bioAic" class="form-control" placeholder="Litros">
-          </div>
-          <div class="form-group">
-            <label>Água Extracelular (AEC L)</label>
-            <input type="number" step="0.1" id="bioAec" class="form-control" placeholder="Litros">
-          </div>
-          <div class="form-group">
-            <label>Relação AEC / ACT</label>
-            <input type="number" step="0.001" id="bioRelacaoAgua" class="form-control" placeholder="Ex: 0.380 (Edema)">
-          </div>
-          <div class="form-group">
-            <label>Ângulo de Fase (° - Phase Angle)</label>
-            <input type="number" step="0.1" id="bioAnguloFase" class="form-control" placeholder="Ex: 7.2°">
-          </div>
-          <div class="form-group">
-            <label>Massa Óssea Mineral (kg)</label>
-            <input type="number" step="0.1" id="bioMassaOssea" class="form-control" placeholder="kg">
-          </div>
-          <div class="form-group">
-            <label>Pontuação / Score Geral</label>
-            <input type="number" step="1" id="bioScore" class="form-control" placeholder="Ex: 82 / 100">
-          </div>
-        </div>
-
-        <!-- 3. Análise Segmentar Muscular (kg) -->
-        <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin:12px 0 8px; border-bottom:1px solid #cad6ca; padding-bottom:4px;">
-          3. Massa Magra Segmentar (Músculo por Segmento - kg)
-        </h4>
-        <div class="form-grid" style="grid-template-columns: repeat(5, 1fr);">
-          <div class="form-group"><label>Braço Direito</label><input type="number" step="0.01" id="bioSegBracoD" class="form-control" placeholder="kg"></div>
-          <div class="form-group"><label>Braço Esquerdo</label><input type="number" step="0.01" id="bioSegBracoE" class="form-control" placeholder="kg"></div>
-          <div class="form-group"><label>Tronco</label><input type="number" step="0.01" id="bioSegTronco" class="form-control" placeholder="kg"></div>
-          <div class="form-group"><label>Perna Direita</label><input type="number" step="0.01" id="bioSegPernaD" class="form-control" placeholder="kg"></div>
-          <div class="form-group"><label>Perna Esquerda</label><input type="number" step="0.01" id="bioSegPernaE" class="form-control" placeholder="kg"></div>
-        </div>
-
-        <div class="form-group" style="margin-top:10px;">
-          <label>Parecer Clínico / Interpretação</label>
-          <input type="text" id="bioObservacoes" class="form-control" placeholder="Ex: Boa hidratação intracelular, hipertrofia em membros inferiores, ângulo de fase excelente...">
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
-          <button type="button" class="btn btn-outline" onclick="fecharModalBioimpedancia()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar Laudo de Bioimpedância</button>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalNovaRegraSubstituicao()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Homologar Substituição</button>
         </div>
       </form>
     </div>
   </div>
   </main>
-
-  <script src="app.js"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
